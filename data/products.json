@@ -1,0 +1,82 @@
+[
+  {
+    "id": "consultation",
+    "title": "Consultation capillaire",
+    "price": 10000,
+    "currency": "XAF",
+    "category": "Services",
+    "shortDescription": "Analyse du cuir chevelu, profil capillaire, routine, conseils personnalisés.",
+    "image": "assets/images/flyer.png",
+    "cities": [
+      "N’Djamena",
+      "Moundou",
+      "Sarh",
+      "Abéché",
+      "Bongor",
+      "Kélo",
+      "Pala",
+      "Koumra",
+      "Faya-Largeau"
+    ]
+  },
+  {
+    "id": "shampoo-nourrissant",
+    "title": "Shampoing nourrissant 500ml",
+    "price": 5000,
+    "currency": "XAF",
+    "category": "Shampoings",
+    "shortDescription": "Pour cheveux afro — nourrit et adoucit.",
+    "image": "assets/images/shampoos.png",
+    "cities": [
+      "N’Djamena",
+      "Moundou",
+      "Sarh",
+      "Abéché",
+      "Bongor",
+      "Kélo",
+      "Pala",
+      "Koumra",
+      "Faya-Largeau"
+    ]
+  },
+  {
+    "id": "shampoo-antipelliculaire",
+    "title": "Shampoing antipelliculaire 500ml",
+    "price": 5000,
+    "currency": "XAF",
+    "category": "Shampoings",
+    "shortDescription": "Agit contre les pellicules, usage régulier.",
+    "image": "assets/images/shampoos.png",
+    "cities": [
+      "N’Djamena",
+      "Moundou",
+      "Sarh",
+      "Abéché",
+      "Bongor",
+      "Kélo",
+      "Pala",
+      "Koumra",
+      "Faya-Largeau"
+    ]
+  },
+  {
+    "id": "beurre-capillaire",
+    "title": "Beurre capillaire",
+    "price": 3000,
+    "currency": "XAF",
+    "category": "Soins cheveux",
+    "shortDescription": "Hydrate et scelle l’humidité.",
+    "image": "assets/images/butter.png",
+    "cities": [
+      "N’Djamena",
+      "Moundou",
+      "Sarh",
+      "Abéché",
+      "Bongor",
+      "Kélo",
+      "Pala",
+      "Koumra",
+      "Faya-Largeau"
+    ]
+  }
+]

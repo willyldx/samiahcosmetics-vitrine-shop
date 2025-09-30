@@ -1,0 +1,38 @@
+
+:root{
+  --charcoal:#0A0A0A;
+  --ivory:#F5F2EA;
+  --gold:#D9B56C;
+  --blush:#F6D6E1;
+}
+*{box-sizing:border-box} html,body{margin:0;padding:0;font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Inter,Arial,sans-serif;color:#222}
+a{color:inherit;text-decoration:none}
+.container{max-width:1100px;margin:0 auto;padding:20px}
+.header{display:flex;align-items:center;gap:18px;padding:16px 0}
+.logo img{height:64px;width:auto}
+.brand{font-family:ui-serif,Georgia,'Times New Roman',serif;font-weight:700;letter-spacing:.08em}
+.hero{background:linear-gradient(135deg, #fff, #ffeef4);border-bottom:1px solid #eee;padding:36px 0}
+.hero .wrap{display:grid;grid-template-columns:1.3fr 1fr;gap:24px}
+.hero h1{margin:0 0 8px;font-size:38px;letter-spacing:.02em}
+.hero p{margin:0 0 16px;font-size:18px;opacity:.85}
+.btn{display:inline-block;background:var(--charcoal);color:#fff;padding:12px 18px;border-radius:10px;font-weight:600}
+.btn.gold{background:var(--gold);color:#222}
+.section-title{font-family:ui-serif,Georgia,'Times New Roman',serif;font-size:28px;margin:24px 0 10px}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+.card{border:1px solid #eee;border-radius:16px;overflow:hidden;background:#fff;box-shadow:0 8px 20px rgba(0,0,0,.05)}
+.card img{width:100%;height:220px;object-fit:cover}
+.card .p{padding:14px}
+.badge{display:inline-block;background:#111;color:#fff;border-radius:999px;font-size:12px;padding:6px 10px;margin-right:6px;opacity:.9}
+.footer{margin-top:40px;padding:24px 0;border-top:1px solid #eee;font-size:14px;color:#666}
+.topbar{background:#111;color:#fff;font-size:13px;padding:6px 0;text-align:center}
+.filters{display:flex;gap:10px;flex-wrap:wrap;margin:12px 0 18px}
+select,.search{padding:10px;border-radius:10px;border:1px solid #ddd;min-width:160px}
+small.muted{opacity:.7}
+@media(max-width:900px){
+  .hero .wrap{grid-template-columns:1fr}
+  .grid{grid-template-columns:1fr 1fr}
+}
+@media(max-width:600px){
+  .grid{grid-template-columns:1fr}
+  .hero h1{font-size:30px}
+}
