@@ -1,0 +1,10 @@
+<!-- assets/images/samiah-C-avatar.svg -->
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024" aria-label="Samiah avatar">
+  <rect width="1024" height="1024" fill="#0A0A0A"/>
+  <circle cx="512" cy="470" r="220" fill="none" stroke="#F5F2EA" stroke-width="12"/>
+  <circle cx="512" cy="470" r="180" fill="none" stroke="#D9B56C" stroke-width="10"/>
+  <g transform="translate(512,470)" fill="none" stroke="#F5F2EA" stroke-width="10" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M0,-56 C16,-96 64,-96 80,-56 C64,-16 16,-16 0,-56Z"/>
+    <path d="M-18,18 C-50,12 -66,40 -48,56 C-26,68 -4,46 -18,18Z"/>
+  </g>
+</svg>
