@@ -1,4 +1,3 @@
-
 <!doctype html>
 <html lang="fr">
 <head>
@@ -47,6 +46,11 @@
     .toast.show{opacity:1;transform:translateY(0)}
     .note{background:var(--soft);border:1px dashed var(--border);border-radius:12px;padding:10px 12px;color:#444}
   </style>
+  <!-- Uploadcare (clé publique + script) -->
+  <script>
+    window.UPLOADCARE_PUBLIC_KEY = 'aff6343f97db42a35956';
+  </script>
+  <script src="https://ucarecdn.com/libs/widget/3.x/uploadcare.full.min.js"></script>
 </head>
 <body>
   <div class="topbar">
@@ -107,7 +111,23 @@
           <div><label>Catégorie<br/><input id="f_category" placeholder="Shampoings, Soins cheveux, Services"></label></div>
           <div><label>ID (slug)<br/><input id="f_id" placeholder="auto si vide"></label></div>
           <div style="grid-column:1 / -1"><label>Description courte<br/><textarea id="f_desc" placeholder="Texte court…"></textarea></label></div>
-          <div><label>Image (chemin ou URL)<br/><input id="f_image" placeholder="assets/images/mon-produit.jpg"></label></div>
+
+          <!-- Champ image avec uploader Uploadcare -->
+          <div>
+            <label>Image (upload ou URL)<br/>
+              <!-- Valeur finale stockée ici (URL du CDN) -->
+              <input type="hidden" id="f_image" placeholder="assets/images/mon-produit.jpg">
+              <!-- Uploader : galerie, appareil photo, URL -->
+              <input type="file"
+                     data-uploadcare-uploader
+                     data-images-only
+                     data-clearable
+                     data-tabs="file camera url"
+                     data-multiple="false" />
+              <small class="muted">Choisis depuis la galerie, prends une photo, ou colle une URL.</small>
+            </label>
+          </div>
+
           <div><label>Villes (liste)<br/>
             <select id="f_cities" multiple size="6" style="height:140px">
               <option>N’Djamena</option><option>Moundou</option><option>Sarh</option><option>Abéché</option><option>Bongor</option>
@@ -315,6 +335,31 @@
     }
 
     load();
+  </script>
+
+  <!-- Étape 4 : branchement Uploadcare -> champ #f_image -->
+  <script>
+    (function(){
+      function initUploadcareHook(){
+        try{
+          if(!window.uploadcare) return;
+          var el = document.querySelector('[data-uploadcare-uploader]');
+          if(!el) return;
+          var widget = uploadcare.Widget(el);
+          widget.onUploadComplete(function(info){
+            var hidden = document.getElementById('f_image');
+            if(hidden) hidden.value = info.cdnUrl;
+            if(typeof show === 'function') show('Image uploadée ✅');
+            else alert('Image uploadée ✅: ' + info.cdnUrl);
+          });
+        }catch(e){ /* silencieux */ }
+      }
+      if(document.readyState === 'loading'){
+        document.addEventListener('DOMContentLoaded', initUploadcareHook);
+      }else{
+        initUploadcareHook();
+      }
+    })();
   </script>
 </body>
 </html>
