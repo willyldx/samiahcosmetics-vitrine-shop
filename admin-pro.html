@@ -1,0 +1,320 @@
+
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Samiah Cosmetics — Admin Pro</title>
+  <meta name="robots" content="noindex,nofollow"/>
+  <style>
+    :root{
+      --charcoal:#0A0A0A;
+      --ivory:#F5F2EA;
+      --gold:#D9B56C;
+      --soft:#f7f5f2;
+      --border:#eaeaea;
+      --muted:#6b7280;
+    }
+    *{box-sizing:border-box}
+    html,body{margin:0;background:#fafafa;color:#111;font-family:Inter,ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
+    .topbar{position:sticky;top:0;z-index:10;background:#fff;border-bottom:1px solid var(--border);}
+    .nav{max-width:1200px;margin:0 auto;display:flex;gap:14px;align-items:center;padding:12px 16px}
+    .brand{display:flex;gap:10px;align-items:center}
+    .logo{display:inline-flex;width:42px;height:42px;border-radius:10px;background:var(--charcoal);align-items:center;justify-content:center}
+    .logo svg{width:28px;height:28px}
+    .brand h1{font-size:16px;margin:0;font-weight:700;letter-spacing:.06em}
+    .nav .spacer{flex:1}
+    .btn{appearance:none;border:0;border-radius:10px;background:var(--charcoal);color:#fff;padding:10px 14px;font-weight:600;cursor:pointer}
+    .btn.secondary{background:#1111110d;color:#111;border:1px solid var(--border)}
+    .btn.gold{background:var(--gold);color:#222}
+    .wrap{max-width:1200px;margin:0 auto;padding:20px}
+    .panel{background:#fff;border:1px solid var(--border);border-radius:16px;box-shadow:0 10px 30px rgba(0,0,0,.04);padding:16px;margin-bottom:18px}
+    .grid{display:grid;grid-template-columns:1.2fr .8fr;gap:18px}
+    @media(max-width:900px){.grid{grid-template-columns:1fr}}
+    h2{margin:0 0 10px;font-size:20px}
+    .filters{display:flex;gap:10px;flex-wrap:wrap;margin:10px 0 14px}
+    input[type="text"],input[type="number"],select,textarea{width:100%;padding:10px;border:1px solid var(--border);border-radius:10px;background:#fff}
+    textarea{min-height:100px}
+    table{width:100%;border-collapse:collapse}
+    th,td{font-size:14px;padding:10px;border-bottom:1px solid var(--border);text-align:left;vertical-align:top}
+    th{position:sticky;top:0;background:#fff;z-index:1}
+    .actions{display:flex;gap:8px}
+    .muted{color:var(--muted)}
+    .pill{display:inline-block;border-radius:999px;background:#111;color:#fff;font-size:11px;padding:4px 8px}
+    .empty{padding:20px;text-align:center;color:var(--muted)}
+    .footer{padding:20px 0 40px;color:var(--muted);font-size:13px;text-align:center}
+    .toast{position:fixed;bottom:16px;right:16px;background:#111;color:#fff;padding:12px 14px;border-radius:10px;opacity:0;transform:translateY(10px);transition:.25s;pointer-events:none}
+    .toast.show{opacity:1;transform:translateY(0)}
+    .note{background:var(--soft);border:1px dashed var(--border);border-radius:12px;padding:10px 12px;color:#444}
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <div class="nav">
+      <div class="brand">
+        <span class="logo" title="Samiah">
+          <!-- tiny badge logo -->
+          <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="50" cy="50" r="42" fill="none" stroke="#F5F2EA" stroke-width="6"/>
+            <circle cx="50" cy="50" r="34" fill="none" stroke="#D9B56C" stroke-width="6"/>
+            <g transform="translate(50,50)" fill="none" stroke="#F5F2EA" stroke-width="6" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M0,-14 C4,-24 16,-24 20,-14 C16,-4 4,-4 0,-14Z"/>
+              <path d="M-6,4 C-14,2 -18,8 -13,12 C-7,15 -2,10 -6,4Z"/>
+            </g>
+          </svg>
+        </span>
+        <h1>SAMIAH — Admin Pro</h1>
+      </div>
+      <div class="spacer"></div>
+      <button class="btn secondary" id="importBtn">Importer JSON</button>
+      <button class="btn gold" id="exportBtn">Exporter JSON</button>
+    </div>
+  </div>
+
+  <div class="wrap">
+    <div class="grid">
+      <div class="panel">
+        <h2>Catalogue</h2>
+        <div class="filters">
+          <input type="text" id="q" placeholder="Recherche (titre, catégorie)…"/>
+          <select id="catFilter"></select>
+        </div>
+        <div class="note">Astuce : cliquer sur une ligne pour l’éditer. Les images doivent être dans <code>assets/images/</code> ou des URLs complètes.</div>
+        <div style="overflow:auto;max-height:520px;margin-top:10px;border:1px solid var(--border);border-radius:12px">
+          <table id="tbl">
+            <thead>
+              <tr>
+                <th style="min-width:200px">Titre</th>
+                <th style="min-width:100px">Prix</th>
+                <th style="min-width:140px">Catégorie</th>
+                <th>Villes</th>
+                <th style="min-width:120px">Aperçu</th>
+                <th style="min-width:150px"></th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <div class="empty" id="empty" style="display:none">Aucun produit</div>
+      </div>
+
+      <div class="panel">
+        <h2 id="formTitle">Nouveau produit</h2>
+        <div class="note" style="margin-bottom:10px">Champs requis : <strong>Titre</strong>, <strong>Prix</strong>. L’ID (slug) est auto-généré si vide.</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+          <div><label>Titre<br/><input id="f_title"></label></div>
+          <div><label>Prix XAF<br/><input id="f_price" type="number" min="0" step="100"></label></div>
+          <div><label>Catégorie<br/><input id="f_category" placeholder="Shampoings, Soins cheveux, Services"></label></div>
+          <div><label>ID (slug)<br/><input id="f_id" placeholder="auto si vide"></label></div>
+          <div style="grid-column:1 / -1"><label>Description courte<br/><textarea id="f_desc" placeholder="Texte court…"></textarea></label></div>
+          <div><label>Image (chemin ou URL)<br/><input id="f_image" placeholder="assets/images/mon-produit.jpg"></label></div>
+          <div><label>Villes (liste)<br/>
+            <select id="f_cities" multiple size="6" style="height:140px">
+              <option>N’Djamena</option><option>Moundou</option><option>Sarh</option><option>Abéché</option><option>Bongor</option>
+              <option>Kélo</option><option>Pala</option><option>Koumra</option><option>Faya-Largeau</option>
+            </select>
+            <small class="muted">Maintenir Ctrl/Cmd pour multisélection</small>
+          </div>
+        </div>
+        <div style="display:flex;gap:10px;margin-top:12px">
+          <button class="btn" id="save">Enregistrer</button>
+          <button class="btn secondary" id="reset">Annuler</button>
+          <button class="btn danger" id="del" style="display:none;background:#b42318">Supprimer</button>
+        </div>
+        <div style="margin-top:14px">
+          <div class="note">Aperçu WhatsApp :</div>
+          <div id="waPreview" class="muted" style="margin-top:6px;font-family:ui-monospace,Menlo,monospace;font-size:12px;background:#fff;border:1px solid var(--border);padding:8px;border-radius:8px;white-space:pre-wrap"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>Import / Export</h2>
+      <p class="muted">Exporter pour télécharger <code>products.json</code> puis remplacer <code>data/products.json</code> dans le repo. Importer pour charger un JSON et continuer l’édition.</p>
+      <input type="file" id="file" accept="application/json" style="display:none"/>
+    </div>
+
+    <div class="footer">© 2025 Samiah Cosmetics — Admin Pro (local uniquement, aucune donnée n’est envoyée côté serveur)</div>
+  </div>
+
+  <div class="toast" id="toast">Enregistré</div>
+
+  <script>
+    const fmt = n => new Intl.NumberFormat('fr-FR').format(n);
+    let items = [];
+    let editing = null;
+
+    const $ = s => document.querySelector(s);
+    const $$ = s => Array.from(document.querySelectorAll(s));
+
+    const els = {
+      q: $('#q'), cat: $('#catFilter'), tbody: $('#tbl tbody'), empty: $('#empty'),
+      f_title: $('#f_title'), f_price: $('#f_price'), f_category: $('#f_category'),
+      f_id: $('#f_id'), f_desc: $('#f_desc'), f_image: $('#f_image'), f_cities: $('#f_cities'),
+      formTitle: $('#formTitle'), del: $('#del'), toast: $('#toast'), file: $('#file')
+    };
+
+    function slugify(s){return (s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'');}
+
+    async function load(){
+      try{
+        const res = await fetch('./data/products.json?_=' + Date.now());
+        items = await res.json();
+      }catch(e){
+        items = [];
+      }
+      fillCats();
+      render();
+      bind();
+    }
+
+    function fillCats(){
+      const cats = Array.from(new Set(items.map(p=>p.category).filter(Boolean))).sort();
+      els.cat.innerHTML = '<option value="">Toutes</option>' + cats.map(c=>`<option>${c}</option>`).join('');
+    }
+
+    function render(){
+      const q = ($('#q').value||'').toLowerCase();
+      const cat = ($('#catFilter').value||'');
+      const data = items.filter(p=>{
+        const okQ = (p.title+' '+(p.category||'')).toLowerCase().includes(q);
+        const okC = !cat || p.category===cat;
+        return okQ && okC;
+      });
+      els.tbody.innerHTML = data.map((p,i)=>rowTpl(p,i)).join('');
+      els.empty.style.display = data.length? 'none':'block';
+    }
+
+    function rowTpl(p,i){
+      const cities = (p.cities||[]).slice(0,3).join(', ') + ((p.cities||[]).length>3? '…':'');
+      const img = p.image? `<img src="${p.image}" alt="" style="width:60px;height:40px;object-fit:cover;border:1px solid #eee;border-radius:6px">` : '<span class="muted">—</span>';
+      return `<tr data-i="${i}">
+        <td>${escapeHtml(p.title||'')}</td>
+        <td>${fmt(p.price||0)} XAF</td>
+        <td>${escapeHtml(p.category||'')}</td>
+        <td>${escapeHtml(cities)}</td>
+        <td>${img}</td>
+        <td class="actions">
+          <button class="btn secondary" onclick="edit(${i})">Éditer</button>
+          <button class="btn" style="background:#b42318" onclick="removeItem(${i})">Supprimer</button>
+        </td>
+      </tr>`;
+    }
+
+    function escapeHtml(s){return (''+s).replace(/[&<>'"]/g, c=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;' }[c]));}
+
+    function edit(i){
+      const p = items[i];
+      editing = i;
+      els.formTitle.textContent = 'Modifier le produit';
+      els.del.style.display = '';
+      els.f_title.value = p.title||'';
+      els.f_price.value = p.price||0;
+      els.f_category.value = p.category||'';
+      els.f_id.value = p.id||'';
+      els.f_desc.value = p.shortDescription||'';
+      els.f_image.value = p.image||'';
+      Array.from(els.f_cities.options).forEach(o=>o.selected = (p.cities||[]).includes(o.value));
+      updateWAPreview();
+      window.scrollTo({top:0,behavior:'smooth'});
+    }
+
+    function removeItem(i){
+      if(!confirm('Supprimer ce produit ?')) return;
+      items.splice(i,1);
+      editing = null;
+      render();
+      show('Produit supprimé');
+    }
+
+    function bind(){
+      $('#q').oninput = $('#catFilter').onchange = render;
+      $$('input,textarea,select').forEach(el => el.addEventListener('input', updateWAPreview));
+      $('#save').onclick = save;
+      $('#reset').onclick = reset;
+      els.del.onclick = ()=>{ if(editing!=null){ removeItem(editing); reset(); } };
+      $('#exportBtn').onclick = exportJSON;
+      $('#importBtn').onclick = ()=>els.file.click();
+      els.file.onchange = importJSON;
+    }
+
+    function selectedCities(){
+      return Array.from(els.f_cities.selectedOptions).map(o=>o.value);
+    }
+
+    function save(){
+      const p = {
+        id: (els.f_id.value||slugify(els.f_title.value)).trim(),
+        title: els.f_title.value.trim(),
+        price: parseInt(els.f_price.value||'0',10),
+        currency: 'XAF',
+        category: els.f_category.value.trim(),
+        shortDescription: els.f_desc.value.trim(),
+        image: els.f_image.value.trim(),
+        cities: selectedCities()
+      };
+      if(!p.title){ alert('Titre requis'); return; }
+      if(isNaN(p.price)){ alert('Prix invalide'); return; }
+      if(editing!=null){ items[editing]=p; show('Produit mis à jour'); }
+      else { items.unshift(p); show('Produit ajouté'); }
+      reset(false);
+      render();
+    }
+
+    function reset(clear=true){
+      editing = null;
+      els.formTitle.textContent = 'Nouveau produit';
+      els.del.style.display = 'none';
+      if(clear){
+        els.f_title.value = els.f_price.value = els.f_category.value = els.f_id.value = els.f_desc.value = els.f_image.value = '';
+        Array.from(els.f_cities.options).forEach(o=>o.selected=false);
+      }
+      updateWAPreview();
+    }
+
+    function exportJSON(){
+      const blob = new Blob([JSON.stringify(items,null,2)], {type:'application/json'});
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'products.json';
+      a.click();
+      URL.revokeObjectURL(a.href);
+      show('products.json exporté');
+    }
+
+    async function importJSON(e){
+      const f = e.target.files[0];
+      if(!f) return;
+      try{
+        const text = await f.text();
+        const json = JSON.parse(text);
+        if(!Array.isArray(json)) throw new Error('Format attendu: tableau JSON');
+        items = json;
+        reset();
+        fillCats();
+        render();
+        show('JSON importé');
+      }catch(err){
+        alert('Erreur import: ' + err.message);
+      }finally{
+        els.file.value = '';
+      }
+    }
+
+    function updateWAPreview(){
+      const title = els.f_title.value||'Nom du produit';
+      const price = els.f_price.value? fmt(parseInt(els.f_price.value,10))+' XAF' : 'Prix à préciser';
+      const msg = `Bonjour Samiah Cosmetics, je suis intéressé(e) par ${title} (${price}).`;
+      document.querySelector('#waPreview').textContent = msg;
+    }
+
+    function show(txt){
+      els.toast.textContent = txt;
+      els.toast.classList.add('show');
+      setTimeout(()=>els.toast.classList.remove('show'), 1700);
+    }
+
+    load();
+  </script>
+</body>
+</html>
