@@ -6,18 +6,11 @@
   <title>Samiah Cosmetics — Admin Pro</title>
   <meta name="robots" content="noindex,nofollow"/>
   <style>
-    :root{
-      --charcoal:#0A0A0A;
-      --ivory:#F5F2EA;
-      --gold:#D9B56C;
-      --soft:#f7f5f2;
-      --border:#eaeaea;
-      --muted:#6b7280;
-    }
+    :root{--charcoal:#0A0A0A;--ivory:#F5F2EA;--gold:#D9B56C;--soft:#f7f5f2;--border:#eaeaea;--muted:#6b7280}
     *{box-sizing:border-box}
     html,body{margin:0;background:#fafafa;color:#111;font-family:Inter,ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
-    .topbar{position:sticky;top:0;z-index:10;background:#fff;border-bottom:1px solid var(--border);}
-    .nav{max-width:1200px;margin:0 auto;display:flex;gap:14px;align-items:center;padding:12px 16px}
+    .topbar{position:sticky;top:0;z-index:10;background:#fff;border-bottom:1px solid var(--border)}
+    .nav{max-width:1200px;margin:0 auto;display:flex;gap:10px;align-items:center;padding:12px 16px}
     .brand{display:flex;gap:10px;align-items:center}
     .logo{display:inline-flex;width:42px;height:42px;border-radius:10px;background:var(--charcoal);align-items:center;justify-content:center}
     .logo svg{width:28px;height:28px}
@@ -39,17 +32,15 @@
     th{position:sticky;top:0;background:#fff;z-index:1}
     .actions{display:flex;gap:8px}
     .muted{color:var(--muted)}
-    .pill{display:inline-block;border-radius:999px;background:#111;color:#fff;font-size:11px;padding:4px 8px}
     .empty{padding:20px;text-align:center;color:var(--muted)}
-    .footer{padding:20px 0 40px;color:var(--muted);font-size:13px;text-align:center}
+    .footer{padding:20px 0 40px;color:#777;font-size:13px;text-align:center}
     .toast{position:fixed;bottom:16px;right:16px;background:#111;color:#fff;padding:12px 14px;border-radius:10px;opacity:0;transform:translateY(10px);transition:.25s;pointer-events:none}
     .toast.show{opacity:1;transform:translateY(0)}
     .note{background:var(--soft);border:1px dashed var(--border);border-radius:12px;padding:10px 12px;color:#444}
   </style>
-  <!-- Uploadcare (clé publique + script) -->
-  <script>
-    window.UPLOADCARE_PUBLIC_KEY = 'aff6343f97db42a35956';
-  </script>
+
+  <!-- Uploadcare (remplace la clé par la tienne si besoin) -->
+  <script>window.UPLOADCARE_PUBLIC_KEY = 'aff6343f97db42a35956';</script>
   <script src="https://ucarecdn.com/libs/widget/3.x/uploadcare.full.min.js"></script>
 </head>
 <body>
@@ -57,7 +48,6 @@
     <div class="nav">
       <div class="brand">
         <span class="logo" title="Samiah">
-          <!-- tiny badge logo -->
           <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
             <circle cx="50" cy="50" r="42" fill="none" stroke="#F5F2EA" stroke-width="6"/>
             <circle cx="50" cy="50" r="34" fill="none" stroke="#D9B56C" stroke-width="6"/>
@@ -72,6 +62,8 @@
       <div class="spacer"></div>
       <button class="btn secondary" id="importBtn">Importer JSON</button>
       <button class="btn gold" id="exportBtn">Exporter JSON</button>
+      <button class="btn" id="publishBtn" style="background:#16a34a">Publier</button>
+      <button class="btn secondary" id="codeBtn" title="Changer le code admin">Code admin</button>
     </div>
   </div>
 
@@ -112,12 +104,10 @@
           <div><label>ID (slug)<br/><input id="f_id" placeholder="auto si vide"></label></div>
           <div style="grid-column:1 / -1"><label>Description courte<br/><textarea id="f_desc" placeholder="Texte court…"></textarea></label></div>
 
-          <!-- Champ image avec uploader Uploadcare -->
+          <!-- Image + uploader Uploadcare -->
           <div>
             <label>Image (upload ou URL)<br/>
-              <!-- Valeur finale stockée ici (URL du CDN) -->
               <input type="hidden" id="f_image" placeholder="assets/images/mon-produit.jpg">
-              <!-- Uploader : galerie, appareil photo, URL -->
               <input type="file"
                      data-uploadcare-uploader
                      data-images-only
@@ -139,7 +129,7 @@
         <div style="display:flex;gap:10px;margin-top:12px">
           <button class="btn" id="save">Enregistrer</button>
           <button class="btn secondary" id="reset">Annuler</button>
-          <button class="btn danger" id="del" style="display:none;background:#b42318">Supprimer</button>
+          <button class="btn" id="del" style="display:none;background:#b42318">Supprimer</button>
         </div>
         <div style="margin-top:14px">
           <div class="note">Aperçu WhatsApp :</div>
@@ -150,7 +140,7 @@
 
     <div class="panel">
       <h2>Import / Export</h2>
-      <p class="muted">Exporter pour télécharger <code>products.json</code> puis remplacer <code>data/products.json</code> dans le repo. Importer pour charger un JSON et continuer l’édition.</p>
+      <p class="muted">Exporter pour télécharger <code>products.json</code> puis remplacer <code>data/products.json</code> dans le repo. Ou utiliser <strong>Publier</strong> pour pousser automatiquement.</p>
       <input type="file" id="file" accept="application/json" style="display:none"/>
     </div>
 
@@ -160,206 +150,117 @@
   <div class="toast" id="toast">Enregistré</div>
 
   <script>
+    // -------- utilitaires --------
     const fmt = n => new Intl.NumberFormat('fr-FR').format(n);
-    let items = [];
-    let editing = null;
-
-    const $ = s => document.querySelector(s);
-    const $$ = s => Array.from(document.querySelectorAll(s));
-
-    const els = {
-      q: $('#q'), cat: $('#catFilter'), tbody: $('#tbl tbody'), empty: $('#empty'),
-      f_title: $('#f_title'), f_price: $('#f_price'), f_category: $('#f_category'),
-      f_id: $('#f_id'), f_desc: $('#f_desc'), f_image: $('#f_image'), f_cities: $('#f_cities'),
-      formTitle: $('#formTitle'), del: $('#del'), toast: $('#toast'), file: $('#file')
-    };
+    let items = [], editing = null;
+    const $ = s => document.querySelector(s), $$ = s => Array.from(document.querySelectorAll(s));
+    const els = { q:$('#q'), cat:$('#catFilter'), tbody:$('#tbl tbody'), empty:$('#empty'),
+      f_title:$('#f_title'), f_price:$('#f_price'), f_category:$('#f_category'),
+      f_id:$('#f_id'), f_desc:$('#f_desc'), f_image:$('#f_image'), f_cities:$('#f_cities'),
+      formTitle:$('#formTitle'), del:$('#del'), toast:$('#toast'), file:$('#file') };
 
     function slugify(s){return (s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'');}
+    function show(txt){ els.toast.textContent=txt; els.toast.classList.add('show'); setTimeout(()=>els.toast.classList.remove('show'),1700); }
+    function escapeHtml(s){return (''+s).replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 
-    async function load(){
+    // -------- chargement initial --------
+    async function load(){ try{
+        const res = await fetch('./data/products.json?_=' + Date.now()); items = await res.json();
+      }catch{ items = []; }
+      fillCats(); render(); bind(); initUploadcareHook(); ensureAdminSecret(); }
+
+    function fillCats(){ const cats = Array.from(new Set(items.map(p=>p.category).filter(Boolean))).sort();
+      $('#catFilter').innerHTML = '<option value=\"\">Toutes</option>' + cats.map(c=>`<option>${c}</option>`).join(''); }
+
+    function render(){ const q = ($('#q')?.value||'').toLowerCase(), cat = ($('#catFilter')?.value||'');
+      const data = items.filter(p=> ((p.title+' '+(p.category||'')).toLowerCase().includes(q)) && (!cat || p.category===cat));
+      els.tbody.innerHTML = data.map((p,i)=>rowTpl(p,i)).join(''); els.empty.style.display = data.length?'none':'block'; }
+
+    function rowTpl(p,i){ const cities=(p.cities||[]).slice(0,3).join(', ')+((p.cities||[]).length>3?'…':'');
+      const img = p.image? `<img src=\"${p.image}\" alt=\"\" style=\"width:60px;height:40px;object-fit:cover;border:1px solid #eee;border-radius:6px\">` : '<span class=\"muted\">—</span>';
+      return `<tr data-i=\"${i}\"><td>${escapeHtml(p.title||'')}</td><td>${fmt(p.price||0)} XAF</td><td>${escapeHtml(p.category||'')}</td>
+        <td>${escapeHtml(cities)}</td><td>${img}</td>
+        <td class=\"actions\"><button class=\"btn secondary\" onclick=\"edit(${i})\">Éditer</button>
+        <button class=\"btn\" style=\"background:#b42318\" onclick=\"removeItem(${i})\">Supprimer</button></td></tr>`; }
+
+    function edit(i){ const p=items[i]; editing=i; els.formTitle.textContent='Modifier le produit'; els.del.style.display='';
+      els.f_title.value=p.title||''; els.f_price.value=p.price||0; els.f_category.value=p.category||''; els.f_id.value=p.id||'';
+      els.f_desc.value=p.shortDescription||''; els.f_image.value=p.image||''; Array.from(els.f_cities.options).forEach(o=>o.selected=(p.cities||[]).includes(o.value));
+      updateWAPreview(); window.scrollTo({top:0,behavior:'smooth'}); }
+    function removeItem(i){ if(!confirm('Supprimer ce produit ?')) return; items.splice(i,1); editing=null; render(); show('Produit supprimé'); }
+
+    function bind(){ $('#q').oninput = $('#catFilter').onchange = render;
+      $$('input,textarea,select').forEach(el=>el.addEventListener('input',updateWAPreview));
+      $('#save').onclick=save; $('#reset').onclick=reset; els.del.onclick=()=>{ if(editing!=null){ removeItem(editing); reset(); } };
+      $('#exportBtn').onclick=exportJSON; $('#importBtn').onclick=()=>els.file.click(); els.file.onchange=importJSON;
+      document.getElementById('publishBtn').onclick=publishToBackend;
+      document.getElementById('codeBtn').onclick=changeAdminSecret; }
+
+    function selectedCities(){ return Array.from(els.f_cities.selectedOptions).map(o=>o.value); }
+    function save(){ const p={ id:(els.f_id.value||slugify(els.f_title.value)).trim(), title:els.f_title.value.trim(),
+        price:parseInt(els.f_price.value||'0',10), currency:'XAF', category:els.f_category.value.trim(),
+        shortDescription:els.f_desc.value.trim(), image:els.f_image.value.trim(), cities:selectedCities() };
+      if(!p.title){ alert('Titre requis'); return; } if(isNaN(p.price)){ alert('Prix invalide'); return; }
+      if(editing!=null){ items[editing]=p; show('Produit mis à jour'); } else{ items.unshift(p); show('Produit ajouté'); }
+      reset(false); render(); }
+
+    function reset(clear=true){ editing=null; els.formTitle.textContent='Nouveau produit'; els.del.style.display='none';
+      if(clear){ els.f_title.value=els.f_price.value=els.f_category.value=els.f_id.value=els.f_desc.value=els.f_image.value='';
+        Array.from(els.f_cities.options).forEach(o=>o.selected=false); } updateWAPreview(); }
+
+    function exportJSON(){ const blob=new Blob([JSON.stringify(items,null,2)],{type:'application/json'});
+      const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='products.json'; a.click(); URL.revokeObjectURL(a.href); show('products.json exporté'); }
+
+    async function importJSON(e){ const f=e.target.files[0]; if(!f) return;
+      try{ const text=await f.text(); const json=JSON.parse(text); if(!Array.isArray(json)) throw new Error('Format attendu: tableau JSON');
+        items=json; reset(); fillCats(); render(); show('JSON importé'); }catch(err){ alert('Erreur import: '+err.message); } finally{ els.file.value=''; } }
+
+    function updateWAPreview(){ const title=els.f_title.value||'Nom du produit';
+      const price=els.f_price.value? fmt(parseInt(els.f_price.value,10))+' XAF' : 'Prix à préciser';
+      document.querySelector('#waPreview').textContent = `Bonjour Samiah Cosmetics, je suis intéressé(e) par ${title} (${price}).`; }
+
+    // -------- admin secret (stocké localement, jamais envoyé sauf en en-tête) --------
+    const SECRET_KEY = 'samiah_admin_secret';
+    function getAdminSecret(){ return localStorage.getItem(SECRET_KEY) || ''; }
+    function ensureAdminSecret(){ if(!getAdminSecret()){ changeAdminSecret(); } }
+    function changeAdminSecret(){
+      const current = getAdminSecret();
+      const v = prompt('Code admin ?', current ? '••••••' : '');
+      if(v && v !== '••••••'){ localStorage.setItem(SECRET_KEY, v.trim()); show('Code enregistré'); }
+    }
+
+    // -------- publier vers l’API Vercel --------
+    async function publishToBackend(){
+      const secret = getAdminSecret();
+      if(!secret){ changeAdminSecret(); return; }
       try{
-        const res = await fetch('./data/products.json?_=' + Date.now());
-        items = await res.json();
-      }catch(e){
-        items = [];
-      }
-      fillCats();
-      render();
-      bind();
+        const resp = await fetch('/api/save-products', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'x-admin-secret': secret },
+          body: JSON.stringify({ products: items })
+        });
+        const json = await resp.json().catch(()=>({}));
+        if(resp.status === 401){ localStorage.removeItem(SECRET_KEY); alert('Code admin invalide (401). Réessaie.'); return; }
+        if(!resp.ok) throw new Error(json?.error || 'Erreur publication');
+        show('Publié ✅ (redéploiement en cours)');
+      }catch(e){ alert('Échec publication: ' + e.message); }
     }
 
-    function fillCats(){
-      const cats = Array.from(new Set(items.map(p=>p.category).filter(Boolean))).sort();
-      els.cat.innerHTML = '<option value="">Toutes</option>' + cats.map(c=>`<option>${c}</option>`).join('');
-    }
-
-    function render(){
-      const q = ($('#q').value||'').toLowerCase();
-      const cat = ($('#catFilter').value||'');
-      const data = items.filter(p=>{
-        const okQ = (p.title+' '+(p.category||'')).toLowerCase().includes(q);
-        const okC = !cat || p.category===cat;
-        return okQ && okC;
-      });
-      els.tbody.innerHTML = data.map((p,i)=>rowTpl(p,i)).join('');
-      els.empty.style.display = data.length? 'none':'block';
-    }
-
-    function rowTpl(p,i){
-      const cities = (p.cities||[]).slice(0,3).join(', ') + ((p.cities||[]).length>3? '…':'');
-      const img = p.image? `<img src="${p.image}" alt="" style="width:60px;height:40px;object-fit:cover;border:1px solid #eee;border-radius:6px">` : '<span class="muted">—</span>';
-      return `<tr data-i="${i}">
-        <td>${escapeHtml(p.title||'')}</td>
-        <td>${fmt(p.price||0)} XAF</td>
-        <td>${escapeHtml(p.category||'')}</td>
-        <td>${escapeHtml(cities)}</td>
-        <td>${img}</td>
-        <td class="actions">
-          <button class="btn secondary" onclick="edit(${i})">Éditer</button>
-          <button class="btn" style="background:#b42318" onclick="removeItem(${i})">Supprimer</button>
-        </td>
-      </tr>`;
-    }
-
-    function escapeHtml(s){return (''+s).replace(/[&<>'"]/g, c=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;' }[c]));}
-
-    function edit(i){
-      const p = items[i];
-      editing = i;
-      els.formTitle.textContent = 'Modifier le produit';
-      els.del.style.display = '';
-      els.f_title.value = p.title||'';
-      els.f_price.value = p.price||0;
-      els.f_category.value = p.category||'';
-      els.f_id.value = p.id||'';
-      els.f_desc.value = p.shortDescription||'';
-      els.f_image.value = p.image||'';
-      Array.from(els.f_cities.options).forEach(o=>o.selected = (p.cities||[]).includes(o.value));
-      updateWAPreview();
-      window.scrollTo({top:0,behavior:'smooth'});
-    }
-
-    function removeItem(i){
-      if(!confirm('Supprimer ce produit ?')) return;
-      items.splice(i,1);
-      editing = null;
-      render();
-      show('Produit supprimé');
-    }
-
-    function bind(){
-      $('#q').oninput = $('#catFilter').onchange = render;
-      $$('input,textarea,select').forEach(el => el.addEventListener('input', updateWAPreview));
-      $('#save').onclick = save;
-      $('#reset').onclick = reset;
-      els.del.onclick = ()=>{ if(editing!=null){ removeItem(editing); reset(); } };
-      $('#exportBtn').onclick = exportJSON;
-      $('#importBtn').onclick = ()=>els.file.click();
-      els.file.onchange = importJSON;
-    }
-
-    function selectedCities(){
-      return Array.from(els.f_cities.selectedOptions).map(o=>o.value);
-    }
-
-    function save(){
-      const p = {
-        id: (els.f_id.value||slugify(els.f_title.value)).trim(),
-        title: els.f_title.value.trim(),
-        price: parseInt(els.f_price.value||'0',10),
-        currency: 'XAF',
-        category: els.f_category.value.trim(),
-        shortDescription: els.f_desc.value.trim(),
-        image: els.f_image.value.trim(),
-        cities: selectedCities()
-      };
-      if(!p.title){ alert('Titre requis'); return; }
-      if(isNaN(p.price)){ alert('Prix invalide'); return; }
-      if(editing!=null){ items[editing]=p; show('Produit mis à jour'); }
-      else { items.unshift(p); show('Produit ajouté'); }
-      reset(false);
-      render();
-    }
-
-    function reset(clear=true){
-      editing = null;
-      els.formTitle.textContent = 'Nouveau produit';
-      els.del.style.display = 'none';
-      if(clear){
-        els.f_title.value = els.f_price.value = els.f_category.value = els.f_id.value = els.f_desc.value = els.f_image.value = '';
-        Array.from(els.f_cities.options).forEach(o=>o.selected=false);
-      }
-      updateWAPreview();
-    }
-
-    function exportJSON(){
-      const blob = new Blob([JSON.stringify(items,null,2)], {type:'application/json'});
-      const a = document.createElement('a');
-      a.href = URL.createObjectURL(blob);
-      a.download = 'products.json';
-      a.click();
-      URL.revokeObjectURL(a.href);
-      show('products.json exporté');
-    }
-
-    async function importJSON(e){
-      const f = e.target.files[0];
-      if(!f) return;
+    // -------- Uploadcare : brancher l’uploader -> #f_image --------
+    function initUploadcareHook(){
       try{
-        const text = await f.text();
-        const json = JSON.parse(text);
-        if(!Array.isArray(json)) throw new Error('Format attendu: tableau JSON');
-        items = json;
-        reset();
-        fillCats();
-        render();
-        show('JSON importé');
-      }catch(err){
-        alert('Erreur import: ' + err.message);
-      }finally{
-        els.file.value = '';
-      }
-    }
-
-    function updateWAPreview(){
-      const title = els.f_title.value||'Nom du produit';
-      const price = els.f_price.value? fmt(parseInt(els.f_price.value,10))+' XAF' : 'Prix à préciser';
-      const msg = `Bonjour Samiah Cosmetics, je suis intéressé(e) par ${title} (${price}).`;
-      document.querySelector('#waPreview').textContent = msg;
-    }
-
-    function show(txt){
-      els.toast.textContent = txt;
-      els.toast.classList.add('show');
-      setTimeout(()=>els.toast.classList.remove('show'), 1700);
+        if(!window.uploadcare) return;
+        const el = document.querySelector('[data-uploadcare-uploader]');
+        if(!el) return;
+        const widget = uploadcare.Widget(el);
+        widget.onUploadComplete(function(info){
+          els.f_image.value = info.cdnUrl;
+          show('Image uploadée ✅');
+        });
+      }catch{}
     }
 
     load();
-  </script>
-
-  <!-- Étape 4 : branchement Uploadcare -> champ #f_image -->
-  <script>
-    (function(){
-      function initUploadcareHook(){
-        try{
-          if(!window.uploadcare) return;
-          var el = document.querySelector('[data-uploadcare-uploader]');
-          if(!el) return;
-          var widget = uploadcare.Widget(el);
-          widget.onUploadComplete(function(info){
-            var hidden = document.getElementById('f_image');
-            if(hidden) hidden.value = info.cdnUrl;
-            if(typeof show === 'function') show('Image uploadée ✅');
-            else alert('Image uploadée ✅: ' + info.cdnUrl);
-          });
-        }catch(e){ /* silencieux */ }
-      }
-      if(document.readyState === 'loading'){
-        document.addEventListener('DOMContentLoaded', initUploadcareHook);
-      }else{
-        initUploadcareHook();
-      }
-    })();
   </script>
 </body>
 </html>
