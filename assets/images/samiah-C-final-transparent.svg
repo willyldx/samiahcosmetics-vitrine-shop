@@ -1,0 +1,17 @@
+<!-- assets/images/samiah-C-final-transparent.svg -->
+<svg xmlns="http://www.w3.org/2000/svg" width="3000" height="1000" viewBox="0 0 3000 1000" aria-label="Samiah Cosmetics">
+  <!-- Badge (sans fond) -->
+  <g transform="translate(560,190)">
+    <circle cx="0" cy="300" r="220" fill="none" stroke="#111111" stroke-width="12"/>
+    <circle cx="0" cy="300" r="180" fill="none" stroke="#C7A27A" stroke-width="10"/>
+    <g transform="translate(0,300)" fill="none" stroke="#111111" stroke-width="8" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M0,-70 C20,-120 80,-120 100,-70 C80,-20 20,-20 0,-70Z"/>
+      <path d="M-24,22 C-70,10 -92,54 -68,76 C-36,92 -4,62 -24,22Z"/>
+    </g>
+  </g>
+  <!-- Wordmark -->
+  <g font-family="Garamond, Georgia, 'Times New Roman', serif" fill="#111111">
+    <text x="980" y="520" font-size="300" font-weight="600" letter-spacing="12">SAMIAH</text>
+    <text x="980" y="640" font-size="120" letter-spacing="24" style="text-transform:lowercase;opacity:.92">cosmetics</text>
+  </g>
+</svg>
