@@ -10,7 +10,7 @@
     *{box-sizing:border-box}
     html,body{margin:0;background:#fafafa;color:#111;font-family:Inter,ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
     .topbar{position:sticky;top:0;z-index:10;background:#fff;border-bottom:1px solid var(--border)}
-    .nav{max-width:1200px;margin:0 auto;display:flex;gap:10px;align-items:center;padding:12px 16px}
+    .nav{max-width:1200px;margin:0 auto;display:flex;gap:10px;align-items:center;padding:12px 16px;position:relative}
     .brand{display:flex;gap:10px;align-items:center}
     .logo{display:inline-flex;width:42px;height:42px;border-radius:10px;background:var(--charcoal);align-items:center;justify-content:center}
     .logo svg{width:28px;height:28px}
@@ -19,6 +19,13 @@
     .btn{appearance:none;border:0;border-radius:10px;background:var(--charcoal);color:#fff;padding:10px 14px;font-weight:600;cursor:pointer}
     .btn.secondary{background:#1111110d;color:#111;border:1px solid var(--border)}
     .btn.gold{background:var(--gold);color:#222}
+    .iconbtn{appearance:none;border:1px solid var(--border);background:#fff;border-radius:10px;padding:8px;display:inline-flex;align-items:center;justify-content:center;cursor:pointer}
+    .iconbtn:hover{background:#f8f8f8}
+    .menu-wrap{position:relative}
+    .menu{position:absolute;right:0;top:44px;background:#fff;border:1px solid var(--border);border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,.06);min-width:180px;display:none;overflow:hidden}
+    .menu.open{display:block}
+    .menu-item{display:block;width:100%;text-align:left;padding:10px 12px;background:#fff;border:0;cursor:pointer;font-weight:500}
+    .menu-item:hover{background:#f6f6f6}
     .wrap{max-width:1200px;margin:0 auto;padding:20px}
     .panel{background:#fff;border:1px solid var(--border);border-radius:16px;box-shadow:0 10px 30px rgba(0,0,0,.04);padding:16px;margin-bottom:18px}
     .grid{display:grid;grid-template-columns:1.2fr .8fr;gap:18px}
@@ -56,10 +63,24 @@
         <h1>SAMIAH — Admin Pro</h1>
       </div>
       <div class="spacer"></div>
-      <button class="btn secondary" id="importBtn">Importer JSON</button>
-      <button class="btn gold" id="exportBtn">Exporter JSON</button>
+
       <button class="btn" id="publishBtn" style="background:#16a34a">Publier</button>
-      <button class="btn secondary" id="codeBtn" title="Changer le code admin">Code admin</button>
+
+      <!-- Menu discret (⋯) -->
+      <div class="menu-wrap">
+        <button class="iconbtn" id="menuBtn" aria-haspopup="true" aria-expanded="false" aria-label="Menu">
+          <!-- icône 3 points -->
+          <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true">
+            <circle cx="5" cy="12" r="2" fill="#111"/>
+            <circle cx="12" cy="12" r="2" fill="#111"/>
+            <circle cx="19" cy="12" r="2" fill="#111"/>
+          </svg>
+        </button>
+        <div class="menu" id="menu" role="menu" aria-hidden="true">
+          <button class="menu-item" id="miChangeSecret" role="menuitem">Changer le code admin</button>
+          <button class="menu-item" id="miLogout" role="menuitem">Se déconnecter</button>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -71,7 +92,7 @@
           <input type="text" id="q" placeholder="Recherche (titre, catégorie)…"/>
           <select id="catFilter"></select>
         </div>
-        <div class="note">Astuce : cliquer sur une ligne pour l’éditer. Les images doivent être des URLs (ex : <code>/assets/uploads/…</code> ou <code>https://…</code>).</div>
+        <div class="note">Astuce : clique sur une ligne pour l’éditer. Tu peux joindre une image avec le bouton « Téléverser » ou coller une URL d’image.</div>
         <div style="overflow:auto;max-height:520px;margin-top:10px;border:1px solid var(--border);border-radius:12px">
           <table id="tbl">
             <thead>
@@ -100,14 +121,14 @@
           <div><label>ID (slug)<br/><input id="f_id" placeholder="auto si vide"></label></div>
           <div style="grid-column:1 / -1"><label>Description courte<br/><textarea id="f_desc" placeholder="Texte court…"></textarea></label></div>
 
-          <!-- Uploader GitHub (gratuit) -->
+          <!-- Uploader -->
           <div>
-            <label>Image (upload → GitHub gratuit)<br/>
+            <label>Image<br/>
               <input type="hidden" id="f_image">
               <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
                 <input type="file" id="gh_uploader" accept="image/*">
                 <button type="button" class="btn secondary" id="gh_send">Téléverser</button>
-                <small class="muted">L’image sera enregistrée dans <code>assets/uploads/</code> du site.</small>
+                <small class="muted">Formats acceptés : JPG/PNG (taille max ~10 Mo).</small>
               </div>
             </label>
           </div>
@@ -132,13 +153,7 @@
       </div>
     </div>
 
-    <div class="panel">
-      <h2>Import / Export</h2>
-      <p class="muted">Exporter pour télécharger <code>products.json</code> puis remplacer <code>data/products.json</code> dans le repo. Ou utiliser <strong>Publier</strong> pour pousser automatiquement.</p>
-      <input type="file" id="file" accept="application/json" style="display:none"/>
-    </div>
-
-    <div class="footer">© 2025 Samiah Cosmetics — Admin Pro (local uniquement, aucune donnée n’est envoyée côté serveur)</div>
+    <div class="footer">© 2025 Samiah Cosmetics — Admin Pro</div>
   </div>
 
   <div class="toast" id="toast">Enregistré</div>
@@ -151,7 +166,7 @@
     const els = { q:$('#q'), cat:$('#catFilter'), tbody:$('#tbl tbody'), empty:$('#empty'),
       f_title:$('#f_title'), f_price:$('#f_price'), f_category:$('#f_category'),
       f_id:$('#f_id'), f_desc:$('#f_desc'), f_image:$('#f_image'), f_cities:$('#f_cities'),
-      formTitle:$('#formTitle'), del:$('#del'), toast:$('#toast'), file:$('#file') };
+      formTitle:$('#formTitle'), del:$('#del'), toast:$('#toast') };
 
     function slugify(s){return (s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'');}
     function show(txt){ els.toast.textContent=txt; els.toast.classList.add('show'); setTimeout(()=>els.toast.classList.remove('show'),1700); }
@@ -184,13 +199,30 @@
       updateWAPreview(); window.scrollTo({top:0,behavior:'smooth'}); }
     function removeItem(i){ if(!confirm('Supprimer ce produit ?')) return; items.splice(i,1); editing=null; render(); show('Produit supprimé'); }
 
-    function bind(){ $('#q').oninput = $('#catFilter').onchange = render;
+    function bind(){
+      $('#q').oninput = $('#catFilter').onchange = render;
       $$('input,textarea,select').forEach(el=>el.addEventListener('input',updateWAPreview));
       $('#save').onclick=save; $('#reset').onclick=reset; els.del.onclick=()=>{ if(editing!=null){ removeItem(editing); reset(); } };
-      $('#exportBtn').onclick=exportJSON; $('#importBtn').onclick=()=>els.file.click(); els.file.onchange=importJSON;
       document.getElementById('publishBtn').onclick=publishToBackend;
-      document.getElementById('codeBtn').onclick=changeAdminSecret;
-      document.getElementById('gh_send').onclick=uploadToGitHub; }
+      document.getElementById('gh_send').onclick=uploadToGitHub;
+
+      // --- Menu (⋯)
+      const menuBtn = document.getElementById('menuBtn');
+      const menu    = document.getElementById('menu');
+      const miChange= document.getElementById('miChangeSecret');
+      const miLogout= document.getElementById('miLogout');
+
+      function openMenu(){ menu.classList.add('open'); menuBtn.setAttribute('aria-expanded','true'); menu.setAttribute('aria-hidden','false'); }
+      function closeMenu(){ menu.classList.remove('open'); menuBtn.setAttribute('aria-expanded','false'); menu.setAttribute('aria-hidden','true'); }
+      function toggleMenu(){ menu.classList.contains('open') ? closeMenu() : openMenu(); }
+
+      menuBtn.addEventListener('click', (e)=>{ e.stopPropagation(); toggleMenu(); });
+      document.addEventListener('click', (e)=>{ if(!menu.contains(e.target) && e.target!==menuBtn) closeMenu(); });
+      document.addEventListener('keydown', (e)=>{ if(e.key==='Escape') closeMenu(); });
+
+      miChange.addEventListener('click', ()=>{ closeMenu(); changeAdminSecret(); });
+      miLogout.addEventListener('click', ()=>{ closeMenu(); logoutAdmin(); });
+    }
 
     function selectedCities(){ return Array.from(els.f_cities.selectedOptions).map(o=>o.value); }
     function save(){ const p={ id:(els.f_id.value||slugify(els.f_title.value)).trim(), title:els.f_title.value.trim(),
@@ -203,13 +235,6 @@
     function reset(clear=true){ editing=null; els.formTitle.textContent='Nouveau produit'; els.del.style.display='none';
       if(clear){ els.f_title.value=els.f_price.value=els.f_category.value=els.f_id.value=els.f_desc.value=els.f_image.value='';
         Array.from(els.f_cities.options).forEach(o=>o.selected=false); } updateWAPreview(); }
-
-    function exportJSON(){ const blob=new Blob([JSON.stringify(items,null,2)],{type:'application/json'});
-      const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='products.json'; a.click(); URL.revokeObjectURL(a.href); show('products.json exporté'); }
-
-    async function importJSON(e){ const f=e.target.files[0]; if(!f) return;
-      try{ const text=await f.text(); const json=JSON.parse(text); if(!Array.isArray(json)) throw new Error('Format attendu: tableau JSON');
-        items=json; reset(); fillCats(); render(); show('JSON importé'); }catch(err){ alert('Erreur import: '+err.message); } finally{ els.file.value=''; } }
 
     function updateWAPreview(){ const title=els.f_title.value||'Nom du produit';
       const price=els.f_price.value? fmt(parseInt(els.f_price.value,10))+' XAF' : 'Prix à préciser';
@@ -224,6 +249,7 @@
       const v = prompt('Code admin ?', current ? '••••••' : '');
       if(v && v !== '••••••'){ localStorage.setItem(SECRET_KEY, v.trim()); show('Code enregistré'); }
     }
+    function logoutAdmin(){ localStorage.removeItem(SECRET_KEY); show('Déconnecté'); setTimeout(()=>location.reload(), 400); }
 
     // ====== publier vers l’API Vercel ======
     async function publishToBackend(){
@@ -242,7 +268,7 @@
       }catch(e){ alert('Échec publication: ' + e.message); }
     }
 
-    // ====== Upload image → GitHub (gratuit) ======
+    // ====== Upload image (bouton « Téléverser ») ======
     function fileToBase64(file){
       return new Promise((resolve,reject)=>{
         const r = new FileReader();
