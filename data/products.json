@@ -2,11 +2,11 @@
   {
     "id": "savon",
     "title": "Savon",
-    "price": 3000,
+    "price": 5000,
     "currency": "XAF",
     "category": "Soins de peaux",
-    "shortDescription": "Laver avant d'utiliser",
-    "image": "/assets/uploads/1759371608520-img-20251001-184131-494.jpg",
+    "shortDescription": "Lave toi avant de l'utiliser",
+    "image": "/assets/uploads/1759376006119-img-20251001-184131-494.jpg",
     "cities": [
       "N’Djamena"
     ]
