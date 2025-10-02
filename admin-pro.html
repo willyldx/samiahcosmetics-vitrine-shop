@@ -19,6 +19,7 @@
     .btn{appearance:none;border:0;border-radius:10px;background:var(--charcoal);color:#fff;padding:10px 14px;font-weight:600;cursor:pointer}
     .btn.secondary{background:#1111110d;color:#111;border:1px solid var(--border)}
     .btn.green{background:#16a34a}
+    .btn:disabled{opacity:.7;cursor:not-allowed}
     .iconbtn{appearance:none;border:1px solid var(--border);background:#fff;border-radius:10px;padding:8px;display:inline-flex;align-items:center;justify-content:center;cursor:pointer}
     .iconbtn:hover{background:#f8f8f8}
     .menu-wrap{position:relative}
@@ -44,6 +45,14 @@
     .toast{position:fixed;bottom:16px;right:16px;background:#111;color:#fff;padding:12px 14px;border-radius:10px;opacity:0;transform:translateY(10px);transition:.25s;pointer-events:none}
     .toast.show{opacity:1;transform:translateY(0)}
     .note{background:var(--soft);border:1px dashed var(--border);border-radius:12px;padding:10px 12px;color:#444}
+
+    /* Popup (modal) */
+    .modal{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:center;justify-content:center;padding:16px;z-index:50}
+    .modal.show{display:flex}
+    .modal-card{background:#fff;border:1px solid var(--border);border-radius:16px;box-shadow:0 20px 60px rgba(0,0,0,.12);max-width:460px;width:100%;padding:18px}
+    .modal-title{margin:0 0 6px;font-size:18px}
+    .modal-text{margin:0 0 12px;color:#444}
+    .modal-actions{display:flex;gap:8px;justify-content:flex-end}
   </style>
 </head>
 <body>
@@ -64,15 +73,14 @@
       </div>
       <div class="spacer"></div>
 
-      <button class="btn green" id="publishBtn">Publier</button>
+      <button class="btn green" id="publishBtn"><span id="pubLabel">Publier</span></button>
+      <span id="pubStatus" class="muted" style="margin-left:8px"></span>
 
-      <!-- Menu (⋯) discret -->
+      <!-- Menu ⋯ -->
       <div class="menu-wrap">
         <button class="iconbtn" id="menuBtn" aria-haspopup="true" aria-expanded="false" aria-label="Menu">
           <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true">
-            <circle cx="5" cy="12" r="2" fill="#111"/>
-            <circle cx="12" cy="12" r="2" fill="#111"/>
-            <circle cx="19" cy="12" r="2" fill="#111"/>
+            <circle cx="5" cy="12" r="2" fill="#111"/><circle cx="12" cy="12" r="2" fill="#111"/><circle cx="19" cy="12" r="2" fill="#111"/>
           </svg>
         </button>
         <div class="menu" id="menu" role="menu" aria-hidden="true">
@@ -155,10 +163,22 @@
     <div class="footer">© 2025 Samiah Cosmetics — Admin Pro</div>
   </div>
 
+  <!-- Popup publication -->
+  <div class="modal" id="pubModal" aria-hidden="true" role="dialog" aria-labelledby="pubTitle">
+    <div class="modal-card">
+      <h3 class="modal-title" id="pubTitle">Catalogue publié ✅</h3>
+      <p class="modal-text" id="pubMsg">Les changements ont été envoyés. Le site se met à jour automatiquement dans un instant.</p>
+      <div class="modal-actions">
+        <button class="btn secondary" id="pubClose">Fermer</button>
+        <a href="/" class="btn" id="pubView">Voir le site</a>
+      </div>
+    </div>
+  </div>
+
   <div class="toast" id="toast">Enregistré</div>
 
   <script>
-    // ========== utilitaires ==========
+    // ========= utilitaires =========
     const fmt = n => new Intl.NumberFormat('fr-FR').format(n);
     let items = [], editing = null;
     const $ = s => document.querySelector(s), $$ = s => Array.from(document.querySelectorAll(s));
@@ -171,8 +191,14 @@
     function show(txt){ els.toast.textContent=txt; els.toast.classList.add('show'); setTimeout(()=>els.toast.classList.remove('show'),1700); }
     function escapeHtml(s){return (''+s).replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
     async function readResp(resp){ const ct=resp.headers.get('content-type')||''; if(ct.includes('application/json')){try{return await resp.json();}catch{}} const t=await resp.text(); return {__text:t}; }
+    function stamp(){ const d=new Date(); return d.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit',second:'2-digit'}); }
 
-    // ========== chargement ==========
+    // Helpers UI pour boutons
+    function setBtnLoading(btn, labelEl, loadingText){ btn.dataset.prev=(labelEl.textContent||''); btn.disabled=true; labelEl.textContent=loadingText; }
+    function setBtnDone(btn, labelEl, finalText='Terminé'){ labelEl.textContent=finalText; setTimeout(()=>{ labelEl.textContent=btn.dataset.prev||labelEl.textContent; btn.disabled=false;},1200); }
+    function setBtnIdle(btn, labelEl){ labelEl.textContent = btn.dataset.prev || labelEl.textContent; btn.disabled=false; }
+
+    // ========= chargement =========
     async function load(){
       try{ const res = await fetch('./data/products.json?_=' + Date.now()); items = await res.json(); }
       catch{ items = []; }
@@ -220,25 +246,37 @@
       $('#q').oninput = $('#catFilter').onchange = render;
       $$('input,textarea,select').forEach(el=>el.addEventListener('input',updateWAPreview));
       $('#save').onclick=save; $('#reset').onclick=reset; els.del.onclick=()=>{ if(editing!=null){ removeItem(editing); reset(); } };
-      document.getElementById('publishBtn').onclick=publishToBackend;
+
+      // Bouton Publier
+      const pubBtn = document.getElementById('publishBtn');
+      const pubLabel = document.getElementById('pubLabel');
+      const pubStatus = document.getElementById('pubStatus');
+      pubBtn.onclick = () => publishToBackend(pubBtn, pubLabel, pubStatus);
+
+      // Upload image
       document.getElementById('gh_send').onclick=uploadToGitHub;
 
-      // Menu (⋯)
+      // Menu ⋯
       const menuBtn = document.getElementById('menuBtn');
       const menu    = document.getElementById('menu');
       const miChange= document.getElementById('miChangeSecret');
       const miLogout= document.getElementById('miLogout');
-
-      const openMenu = ()=>{ menu.classList.add('open'); menuBtn.setAttribute('aria-expanded','true'); menu.setAttribute('aria-hidden','false'); };
-      const closeMenu= ()=>{ menu.classList.remove('open'); menuBtn.setAttribute('aria-expanded','false'); menu.setAttribute('aria-hidden','true'); };
-      const toggleMenu= ()=> menu.classList.contains('open') ? closeMenu() : openMenu();
-
+      const openMenu=()=>{menu.classList.add('open');menuBtn.setAttribute('aria-expanded','true');menu.setAttribute('aria-hidden','false');};
+      const closeMenu=()=>{menu.classList.remove('open');menuBtn.setAttribute('aria-expanded','false');menu.setAttribute('aria-hidden','true');};
+      const toggleMenu=()=> menu.classList.contains('open')?closeMenu():openMenu();
       menuBtn.addEventListener('click', e=>{ e.stopPropagation(); toggleMenu(); });
       document.addEventListener('click', e=>{ if(!menu.contains(e.target) && e.target!==menuBtn) closeMenu(); });
       document.addEventListener('keydown', e=>{ if(e.key==='Escape') closeMenu(); });
-
       miChange.addEventListener('click', ()=>{ closeMenu(); changeAdminSecret(); });
       miLogout.addEventListener('click', ()=>{ closeMenu(); logoutAdmin(); });
+
+      // Popup publication
+      const pubModal = $('#pubModal');
+      const pubClose = $('#pubClose');
+      const pubView  = $('#pubView');
+      pubClose.onclick = ()=> hideModal(pubModal);
+      pubModal.addEventListener('click', e=>{ if(e.target===pubModal) hideModal(pubModal); });
+      document.addEventListener('keydown', e=>{ if(e.key==='Escape') hideModal(pubModal); });
     }
 
     function selectedCities(){ return Array.from(els.f_cities.selectedOptions).map(o=>o.value); }
@@ -274,7 +312,7 @@
       $('#waPreview').textContent = `Bonjour Samiah Cosmetics, je suis intéressé(e) par ${title} (${price}).`;
     }
 
-    // ========== admin secret ==========
+    // ========= admin secret =========
     const SECRET_KEY='samiah_admin_secret';
     function getAdminSecret(){ return localStorage.getItem(SECRET_KEY) || ''; }
     function ensureAdminSecret(){ if(!getAdminSecret()){ changeAdminSecret(); } }
@@ -285,24 +323,38 @@
     }
     function logoutAdmin(){ localStorage.removeItem(SECRET_KEY); show('Déconnecté'); setTimeout(()=>location.reload(),400); }
 
-    // ========== publier vers l’API ==========
-    async function publishToBackend(){
+    // ========= popup helpers =========
+    function showModal(m){ m.classList.add('show'); m.setAttribute('aria-hidden','false'); }
+    function hideModal(m){ m.classList.remove('show'); m.setAttribute('aria-hidden','true'); }
+
+    // ========= publier vers l’API =========
+    async function publishToBackend(pubBtn, pubLabel, pubStatus){
       const secret = getAdminSecret();
       if(!secret){ changeAdminSecret(); return; }
       try{
+        setBtnLoading(pubBtn, pubLabel, 'Publication…');
+
         const resp = await fetch('/api/save-products', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'x-admin-secret': secret },
           body: JSON.stringify({ products: items })
         });
         const out = await readResp(resp);
-        if (resp.status === 401){ localStorage.removeItem(SECRET_KEY); alert('Code admin invalide (401).'); return; }
+        if (resp.status === 401){ localStorage.removeItem(SECRET_KEY); setBtnIdle(pubBtn,pubLabel); alert('Code admin invalide (401).'); return; }
         if (!resp.ok){ throw new Error(out?.error || out?.details || out?.__text || resp.statusText); }
+
         show('Publié ✅ (redéploiement en cours)');
-      }catch(e){ alert('Échec publication: ' + e.message); }
+        setBtnDone(pubBtn, pubLabel, 'Publié ✅');
+        pubStatus.textContent = `Dernière publication : ${stamp()}`;
+        showModal(document.getElementById('pubModal'));
+
+      }catch(e){
+        setBtnIdle(pubBtn, pubLabel);
+        alert('Échec publication: ' + e.message);
+      }
     }
 
-    // ========== Upload image ==========
+    // ========= Upload image =========
     function fileToBase64(file){
       return new Promise((resolve,reject)=>{
         const r=new FileReader();
@@ -311,17 +363,21 @@
       });
     }
     async function uploadToGitHub(){
-      const f = $('#gh_uploader').files[0];
+      const upBtn = document.getElementById('gh_send');
+      const f = document.getElementById('gh_uploader').files[0];
       if(!f){ alert('Choisis une image'); return; }
       if (f.size > 4*1024*1024){ alert('Image trop lourde (>4 Mo).'); return; }
 
       const secret = getAdminSecret(); if(!secret){ changeAdminSecret(); return; }
-      const base64 = await fileToBase64(f);
-      const ext = (f.name.split('.').pop()||'jpg').toLowerCase().replace(/[^a-z0-9]/g,'')||'jpg';
-      const base = (els.f_title.value || f.name.replace(/\.[^.]+$/,'') || 'image').toLowerCase();
-      const name = `${Date.now()}-${slugify(base)}.${ext}`;
 
       try{
+        setBtnLoading(upBtn, upBtn, 'Téléversement…');
+
+        const base64 = await fileToBase64(f);
+        const ext = (f.name.split('.').pop()||'jpg').toLowerCase().replace(/[^a-z0-9]/g,'')||'jpg';
+        const base = (els.f_title.value || f.name.replace(/\.[^.]+$/,'') || 'image').toLowerCase();
+        const name = `${Date.now()}-${slugify(base)}.${ext}`;
+
         const resp = await fetch('/api/upload-image', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'x-admin-secret': secret },
@@ -329,9 +385,15 @@
         });
         const out = await readResp(resp);
         if (!resp.ok){ throw new Error(out?.error || out?.details || out?.__text || resp.statusText); }
+
         els.f_image.value = out.siteUrl; // /assets/uploads/…
         show('Image envoyée ✅ (déploiement en cours)');
-      }catch(e){ alert('Erreur upload: ' + e.message); }
+        setBtnDone(upBtn, upBtn, 'Téléversé ✅');
+
+      }catch(e){
+        setBtnIdle(upBtn, upBtn);
+        alert('Erreur upload: ' + e.message);
+      }
     }
 
     load();
