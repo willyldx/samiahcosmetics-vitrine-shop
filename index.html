@@ -60,25 +60,42 @@
              /assets/images/consultation-hero.jpg  (obligatoire)
         -->
        <picture>
-  <!-- Si tu ajoutes un .webp plus tard, il sera utilisé automatiquement -->
-  <source srcset="assets/images/consultation-hero.webp?v=2" type="image/webp">
-  <img
-    src="assets/images/consultation-hero.jpg?v=2"
-    alt="Consultation capillaire"
-    width="1200" height="1500"
-    loading="eager" decoding="async"
-    style="width:100%;border-radius:16px;border:1px solid #eee;box-shadow:0 10px 30px rgba(0,0,0,.08)"
-    onerror="
-      console.warn('Image héro introuvable, tentative fallback…');
-      this.onerror=null;
-      // 1) essai .jpeg
-      if(!this.dataset.f1){ this.dataset.f1=1; this.src='assets/images/consultation-hero.jpeg?v=2'; return; }
-      // 2) essai .png
-      if(!this.dataset.f2){ this.dataset.f2=1; this.src='assets/images/consultation-hero.png?v=2'; return; }
-      // 3) dernier recours: ancien flyer
-      this.src='assets/images/flyer.png';
-    "
-  />
+  <!-- REMPLACE TOUT le <picture>…</picture> par ceci -->
+<img
+  id="hero-img"
+  alt="Consultation capillaire"
+  width="1200" height="1500"
+  style="width:100%;border-radius:16px;border:1px solid #eee;box-shadow:0 10px 30px rgba(0,0,0,.08)"
+/>
+<script>
+  (function(){
+    // Essaye toutes ces variantes, la première qui répond 200 sera utilisée
+    const candidates = [
+      'assets/images/consultation-hero.jpg?v=3',
+      '/assets/images/consultation-hero.jpg?v=3',
+      'assets/images/consultation-hero.jpeg?v=3',
+      '/assets/images/consultation-hero.jpeg?v=3',
+      'assets/images/consultation-hero.png?v=3',
+      '/assets/images/consultation-hero.png?v=3',
+      'assets/images/flyer.png?v=3',
+      '/assets/images/flyer.png?v=3'
+    ];
+    const img = document.getElementById('hero-img');
+
+    (async function pick(i=0){
+      if(i>=candidates.length){
+        img.src = '/assets/images/placeholder.png'; // dernier secours
+        return;
+      }
+      try{
+        const url = candidates[i];
+        const r = await fetch(url, { method:'HEAD', cache:'no-store' });
+        if(r.ok){ img.src = url; return; }
+      }catch(e){}
+      pick(i+1);
+    })();
+  })();
+</script>
 </picture>
       </div>
     </div>
