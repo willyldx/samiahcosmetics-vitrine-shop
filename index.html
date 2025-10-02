@@ -17,10 +17,10 @@
   <link rel="apple-touch-icon" href="/apple-touch-icon.png">
   <meta name="theme-color" content="#0A0A0A">
 
-  <!-- Styles du site -->
+  <!-- Styles globaux -->
   <link rel="stylesheet" href="/assets/css/styles.css" />
 
-  <!-- Styles bouton WhatsApp flottant (ajout) -->
+  <!-- Styles bouton WhatsApp flottant + HERO image solide -->
   <style>
     .wa-float{
       position:fixed;
@@ -34,10 +34,22 @@
     }
     .wa-float:hover{ transform:translateY(-1px); box-shadow:0 14px 28px rgba(0,0,0,.25); }
     .wa-float svg{ width:28px;height:28px; }
+
+    /* HERO colonne droite en fond CSS : aucune déformation possible */
+    .hero-photo{
+      border:1px solid #eee; border-radius:16px; box-shadow:0 10px 30px rgba(0,0,0,.08);
+      background-color:#fff;
+      background-position:center; background-repeat:no-repeat;
+      background-size:contain;      /* montre toute l’affiche, sans recadrer */
+      aspect-ratio:3/4;             /* ratio type affiche (ajuste si besoin) */
+      min-height:320px;
+      width:100%;
+    }
+    @media (min-width:900px){ .hero-photo{ min-height:540px; } }
   </style>
 </head>
 <body>
-  <!-- (SUPPRIMÉ) Bandeau numéro en haut -->
+  <!-- (Supprimé) Bandeau numéro -->
 
   <!-- En-tête -->
   <header class="container header">
@@ -70,19 +82,34 @@
       </div>
 
       <div>
-        <!-- Si tu utilises l’image en <img> -->
-        <picture>
-          <source srcset="/assets/images/consultation-hero.webp?v=5" type="image/webp">
-          <img
-            src="/assets/images/consultation-hero.jpg?v=5"
-            alt="Consultation capillaire"
-            width="1200" height="1500"
-            loading="eager" decoding="async"
-            style="width:100%;border-radius:16px;border:1px solid #eee;box-shadow:0 10px 30px rgba(0,0,0,.08)"
-            onerror="this.onerror=null;this.src='/assets/images/flyer.png?v=5';"
-          />
-        </picture>
-        <!-- Si tu utilises la version fond CSS (.hero-photo), garde ton bloc actuel à la place -->
+        <!-- Image robuste : fond CSS + auto-détection du bon fichier -->
+        <div id="heroPhoto" class="hero-photo" role="img" aria-label="Consultation capillaire"></div>
+        <script>
+          (function(){
+            const el = document.getElementById('heroPhoto');
+            // Essaye ces chemins/extensions (avec/sans slash) + cache-buster ?v=6
+            const pics = [
+              'assets/images/consultation-hero.jpg?v=6',
+              '/assets/images/consultation-hero.jpg?v=6',
+              'assets/images/consultation-hero.jpeg?v=6',
+              '/assets/images/consultation-hero.jpeg?v=6',
+              'assets/images/consultation-hero.png?v=6',
+              '/assets/images/consultation-hero.png?v=6',
+              'assets/images/flyer.png?v=6',
+              '/assets/images/flyer.png?v=6'
+            ];
+            (async function pick(){
+              for(const url of pics){
+                try{
+                  const r = await fetch(url, { method:'HEAD', cache:'no-store' });
+                  if(r.ok){ el.style.backgroundImage = `url('${url}')`; return; }
+                }catch(e){}
+              }
+              // ultime secours (placeholder)
+              el.style.backgroundImage = "url('/assets/images/placeholder.png')";
+            })();
+          })();
+        </script>
       </div>
     </div>
   </section>
@@ -124,7 +151,7 @@
 
     <h2 class="section-title">Contact</h2>
     <p>
-      <!-- On retire l’affichage du numéro, on garde seulement le bouton -->
+      <!-- On retire le numéro, on garde seulement le bouton -->
       <a class="btn" target="_blank" rel="noopener"
          href="https://wa.me/23562752105?text=Bonjour%20Samiah%20Cosmetics%2C%20j%E2%80%99aimerais%20des%20informations.">
         Contacter sur WhatsApp
