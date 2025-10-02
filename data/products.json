@@ -7,7 +7,9 @@
     "category": "Soins de peaux",
     "shortDescription": "Laver avant d'utiliser",
     "image": "/assets/uploads/1759371608520-img-20251001-184131-494.jpg",
-    "cities": []
+    "cities": [
+      "N’Djamena"
+    ]
   },
   {
     "id": "consultation",
