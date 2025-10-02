@@ -1,75 +1,314 @@
 <!doctype html>
 <html lang="fr">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Samiah Cosmetics — Consultation capillaire & produits</title>
-  <meta name="description" content="Consultation capillaire en ligne et produits cosmétiques. Réservez via WhatsApp." />
-  <meta property="og:title" content="Samiah Cosmetics — Consultation capillaire & produits">
-  <meta property="og:description" content="Réservez votre consultation capillaire (10 000 F) et découvrez nos shampoings & soins.">
-  <meta property="og:image" content="assets/images/samiah-C-final-transparent.svg">
-  <link rel="icon" href="assets/images/samiah-C-favicon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="assets/css/styles.css" />
-<link rel="icon" href="/favicon.svg" type="image/svg+xml" sizes="any">
-<link rel="mask-icon" href="/safari-pinned-tab.svg" color="#0A0A0A">
-<link rel="apple-touch-icon" href="/apple-touch-icon.png"> <!-- optionnel si tu l'ajoutes -->
-<meta name="theme-color" content="#0A0A0A">
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Samiah Cosmetics — Vitrine</title>
+  <meta name="description" content="Soins & cosmétiques pour sublimer votre beauté au Tchad. Commande rapide via WhatsApp.">
+  <!-- Open Graph (aperçu WhatsApp/Facebook) -->
+  <meta property="og:title" content="Samiah Cosmetics — Vitrine">
+  <meta property="og:description" content="Découvrez nos produits et commandez en un clic via WhatsApp.">
+  <meta property="og:image" content="/assets/og-cover.jpg">
+  <meta property="og:type" content="website">
+  <style>
+    :root{--bg:#fff;--text:#111;--muted:#6b7280;--border:#eaeaea;--brand:#D9B56C}
+    *{box-sizing:border-box}
+    html,body{margin:0;background:#fafafa;color:var(--text);font-family:Inter,ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
+    header{background:#fff;border-bottom:1px solid var(--border)}
+    .nav{max-width:1200px;margin:0 auto;display:flex;align-items:center;gap:12px;padding:12px 16px}
+    .brand{display:flex;align-items:center;gap:10px}
+    .logo{width:42px;height:42px;border-radius:10px;background:#0A0A0A;display:inline-flex;align-items:center;justify-content:center}
+    .logo svg{width:28px;height:28px}
+    .brand h1{font-size:16px;margin:0;font-weight:800;letter-spacing:.06em}
+    .spacer{flex:1}
+    .wrap{max-width:1200px;margin:0 auto;padding:20px}
+
+    .hero{background:#fff;border:1px solid var(--border);border-radius:16px;padding:18px;display:flex;gap:18px;align-items:center}
+    .hero h2{margin:0 0 6px}
+    .filters{display:grid;grid-template-columns:1fr 200px;gap:10px;max-width:600px}
+    @media(max-width:560px){.filters{grid-template-columns:1fr}}
+    input,select{padding:10px;border:1px solid var(--border);border-radius:10px;background:#fff}
+
+    /* Auto-complétion */
+    .suggest{position:relative}
+    .suggest-list{
+      position:absolute; top:100%; left:0; right:0; background:#fff; border:1px solid var(--border);
+      border-radius:12px; box-shadow:0 10px 30px rgba(0,0,0,.06); margin-top:6px; z-index:20; display:none;
+      max-height:240px; overflow:auto;
+    }
+    .suggest-list.show{display:block}
+    .suggest-item{padding:10px 12px; cursor:pointer; display:flex; justify-content:space-between; gap:8px}
+    .suggest-item:hover{background:#f7f7f7}
+    .suggest-k{font-weight:600}
+    .suggest-t{color:var(--muted); font-size:12px}
+
+    .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;align-items:stretch}
+    @media(max-width:1000px){.grid{grid-template-columns:repeat(3,1fr)}}
+    @media(max-width:700px){.grid{grid-template-columns:repeat(2,1fr)}}
+    @media(max-width:460px){.grid{grid-template-columns:1fr}}
+    .card{background:#fff;border:1px solid var(--border);border-radius:14px;overflow:hidden;display:flex;flex-direction:column}
+    .card img{width:100%;height:180px;object-fit:cover;background:#f3f3f3}
+    .card .b{padding:10px}
+    .title{font-weight:700}
+    .price{font-weight:700}
+    .muted{color:var(--muted);font-size:14px}
+    .tags{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+    .pill{background:#111;color:#fff;padding:4px 8px;border-radius:999px;font-size:12px}
+    .cta{margin-top:8px;display:flex;gap:8px;flex-wrap:wrap}
+    .btn{appearance:none;border:0;border-radius:10px;background:#111;color:#fff;padding:10px 12px;cursor:pointer;font-weight:600;text-decoration:none;display:inline-flex;align-items:center;justify-content:center}
+    .btn.secondary{background:#1111110d;color:#111;border:1px solid var(--border)}
+
+    /* Badge chrono */
+    .badge-timer{
+      display:inline-flex; align-items:center; gap:6px;
+      padding:4px 8px; border-radius:999px; font-size:12px; font-weight:700;
+      background:#fee2e2; color:#b91c1c; border:1px solid #fecaca;
+      margin:6px 0 0;
+    }
+    .badge-timer svg{width:14px; height:14px}
+
+    .empty{padding:18px;text-align:center;color:var(--muted)}
+
+    /* Bouton WhatsApp flottant */
+    .wa-float{
+      position:fixed; right:16px; bottom:16px; width:56px; height:56px; border-radius:9999px;
+      background:#25D366; color:#fff; display:flex; align-items:center; justify-content:center;
+      box-shadow:0 10px 25px rgba(0,0,0,.2); z-index:50; text-decoration:none;
+      transition:transform .15s ease, box-shadow .15s ease;
+    }
+    .wa-float:hover{ transform:translateY(-1px); box-shadow:0 14px 28px rgba(0,0,0,.25); }
+    .wa-float svg{ width:28px; height:28px; }
+  </style>
 </head>
 <body>
-  <div class="topbar">Numéro WhatsApp : <strong>+235 62 75 21 05</strong></div>
-  <header class="container header">
-    <div class="logo">
-      <img
-  src="/assets/images/samiah-C-final-transparent.svg?v=2"
-  onerror="this.onerror=null;this.src='/assets/images/samiah-C-avatar.svg';"
-  alt="Samiah Cosmetics" />
+  <header>
+    <div class="nav">
+      <span class="logo" title="Samiah">
+        <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="50" cy="50" r="42" fill="none" stroke="#F5F2EA" stroke-width="6"/>
+          <circle cx="50" cy="50" r="34" fill="none" stroke="#D9B56C" stroke-width="6"/>
+          <g transform="translate(50,50)" fill="none" stroke="#F5F2EA" stroke-width="6" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M0,-14 C4,-24 16,-24 20,-14 C16,-4 4,-4 0,-14Z"/>
+            <path d="M-6,4 C-14,2 -18,8 -13,12 C-7,15 -2,10 -6,4Z"/>
+          </g>
+        </svg>
+      </span>
+      <h1>SAMIAH — Vitrine</h1>
+      <div class="spacer"></div>
+      <a class="btn secondary" href="/admin/">Admin</a>
     </div>
-    <div class="brand">SAMIAH COSMETICS</div>
   </header>
 
-  <section class="hero">
-    <div class="container wrap">
-      <div>
-        <h1>Consultation capillaire en ligne</h1>
-        <p>Définition de votre profil, analyse des problèmes, correction des habitudes, mise en place d’une routine saine et conseils sur mesure.</p>
-        <a class="btn gold" target="_blank" rel="noopener" href="https://wa.me/23562752105?text=Bonjour%20Samiah%20Cosmetics%2C%20je%20souhaite%20r%C3%A9server%20une%20consultation%20capillaire%20(10.000F).">Réserver via WhatsApp — 10 000 F</a>
-        <div style="margin-top:10px"><small class="muted">Disponible dans les grandes villes du Tchad. Réponse rapide.</small></div>
+  <main class="wrap">
+    <div class="hero">
+      <div style="flex:1">
+        <h2>Bienvenue chez Samiah Cosmetics</h2>
+        <p class="muted">Découvrez nos nouveautés. Commande simple via WhatsApp.</p>
+        <div class="filters">
+          <!-- Champ recherche avec auto-complétion -->
+          <div class="suggest">
+            <input id="q" placeholder="Recherche (titre, catégorie)…" autocomplete="off">
+            <div id="q_list" class="suggest-list" role="listbox" aria-label="Suggestions de recherche"></div>
+          </div>
+          <select id="cat"></select>
+        </div>
       </div>
-      <div>
-        <img src="assets/images/flyer.png" alt="Consultation capillaire" style="width:100%;border-radius:16px;border:1px solid #eee;box-shadow:0 10px 30px rgba(0,0,0,.08)"/>
-      </div>
-    </div>
-  </section>
-
-  <main class="container">
-    <h2 class="section-title">Catalogue</h2>
-    <div class="filters">
-      <input id="search" class="search" placeholder="Recherche produit..." />
-      <select id="category" title="Catégorie">
-        <option value="Toutes">Toutes les catégories</option>
-      </select>
-      <select id="city" title="Ville">
-        <option>Toutes</option>
-        <option>N’Djamena</option><option>Moundou</option><option>Sarh</option><option>Abéché</option><option>Bongor</option><option>Kélo</option><option>Pala</option><option>Koumra</option><option>Faya-Largeau</option>
-      </select>
-    </div>
-    <div id="products-grid" class="grid"></div>
-
-    <h2 class="section-title">Témoignages</h2>
-    <div class="grid">
-      <div class="card"><img src="assets/images/testimonial.png" alt="Témoignage WhatsApp"><div class="p"><small class="muted">“J’ai testé tes produits... le résultat est incroyable.”</small></div></div>
-      <div class="card"><img src="assets/images/shampoos.png" alt="Shampoings"><div class="p"><small class="muted">Shampoings Samiah : nourrissant & antipelliculaire.</small></div></div>
-      <div class="card"><img src="assets/images/butter.png" alt="Beurre capillaire"><div class="p"><small class="muted">Beurre capillaire : hydrate et scelle l’humidité.</small></div></div>
     </div>
 
-    <h2 class="section-title">Contact</h2>
-    <p>WhatsApp : <a class="btn" target="_blank" rel="noopener" href="https://wa.me/23562752105">+235 62 75 21 05</a></p>
+    <div id="grid" class="grid" aria-live="polite"></div>
+    <div id="empty" class="empty" style="display:none">Aucun produit pour l’instant.</div>
   </main>
 
-  <footer class="footer">
-    <div class="container">© 2025 Samiah Cosmetics — N’Djamena, Tchad</div>
-  </footer>
+  <!-- Bouton WhatsApp flottant (contact direct) -->
+  <a class="wa-float"
+     href="https://wa.me/23562752105?text=Bonjour%20Samiah%20Cosmetics%2C%20j%E2%80%99aimerais%20des%20informations."
+     target="_blank" rel="noopener" aria-label="Contacter Samiah Cosmetics sur WhatsApp">
+    <svg viewBox="0 0 32 32" aria-hidden="true" focusable="false">
+      <path fill="white" d="M19.11 17.3c-.27-.14-1.6-.79-1.85-.88-.25-.09-.43-.14-.62.14-.18.27-.71.88-.87 1.06-.16.18-.32.2-.6.07-.27-.14-1.15-.42-2.2-1.34-.81-.72-1.36-1.6-1.52-1.87-.16-.27-.02-.41.12-.55.13-.13.27-.32.41-.48.14-.16.18-.27.27-.45.09-.18.05-.34-.02-.48-.07-.14-.62-1.49-.85-2.05-.22-.52-.44-.45-.62-.46l-.53-.01c-.18 0-.48.07-.73.34-.25.27-.96.94-.96 2.29 0 1.35.98 2.66 1.12 2.84.14.18 1.93 2.95 4.75 4.15.66.29 1.17.46 1.57.59.66.21 1.26.18 1.73.11.53-.08 1.6-.65 1.83-1.29.23-.64.23-1.18.16-1.29-.07-.11-.25-.18-.52-.31z"/>
+      <path fill="white" d="M26.6 5.39A12.55 12.55 0 0 0 16 .07C7.3.07.2 7.16.2 15.86c0 2.8.74 5.54 2.14 7.95L.03 32l8.34-2.19a15.67 15.67 0 0 0 7.63 1.95h.01c8.7 0 15.79-7.09 15.79-15.79a15.68 15.68 0 0 0-5.2-11.58zM16 29.23h-.01a13.18 13.18 0 0 1-6.71-1.85l-.48-.28-4.95 1.3 1.32-4.82-.31-.5a13.16 13.16 0 1 1 11.14 6.14z"/>
+    </svg>
+  </a>
 
-  <script src="assets/js/script.js"></script>
+  <!-- Supabase client -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    // ⚠️ REMPLACE ces 2 constantes par tes vraies valeurs (publiques)
+    const SUPABASE_URL  = 'https://XXXX.supabase.co';
+    const SUPABASE_ANON = 'ey...anon_key...';
+
+    const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+    const fmt = n => new Intl.NumberFormat('fr-FR').format(n);
+    const $ = s => document.querySelector(s);
+    const $$ = s => Array.from(document.querySelectorAll(s));
+
+    // ===== utils =====
+    const normalize = s => (s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+    function formatRemaining(ms){
+      if (ms<=0) return 'expiré';
+      const sec = Math.floor(ms/1000);
+      const h = Math.floor(sec/3600), m = Math.floor((sec%3600)/60), s = sec%60;
+      if (h>0) return `${h}h ${m}m ${s}s`;
+      if (m>0) return `${m}m ${s}s`;
+      return `${s}s`;
+    }
+    function expiryTs(p){
+      if (!p.publishedAt || !p.expiresAfterDays || p.expiresAfterDays<=0) return null;
+      return Date.parse(p.publishedAt) + p.expiresAfterDays*86400000;
+    }
+
+    // ===== cartes =====
+    function cardTpl(p){
+      const img = p.image ? `<img src="${p.image}" alt="">` : `<div style="height:180px;background:#f3f3f3"></div>`;
+      const tags = (p.cities||[]).slice(0,3).map(c=>`<span class="pill">${c}</span>`).join('');
+      const msg = encodeURIComponent(`Bonjour Samiah Cosmetics, je suis intéressé(e) par ${p.title} (${fmt(p.price)} XAF).`);
+      const wa = `https://wa.me/23562752105?text=${msg}`;
+
+      // Chrono si <= 1h
+      const exp = expiryTs(p);
+      let timer = '';
+      if (exp){
+        const left = exp - Date.now();
+        if (left>0 && left<=3600000){
+          timer = `
+            <span class="badge-timer countdown" data-exp="${exp}">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 2h10v2H7V2zm5 4a8 8 0 100 16 8 8 0 000-16zm0 2a6 6 0 110 12A6 6 0 0112 8zm-.5 2v4.25l3.5 2.1-.75 1.23L10 15V10h1.5z" fill="#b91c1c"/></svg>
+              <span>Se termine dans <b data-remaining>${formatRemaining(left)}</b></span>
+            </span>`;
+        }
+      }
+
+      return `
+        <article class="card">
+          ${img}
+          <div class="b">
+            <div class="title">${p.title}</div>
+            <div class="price">${fmt(p.price)} XAF</div>
+            <div class="muted">${p.category||''}</div>
+            ${timer}
+            <div class="tags" aria-label="Villes">${tags}</div>
+            <div class="cta">
+              <a class="btn" href="${wa}" target="_blank" rel="noopener">Commander via WhatsApp</a>
+              ${p.image ? `<a class="btn secondary" href="${p.image}" target="_blank" rel="noopener">Voir l’image</a>` : ''}
+            </div>
+          </div>
+        </article>`;
+    }
+
+    // ===== filtres =====
+    function applyFilters(list){
+      const q = normalize($('#q')?.value);
+      const cat = ($('#cat')?.value||'');
+      return list.filter(p=>{
+        const okQ = !q || normalize(p.title+' '+(p.category||'')).includes(q);
+        const okC = !cat || p.category===cat;
+        return okQ && okC;
+      });
+    }
+    function fillCats(list){
+      const sel = $('#cat');
+      const cats = Array.from(new Set(list.map(p=>p.category).filter(Boolean))).sort();
+      sel.innerHTML = `<option value="">Toutes</option>` + cats.map(c=>`<option>${c}</option>`).join('');
+    }
+
+    // ===== auto-complétion =====
+    let ALL = [];
+    let selIndex = -1;
+    function buildSuggestions(q){
+      if (!q) return [];
+      const nq = normalize(q);
+      const titles = ALL.map(p=>p.title).filter(Boolean);
+      const cats = ALL.map(p=>p.category).filter(Boolean);
+      const uniq = arr => Array.from(new Set(arr));
+      const tMatches = uniq(titles.filter(t=> normalize(t).includes(nq))).slice(0,5).map(t=>({k:t, t:'Titre'}));
+      const cMatches = uniq(cats.filter(c=> normalize(c).includes(nq))).slice(0,5).map(c=>({k:c, t:'Catégorie'}));
+      return [...tMatches, ...cMatches].slice(0,8);
+    }
+    function renderSuggest(list){
+      const box = $('#q_list');
+      if (!list.length){ box.classList.remove('show'); box.innerHTML=''; selIndex=-1; return; }
+      box.innerHTML = list.map((it,i)=>`<div class="suggest-item" role="option" data-i="${i}"><span class="suggest-k">${it.k}</span><span class="suggest-t">${it.t}</span></div>`).join('');
+      box.classList.add('show'); selIndex=-1;
+    }
+    function closeSuggest(){ $('#q_list').classList.remove('show'); selIndex=-1; }
+    function useSuggestion(val){ $('#q').value = val; closeSuggest(); renderFromDB(); }
+
+    // ===== rendu =====
+    async function fetchVisibleProducts(){
+      const { data, error } = await sb
+        .from('products')
+        .select('id,title,price,currency,category,short_description,image,cities,active,published_at,expires_after_days')
+        .order('published_at', { ascending:false });
+      if (error) { console.error(error); return []; }
+      return data.map(p => ({
+        id: p.id, title: p.title, price: p.price, currency: p.currency || 'XAF',
+        category: p.category || '', shortDescription: p.short_description || '',
+        image: p.image || '', cities: Array.isArray(p.cities)?p.cities:[],
+        active: p.active !== false,
+        publishedAt: p.published_at, expiresAfterDays: p.expires_after_days ?? null
+      }));
+    }
+
+    async function renderFromDB(){
+      ALL = await fetchVisibleProducts();
+      const grid = $('#grid'), empty = $('#empty');
+      fillCats(ALL);
+      const shown = applyFilters(ALL);
+      if(!shown.length){ grid.innerHTML=''; empty.style.display='block'; }
+      else { empty.style.display='none'; grid.innerHTML = shown.map(cardTpl).join(''); }
+      startCountdownLoop();              // lance/relance le chrono
+      wireSuggestions();                 // recalcule la source des suggestions
+    }
+
+    // ===== chrono (≤ 1h) =====
+    let timerInterval = null;
+    function startCountdownLoop(){
+      if (timerInterval) clearInterval(timerInterval);
+      const update = () => {
+        const now = Date.now();
+        $$('.countdown').forEach(el=>{
+          const exp = parseInt(el.getAttribute('data-exp'),10);
+          const left = exp - now;
+          const tgt = el.querySelector('[data-remaining]');
+          if (!tgt) return;
+          if (left<=0){ el.style.display='none'; }  // expiré → badge disparaît
+          else { tgt.textContent = formatRemaining(left); }
+        });
+      };
+      update();
+      timerInterval = setInterval(update, 1000);
+    }
+
+    // ===== events UI =====
+    $('#q').addEventListener('input', e=>{
+      const q = e.target.value;
+      renderSuggest(buildSuggestions(q));
+    });
+    $('#q').addEventListener('keydown', e=>{
+      const box = $('#q_list'); const items = $$('.suggest-item');
+      if (!box.classList.contains('show')) return;
+      if (e.key==='ArrowDown'){ selIndex = Math.min(selIndex+1, items.length-1); items.forEach((it,i)=>it.style.background = i===selIndex ? '#f0f0f0' : ''); e.preventDefault(); }
+      else if (e.key==='ArrowUp'){ selIndex = Math.max(selIndex-1, 0); items.forEach((it,i)=>it.style.background = i===selIndex ? '#f0f0f0' : ''); e.preventDefault(); }
+      else if (e.key==='Enter'){ if (selIndex>=0) { const val = items[selIndex].querySelector('.suggest-k').textContent; useSuggestion(val); } else { closeSuggest(); renderFromDB(); } }
+      else if (e.key==='Escape'){ closeSuggest(); }
+    });
+    $('#q_list').addEventListener('click', e=>{
+      const it = e.target.closest('.suggest-item'); if (!it) return;
+      const val = it.querySelector('.suggest-k').textContent; useSuggestion(val);
+    });
+    document.addEventListener('click', e=>{
+      if (!e.target.closest('.suggest')) closeSuggest();
+    });
+    $('#cat').addEventListener('change', ()=> renderFromDB());
+
+    // 1) premier rendu
+    renderFromDB();
+
+    // 2) temps réel : refresh sur insert/update/delete
+    sb.channel('public:products')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'products' }, payload => {
+        renderFromDB();
+      })
+      .subscribe();
+  </script>
 </body>
 </html>
