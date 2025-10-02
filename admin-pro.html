@@ -38,10 +38,6 @@
     .toast.show{opacity:1;transform:translateY(0)}
     .note{background:var(--soft);border:1px dashed var(--border);border-radius:12px;padding:10px 12px;color:#444}
   </style>
-
-  <!-- Uploadcare (remplace la clé par la tienne si besoin) -->
-  <script>window.UPLOADCARE_PUBLIC_KEY = 'aff6343f97db42a35956';</script>
-  <script src="https://ucarecdn.com/libs/widget/3.x/uploadcare.full.min.js"></script>
 </head>
 <body>
   <div class="topbar">
@@ -75,7 +71,7 @@
           <input type="text" id="q" placeholder="Recherche (titre, catégorie)…"/>
           <select id="catFilter"></select>
         </div>
-        <div class="note">Astuce : cliquer sur une ligne pour l’éditer. Les images doivent être dans <code>assets/images/</code> ou des URLs complètes.</div>
+        <div class="note">Astuce : cliquer sur une ligne pour l’éditer. Les images doivent être des URLs (ex : <code>/assets/uploads/…</code> ou <code>https://…</code>).</div>
         <div style="overflow:auto;max-height:520px;margin-top:10px;border:1px solid var(--border);border-radius:12px">
           <table id="tbl">
             <thead>
@@ -104,17 +100,15 @@
           <div><label>ID (slug)<br/><input id="f_id" placeholder="auto si vide"></label></div>
           <div style="grid-column:1 / -1"><label>Description courte<br/><textarea id="f_desc" placeholder="Texte court…"></textarea></label></div>
 
-          <!-- Image + uploader Uploadcare -->
+          <!-- Uploader GitHub (gratuit) -->
           <div>
-            <label>Image (upload ou URL)<br/>
-              <input type="hidden" id="f_image" placeholder="assets/images/mon-produit.jpg">
-              <input type="file"
-                     data-uploadcare-uploader
-                     data-images-only
-                     data-clearable
-                     data-tabs="file camera url"
-                     data-multiple="false" />
-              <small class="muted">Choisis depuis la galerie, prends une photo, ou colle une URL.</small>
+            <label>Image (upload → GitHub gratuit)<br/>
+              <input type="hidden" id="f_image">
+              <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+                <input type="file" id="gh_uploader" accept="image/*">
+                <button type="button" class="btn secondary" id="gh_send">Téléverser</button>
+                <small class="muted">L’image sera enregistrée dans <code>assets/uploads/</code> du site.</small>
+              </div>
             </label>
           </div>
 
@@ -150,7 +144,7 @@
   <div class="toast" id="toast">Enregistré</div>
 
   <script>
-    // -------- utilitaires --------
+    // ====== utilitaires ======
     const fmt = n => new Intl.NumberFormat('fr-FR').format(n);
     let items = [], editing = null;
     const $ = s => document.querySelector(s), $$ = s => Array.from(document.querySelectorAll(s));
@@ -163,11 +157,12 @@
     function show(txt){ els.toast.textContent=txt; els.toast.classList.add('show'); setTimeout(()=>els.toast.classList.remove('show'),1700); }
     function escapeHtml(s){return (''+s).replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 
-    // -------- chargement initial --------
+    // ====== chargement initial ======
     async function load(){ try{
         const res = await fetch('./data/products.json?_=' + Date.now()); items = await res.json();
       }catch{ items = []; }
-      fillCats(); render(); bind(); initUploadcareHook(); ensureAdminSecret(); }
+      fillCats(); render(); bind(); ensureAdminSecret();
+    }
 
     function fillCats(){ const cats = Array.from(new Set(items.map(p=>p.category).filter(Boolean))).sort();
       $('#catFilter').innerHTML = '<option value=\"\">Toutes</option>' + cats.map(c=>`<option>${c}</option>`).join(''); }
@@ -194,7 +189,8 @@
       $('#save').onclick=save; $('#reset').onclick=reset; els.del.onclick=()=>{ if(editing!=null){ removeItem(editing); reset(); } };
       $('#exportBtn').onclick=exportJSON; $('#importBtn').onclick=()=>els.file.click(); els.file.onchange=importJSON;
       document.getElementById('publishBtn').onclick=publishToBackend;
-      document.getElementById('codeBtn').onclick=changeAdminSecret; }
+      document.getElementById('codeBtn').onclick=changeAdminSecret;
+      document.getElementById('gh_send').onclick=uploadToGitHub; }
 
     function selectedCities(){ return Array.from(els.f_cities.selectedOptions).map(o=>o.value); }
     function save(){ const p={ id:(els.f_id.value||slugify(els.f_title.value)).trim(), title:els.f_title.value.trim(),
@@ -219,7 +215,7 @@
       const price=els.f_price.value? fmt(parseInt(els.f_price.value,10))+' XAF' : 'Prix à préciser';
       document.querySelector('#waPreview').textContent = `Bonjour Samiah Cosmetics, je suis intéressé(e) par ${title} (${price}).`; }
 
-    // -------- admin secret (stocké localement, jamais envoyé sauf en en-tête) --------
+    // ====== admin secret (stockage local) ======
     const SECRET_KEY = 'samiah_admin_secret';
     function getAdminSecret(){ return localStorage.getItem(SECRET_KEY) || ''; }
     function ensureAdminSecret(){ if(!getAdminSecret()){ changeAdminSecret(); } }
@@ -229,7 +225,7 @@
       if(v && v !== '••••••'){ localStorage.setItem(SECRET_KEY, v.trim()); show('Code enregistré'); }
     }
 
-    // -------- publier vers l’API Vercel --------
+    // ====== publier vers l’API Vercel ======
     async function publishToBackend(){
       const secret = getAdminSecret();
       if(!secret){ changeAdminSecret(); return; }
@@ -246,18 +242,39 @@
       }catch(e){ alert('Échec publication: ' + e.message); }
     }
 
-    // -------- Uploadcare : brancher l’uploader -> #f_image --------
-    function initUploadcareHook(){
+    // ====== Upload image → GitHub (gratuit) ======
+    function fileToBase64(file){
+      return new Promise((resolve,reject)=>{
+        const r = new FileReader();
+        r.onload = ()=> {
+          const s = (r.result||'').toString();
+          resolve(s.includes(',') ? s.split(',')[1] : s);
+        };
+        r.onerror = reject;
+        r.readAsDataURL(file);
+      });
+    }
+    async function uploadToGitHub(){
+      const f = document.getElementById('gh_uploader').files[0];
+      if(!f){ alert('Choisis une image'); return; }
+      const secret = getAdminSecret(); if(!secret){ changeAdminSecret(); return; }
+
+      const base64 = await fileToBase64(f);
+      const ext = (f.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g,'') || 'jpg';
+      const base = (els.f_title.value || f.name.replace(/\.[^.]+$/,'') || 'image').toLowerCase();
+      const name = `${Date.now()}-${slugify(base)}.${ext}`;
+
       try{
-        if(!window.uploadcare) return;
-        const el = document.querySelector('[data-uploadcare-uploader]');
-        if(!el) return;
-        const widget = uploadcare.Widget(el);
-        widget.onUploadComplete(function(info){
-          els.f_image.value = info.cdnUrl;
-          show('Image uploadée ✅');
+        const resp = await fetch('/api/upload-image', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'x-admin-secret': secret },
+          body: JSON.stringify({ filename: name, contentBase64: base64 })
         });
-      }catch{}
+        const json = await resp.json();
+        if(!resp.ok) throw new Error(json?.error || 'Upload échoué');
+        els.f_image.value = json.siteUrl; // /assets/uploads/…
+        show('Image envoyée ✅ (déploiement en cours)');
+      }catch(e){ alert('Erreur upload: ' + e.message); }
     }
 
     load();
