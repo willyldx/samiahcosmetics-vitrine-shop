@@ -36,3 +36,20 @@ small.muted{opacity:.7}
   .grid{grid-template-columns:1fr}
   .hero h1{font-size:30px}
 }
+/* --- FIX rendu de l'image du HERO --- */
+.hero-img-box{
+  height: clamp(280px, 48vw, 620px);  /* hauteur raisonnable, responsive */
+  border-radius: 16px;
+  overflow: hidden;
+  border: 1px solid #eee;
+  box-shadow: 0 10px 30px rgba(0,0,0,.08);
+  background: #fff; /* fond neutre autour de l’affiche si elle ne remplit pas tout */
+}
+
+.hero-img{
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: contain;     /* pas de recadrage, pas de déformation */
+  image-orientation: from-image; /* corrige certaines photos iPhone mal orientées */
+}
