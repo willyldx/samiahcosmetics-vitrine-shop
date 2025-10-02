@@ -1,5 +1,15 @@
 [
   {
+    "id": "savon",
+    "title": "Savon",
+    "price": 3000,
+    "currency": "XAF",
+    "category": "Soins de peaux",
+    "shortDescription": "Laver avant d'utiliser",
+    "image": "/assets/uploads/1759371608520-img-20251001-184131-494.jpg",
+    "cities": []
+  },
+  {
     "id": "consultation",
     "title": "Consultation capillaire",
     "price": 10000,
