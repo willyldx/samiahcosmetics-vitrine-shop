@@ -19,10 +19,25 @@
 
   <!-- Styles du site -->
   <link rel="stylesheet" href="/assets/css/styles.css" />
+
+  <!-- Styles bouton WhatsApp flottant (ajout) -->
+  <style>
+    .wa-float{
+      position:fixed;
+      right:max(16px, env(safe-area-inset-right));
+      bottom:max(16px, env(safe-area-inset-bottom));
+      width:56px;height:56px;border-radius:9999px;
+      background:#25D366;color:#fff;
+      display:flex;align-items:center;justify-content:center;
+      box-shadow:0 10px 25px rgba(0,0,0,.2);
+      z-index:1000;text-decoration:none;transition:transform .15s ease, box-shadow .15s ease;
+    }
+    .wa-float:hover{ transform:translateY(-1px); box-shadow:0 14px 28px rgba(0,0,0,.25); }
+    .wa-float svg{ width:28px;height:28px; }
+  </style>
 </head>
 <body>
-  <!-- Bandeau numéro -->
-  <div class="topbar">Numéro WhatsApp : <strong>+235 62 75 21 05</strong></div>
+  <!-- (SUPPRIMÉ) Bandeau numéro en haut -->
 
   <!-- En-tête -->
   <header class="container header">
@@ -55,11 +70,19 @@
       </div>
 
       <div>
-        <!-- Place ces fichiers dans ton repo :
-             /assets/images/consultation-hero.webp (optionnel)
-             /assets/images/consultation-hero.jpg  (obligatoire)
-        -->
-  <div class="hero-photo" role="img" aria-label="Consultation capillaire"></div>
+        <!-- Si tu utilises l’image en <img> -->
+        <picture>
+          <source srcset="/assets/images/consultation-hero.webp?v=5" type="image/webp">
+          <img
+            src="/assets/images/consultation-hero.jpg?v=5"
+            alt="Consultation capillaire"
+            width="1200" height="1500"
+            loading="eager" decoding="async"
+            style="width:100%;border-radius:16px;border:1px solid #eee;box-shadow:0 10px 30px rgba(0,0,0,.08)"
+            onerror="this.onerror=null;this.src='/assets/images/flyer.png?v=5';"
+          />
+        </picture>
+        <!-- Si tu utilises la version fond CSS (.hero-photo), garde ton bloc actuel à la place -->
       </div>
     </div>
   </section>
@@ -101,9 +124,10 @@
 
     <h2 class="section-title">Contact</h2>
     <p>
-      WhatsApp :
-      <a class="btn" target="_blank" rel="noopener" href="https://wa.me/23562752105">
-        +235 62 75 21 05
+      <!-- On retire l’affichage du numéro, on garde seulement le bouton -->
+      <a class="btn" target="_blank" rel="noopener"
+         href="https://wa.me/23562752105?text=Bonjour%20Samiah%20Cosmetics%2C%20j%E2%80%99aimerais%20des%20informations.">
+        Contacter sur WhatsApp
       </a>
     </p>
   </main>
@@ -112,6 +136,13 @@
   <footer class="footer">
     <div class="container">© 2025 Samiah Cosmetics — N’Djamena, Tchad</div>
   </footer>
+
+  <!-- Bouton WhatsApp flottant -->
+  <a class="wa-float"
+     href="https://wa.me/23562752105?text=Bonjour%20Samiah%20Cosmetics%2C%20j%E2%80%99aimerais%20des%20informations."
+     target="_blank" rel="noopener" aria-label="Contacter Samiah sur WhatsApp">
+    <svg viewBox="0 0 32 32" aria-hidden="true"><path fill="#fff" d="M19.11 17.3c-.27-.14-1.6-.79-1.85-.88-.25-.09-.43-.14-.62.14-.18.27-.71.88-.87 1.06-.16.18-.32.2-.6.07-.27-.14-1.15-.42-2.2-1.34-.81-.72-1.36-1.6-1.52-1.87-.16-.27-.02-.41.12-.55.13-.13.27-.32.41-.48.14-.16.18-.27.27-.45.09-.18.05-.34-.02-.48-.07-.14-.62-1.49-.85-2.05-.22-.52-.44-.45-.62-.46l-.53-.01c-.18 0-.48.07-.73.34-.25.27-.96.94-.96 2.29 0 1.35.98 2.66 1.12 2.84.14.18 1.93 2.95 4.75 4.15.66.29 1.17.46 1.57.59.66.21 1.26.18 1.73.11.53-.08 1.6-.65 1.83-1.29.23-.64.23-1.18.16-1.29-.07-.11-.25-.18-.52-.31z"/><path fill="#fff" d="M26.6 5.39A12.55 12.55 0 0 0 16 .07C7.3.07.2 7.16.2 15.86c0 2.8.74 5.54 2.14 7.95L.03 32l8.34-2.19a15.67 15.67 0 0 0 7.63 1.95h.01c8.7 0 15.79-7.09 15.79-15.79a15.68 15.68 0 0 0-5.2-11.58z"/></svg>
+  </a>
 
   <!-- JS du site (module ES pour activer Supabase Realtime) -->
   <script type="module" src="/assets/js/script.js"></script>
