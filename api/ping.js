@@ -1,4 +1,4 @@
 // /api/ping.js
-export default function handler(req, res) {
+module.exports = (req, res) => {
   res.status(200).json({ ok: true, time: new Date().toISOString() });
-}
+};
