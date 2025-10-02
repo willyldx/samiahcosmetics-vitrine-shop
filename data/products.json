@@ -1,37 +1,5 @@
 [
   {
-    "id": "savon",
-    "title": "Savon",
-    "price": 5000,
-    "currency": "XAF",
-    "category": "Soins de peaux",
-    "shortDescription": "Lave toi avant de l'utiliser",
-    "image": "/assets/uploads/1759376006119-img-20251001-184131-494.jpg",
-    "cities": [
-      "N’Djamena"
-    ]
-  },
-  {
-    "id": "consultation",
-    "title": "Consultation capillaire",
-    "price": 10000,
-    "currency": "XAF",
-    "category": "Services",
-    "shortDescription": "Analyse du cuir chevelu, profil capillaire, routine, conseils personnalisés.",
-    "image": "assets/images/flyer.png",
-    "cities": [
-      "N’Djamena",
-      "Moundou",
-      "Sarh",
-      "Abéché",
-      "Bongor",
-      "Kélo",
-      "Pala",
-      "Koumra",
-      "Faya-Largeau"
-    ]
-  },
-  {
     "id": "shampoo-nourrissant",
     "title": "Shampoing nourrissant 500ml",
     "price": 5000,
