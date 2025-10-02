@@ -36,20 +36,23 @@ small.muted{opacity:.7}
   .grid{grid-template-columns:1fr}
   .hero h1{font-size:30px}
 }
-/* --- FIX rendu de l'image du HERO --- */
-.hero-img-box{
-  height: clamp(280px, 48vw, 620px);  /* hauteur raisonnable, responsive */
-  border-radius: 16px;
-  overflow: hidden;
+/* --- HERO image, rendu propre sans déformation --- */
+.hero-photo{
   border: 1px solid #eee;
+  border-radius: 16px;
   box-shadow: 0 10px 30px rgba(0,0,0,.08);
-  background: #fff; /* fond neutre autour de l’affiche si elle ne remplit pas tout */
-}
+  background-color: #fff;
 
-.hero-img{
-  width: 100%;
-  height: 100%;
-  display: block;
-  object-fit: contain;     /* pas de recadrage, pas de déformation */
-  image-orientation: from-image; /* corrige certaines photos iPhone mal orientées */
+  /* ta photo en fond, centrée, sans étirement */
+  background-image: url('/assets/images/consultation-hero.jpg?v=5');
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: contain; /* montre l'image entière, pas de recadrage */
+
+  /* format responsive type affiche */
+  aspect-ratio: 3 / 4;      /* ajuste si besoin (ex: 4/5, 9/16, …) */
+  min-height: 320px;
+}
+@media (min-width: 900px){
+  .hero-photo{ min-height: 540px; }
 }
