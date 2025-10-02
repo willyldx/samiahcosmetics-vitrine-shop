@@ -3,13 +3,9 @@
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>Samiah Cosmetics — Vitrine</title>
-  <meta name="description" content="Soins & cosmétiques pour sublimer votre beauté au Tchad. Commande rapide via WhatsApp.">
-  <!-- Open Graph (aperçu WhatsApp/Facebook) -->
-  <meta property="og:title" content="Samiah Cosmetics — Vitrine">
-  <meta property="og:description" content="Découvrez nos produits et commandez en un clic via WhatsApp.">
-  <meta property="og:image" content="/assets/og-cover.jpg">
-  <meta property="og:type" content="website">
+  <title>SAMIAH Cosmetics</title>
+  <meta name="description" content="Soins & cosmétiques — commande rapide via WhatsApp.">
+
   <style>
     :root{--bg:#fff;--text:#111;--muted:#6b7280;--border:#eaeaea;--brand:#D9B56C}
     *{box-sizing:border-box}
@@ -23,9 +19,8 @@
     .spacer{flex:1}
     .wrap{max-width:1200px;margin:0 auto;padding:20px}
 
-    .hero{background:#fff;border:1px solid var(--border);border-radius:16px;padding:18px;display:flex;gap:18px;align-items:center}
-    .hero h2{margin:0 0 6px}
-    .filters{display:grid;grid-template-columns:1fr 200px;gap:10px;max-width:600px}
+    /* Barre de filtres simple */
+    .filters{display:grid;grid-template-columns:1fr 220px;gap:10px;margin-bottom:14px}
     @media(max-width:560px){.filters{grid-template-columns:1fr}}
     input,select{padding:10px;border:1px solid var(--border);border-radius:10px;background:#fff}
 
@@ -93,56 +88,46 @@
           </g>
         </svg>
       </span>
-      <h1>SAMIAH — Vitrine</h1>
+      <h1>SAMIAH Cosmetics</h1>
       <div class="spacer"></div>
-      <a class="btn secondary" href="/admin/">Admin</a>
+      <!-- (Bouton Admin supprimé volontairement) -->
     </div>
   </header>
 
   <main class="wrap">
-    <div class="hero">
-      <div style="flex:1">
-        <h2>Bienvenue chez Samiah Cosmetics</h2>
-        <p class="muted">Découvrez nos nouveautés. Commande simple via WhatsApp.</p>
-        <div class="filters">
-          <!-- Champ recherche avec auto-complétion -->
-          <div class="suggest">
-            <input id="q" placeholder="Recherche (titre, catégorie)…" autocomplete="off">
-            <div id="q_list" class="suggest-list" role="listbox" aria-label="Suggestions de recherche"></div>
-          </div>
-          <select id="cat"></select>
-        </div>
+    <!-- Barre de recherche + catégorie -->
+    <div class="filters">
+      <div class="suggest">
+        <input id="q" placeholder="Recherche (titre, catégorie)…" autocomplete="off">
+        <div id="q_list" class="suggest-list" role="listbox" aria-label="Suggestions"></div>
       </div>
+      <select id="cat"></select>
     </div>
 
     <div id="grid" class="grid" aria-live="polite"></div>
     <div id="empty" class="empty" style="display:none">Aucun produit pour l’instant.</div>
   </main>
 
-  <!-- Bouton WhatsApp flottant (contact direct) -->
+  <!-- WhatsApp flottant -->
   <a class="wa-float"
      href="https://wa.me/23562752105?text=Bonjour%20Samiah%20Cosmetics%2C%20j%E2%80%99aimerais%20des%20informations."
-     target="_blank" rel="noopener" aria-label="Contacter Samiah Cosmetics sur WhatsApp">
-    <svg viewBox="0 0 32 32" aria-hidden="true" focusable="false">
-      <path fill="white" d="M19.11 17.3c-.27-.14-1.6-.79-1.85-.88-.25-.09-.43-.14-.62.14-.18.27-.71.88-.87 1.06-.16.18-.32.2-.6.07-.27-.14-1.15-.42-2.2-1.34-.81-.72-1.36-1.6-1.52-1.87-.16-.27-.02-.41.12-.55.13-.13.27-.32.41-.48.14-.16.18-.27.27-.45.09-.18.05-.34-.02-.48-.07-.14-.62-1.49-.85-2.05-.22-.52-.44-.45-.62-.46l-.53-.01c-.18 0-.48.07-.73.34-.25.27-.96.94-.96 2.29 0 1.35.98 2.66 1.12 2.84.14.18 1.93 2.95 4.75 4.15.66.29 1.17.46 1.57.59.66.21 1.26.18 1.73.11.53-.08 1.6-.65 1.83-1.29.23-.64.23-1.18.16-1.29-.07-.11-.25-.18-.52-.31z"/>
-      <path fill="white" d="M26.6 5.39A12.55 12.55 0 0 0 16 .07C7.3.07.2 7.16.2 15.86c0 2.8.74 5.54 2.14 7.95L.03 32l8.34-2.19a15.67 15.67 0 0 0 7.63 1.95h.01c8.7 0 15.79-7.09 15.79-15.79a15.68 15.68 0 0 0-5.2-11.58zM16 29.23h-.01a13.18 13.18 0 0 1-6.71-1.85l-.48-.28-4.95 1.3 1.32-4.82-.31-.5a13.16 13.16 0 1 1 11.14 6.14z"/>
-    </svg>
+     target="_blank" rel="noopener" aria-label="Contacter Samiah sur WhatsApp">
+    <svg viewBox="0 0 32 32" aria-hidden="true"><path fill="#fff" d="M19.11 17.3c-.27-.14-1.6-.79-1.85-.88-.25-.09-.43-.14-.62.14-.18.27-.71.88-.87 1.06-.16.18-.32.2-.6.07-.27-.14-1.15-.42-2.2-1.34-.81-.72-1.36-1.6-1.52-1.87-.16-.27-.02-.41.12-.55.13-.13.27-.32.41-.48.14-.16.18-.27.27-.45.09-.18.05-.34-.02-.48-.07-.14-.62-1.49-.85-2.05-.22-.52-.44-.45-.62-.46l-.53-.01c-.18 0-.48.07-.73.34-.25.27-.96.94-.96 2.29 0 1.35.98 2.66 1.12 2.84.14.18 1.93 2.95 4.75 4.15.66.29 1.17.46 1.57.59.66.21 1.26.18 1.73.11.53-.08 1.6-.65 1.83-1.29.23-.64.23-1.18.16-1.29-.07-.11-.25-.18-.52-.31z"/><path fill="#fff" d="M26.6 5.39A12.55 12.55 0 0 0 16 .07C7.3.07.2 7.16.2 15.86c0 2.8.74 5.54 2.14 7.95L.03 32l8.34-2.19a15.67 15.67 0 0 0 7.63 1.95h.01c8.7 0 15.79-7.09 15.79-15.79a15.68 15.68 0 0 0-5.2-11.58zM16 29.23h-.01a13.18 13.18 0 0 1-6.71-1.85l-.48-.28-4.95 1.3 1.32-4.82-.31-.5a13.16 13.16 0 1 1 11.14 6.14z"/></svg>
   </a>
 
   <!-- Supabase client -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
-    // ⚠️ REMPLACE ces 2 constantes par tes vraies valeurs (publiques)
-    const SUPABASE_URL  = 'https://dzzblqlteirtzyegplgu.supabase.co';
-    const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR6emJscWx0ZWlydHp5ZWdwbGd1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk0MjgyMDgsImV4cCI6MjA3NTAwNDIwOH0.WbjNAjF2qxly8QMu-3VJLPQE88UgzkeAn9XPj0lcb1Y';
+    // ⚠️ Mets tes vraies valeurs ici :
+    const SUPABASE_URL  = 'https://XXXX.supabase.co';
+    const SUPABASE_ANON = 'ey...anon_key...';
 
     const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
     const fmt = n => new Intl.NumberFormat('fr-FR').format(n);
     const $ = s => document.querySelector(s);
     const $$ = s => Array.from(document.querySelectorAll(s));
-
-    // ===== utils =====
     const normalize = s => (s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+
     function formatRemaining(ms){
       if (ms<=0) return 'expiré';
       const sec = Math.floor(ms/1000);
@@ -156,14 +141,12 @@
       return Date.parse(p.publishedAt) + p.expiresAfterDays*86400000;
     }
 
-    // ===== cartes =====
     function cardTpl(p){
       const img = p.image ? `<img src="${p.image}" alt="">` : `<div style="height:180px;background:#f3f3f3"></div>`;
       const tags = (p.cities||[]).slice(0,3).map(c=>`<span class="pill">${c}</span>`).join('');
       const msg = encodeURIComponent(`Bonjour Samiah Cosmetics, je suis intéressé(e) par ${p.title} (${fmt(p.price)} XAF).`);
       const wa = `https://wa.me/23562752105?text=${msg}`;
 
-      // Chrono si <= 1h
       const exp = expiryTs(p);
       let timer = '';
       if (exp){
@@ -185,16 +168,15 @@
             <div class="price">${fmt(p.price)} XAF</div>
             <div class="muted">${p.category||''}</div>
             ${timer}
-            <div class="tags" aria-label="Villes">${tags}</div>
+            <div class="tags">${tags}</div>
             <div class="cta">
-              <a class="btn" href="${wa}" target="_blank" rel="noopener">Commander via WhatsApp</a>
+              <a class="btn" href="${wa}" target="_blank" rel="noopener">WhatsApp</a>
               ${p.image ? `<a class="btn secondary" href="${p.image}" target="_blank" rel="noopener">Voir l’image</a>` : ''}
             </div>
           </div>
         </article>`;
     }
 
-    // ===== filtres =====
     function applyFilters(list){
       const q = normalize($('#q')?.value);
       const cat = ($('#cat')?.value||'');
@@ -210,18 +192,17 @@
       sel.innerHTML = `<option value="">Toutes</option>` + cats.map(c=>`<option>${c}</option>`).join('');
     }
 
-    // ===== auto-complétion =====
-    let ALL = [];
-    let selIndex = -1;
+    // Auto-complétion
+    let ALL = []; let selIndex = -1;
     function buildSuggestions(q){
       if (!q) return [];
       const nq = normalize(q);
       const titles = ALL.map(p=>p.title).filter(Boolean);
       const cats = ALL.map(p=>p.category).filter(Boolean);
-      const uniq = arr => Array.from(new Set(arr));
-      const tMatches = uniq(titles.filter(t=> normalize(t).includes(nq))).slice(0,5).map(t=>({k:t, t:'Titre'}));
-      const cMatches = uniq(cats.filter(c=> normalize(c).includes(nq))).slice(0,5).map(c=>({k:c, t:'Catégorie'}));
-      return [...tMatches, ...cMatches].slice(0,8);
+      const uniq = a => Array.from(new Set(a));
+      const t = uniq(titles.filter(t=> normalize(t).includes(nq))).slice(0,5).map(t=>({k:t,t:'Titre'}));
+      const c = uniq(cats.filter(c=> normalize(c).includes(nq))).slice(0,5).map(c=>({k:c,t:'Catégorie'}));
+      return [...t,...c].slice(0,8);
     }
     function renderSuggest(list){
       const box = $('#q_list');
@@ -232,7 +213,6 @@
     function closeSuggest(){ $('#q_list').classList.remove('show'); selIndex=-1; }
     function useSuggestion(val){ $('#q').value = val; closeSuggest(); renderFromDB(); }
 
-    // ===== rendu =====
     async function fetchVisibleProducts(){
       const { data, error } = await sb
         .from('products')
@@ -243,71 +223,60 @@
         id: p.id, title: p.title, price: p.price, currency: p.currency || 'XAF',
         category: p.category || '', shortDescription: p.short_description || '',
         image: p.image || '', cities: Array.isArray(p.cities)?p.cities:[],
-        active: p.active !== false,
-        publishedAt: p.published_at, expiresAfterDays: p.expires_after_days ?? null
+        active: p.active !== false, publishedAt: p.published_at, expiresAfterDays: p.expires_after_days ?? null
       }));
     }
 
     async function renderFromDB(){
       ALL = await fetchVisibleProducts();
-      const grid = $('#grid'), empty = $('#empty');
       fillCats(ALL);
       const shown = applyFilters(ALL);
+      const grid = $('#grid'), empty = $('#empty');
       if(!shown.length){ grid.innerHTML=''; empty.style.display='block'; }
       else { empty.style.display='none'; grid.innerHTML = shown.map(cardTpl).join(''); }
-      startCountdownLoop();              // lance/relance le chrono
-      wireSuggestions();                 // recalcule la source des suggestions
+      startCountdownLoop();
     }
 
-    // ===== chrono (≤ 1h) =====
-    let timerInterval = null;
+    // Chrono loop
+    let timerInterval=null;
     function startCountdownLoop(){
       if (timerInterval) clearInterval(timerInterval);
-      const update = () => {
+      const update = ()=>{
         const now = Date.now();
         $$('.countdown').forEach(el=>{
           const exp = parseInt(el.getAttribute('data-exp'),10);
           const left = exp - now;
           const tgt = el.querySelector('[data-remaining]');
           if (!tgt) return;
-          if (left<=0){ el.style.display='none'; }  // expiré → badge disparaît
-          else { tgt.textContent = formatRemaining(left); }
+          if (left<=0) el.style.display='none';
+          else tgt.textContent = formatRemaining(left);
         });
       };
-      update();
-      timerInterval = setInterval(update, 1000);
+      update(); timerInterval = setInterval(update, 1000);
     }
 
-    // ===== events UI =====
-    $('#q').addEventListener('input', e=>{
-      const q = e.target.value;
-      renderSuggest(buildSuggestions(q));
-    });
+    // UI events
+    $('#q').addEventListener('input', e=> renderSuggest(buildSuggestions(e.target.value)));
     $('#q').addEventListener('keydown', e=>{
       const box = $('#q_list'); const items = $$('.suggest-item');
       if (!box.classList.contains('show')) return;
-      if (e.key==='ArrowDown'){ selIndex = Math.min(selIndex+1, items.length-1); items.forEach((it,i)=>it.style.background = i===selIndex ? '#f0f0f0' : ''); e.preventDefault(); }
-      else if (e.key==='ArrowUp'){ selIndex = Math.max(selIndex-1, 0); items.forEach((it,i)=>it.style.background = i===selIndex ? '#f0f0f0' : ''); e.preventDefault(); }
-      else if (e.key==='Enter'){ if (selIndex>=0) { const val = items[selIndex].querySelector('.suggest-k').textContent; useSuggestion(val); } else { closeSuggest(); renderFromDB(); } }
+      if (e.key==='ArrowDown'){ selIndex=Math.min(selIndex+1,items.length-1); items.forEach((it,i)=>it.style.background=i===selIndex?'#f0f0f0':''); e.preventDefault(); }
+      else if (e.key==='ArrowUp'){ selIndex=Math.max(selIndex-1,0); items.forEach((it,i)=>it.style.background=i===selIndex?'#f0f0f0':''); e.preventDefault(); }
+      else if (e.key==='Enter'){ if (selIndex>=0){ const val = items[selIndex].querySelector('.suggest-k').textContent; useSuggestion(val); } else { closeSuggest(); renderFromDB(); } }
       else if (e.key==='Escape'){ closeSuggest(); }
     });
     $('#q_list').addEventListener('click', e=>{
       const it = e.target.closest('.suggest-item'); if (!it) return;
       const val = it.querySelector('.suggest-k').textContent; useSuggestion(val);
     });
-    document.addEventListener('click', e=>{
-      if (!e.target.closest('.suggest')) closeSuggest();
-    });
+    document.addEventListener('click', e=>{ if (!e.target.closest('.suggest')) closeSuggest(); });
     $('#cat').addEventListener('change', ()=> renderFromDB());
 
     // 1) premier rendu
     renderFromDB();
-
-    // 2) temps réel : refresh sur insert/update/delete
+    // 2) temps réel
     sb.channel('public:products')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'products' }, payload => {
-        renderFromDB();
-      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'products' }, () => renderFromDB())
       .subscribe();
   </script>
 </body>
