@@ -1,326 +1,128 @@
 <!doctype html>
 <html lang="fr">
 <head>
-  <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>Samiah Cosmetics</title>
-  <meta name="description" content="Cosmétiques & soins capillaires — Consultation en ligne et commande rapide via WhatsApp.">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Samiah Cosmetics — Consultation capillaire & produits</title>
+  <meta name="description" content="Consultation capillaire en ligne et produits cosmétiques. Réservez via WhatsApp." />
 
-  <!-- Polices élégantes -->
-  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <!-- Partage -->
+  <meta property="og:title" content="Samiah Cosmetics — Consultation capillaire & produits">
+  <meta property="og:description" content="Réservez votre consultation capillaire (10 000 F) et découvrez nos shampoings & soins.">
+  <meta property="og:image" content="/assets/images/samiah-C-final-transparent.svg">
 
-  <style>
-    :root{
-      --bg:#fafafa; --text:#111; --muted:#6b7280; --border:#eaeaea;
-      --brand:#6f2432; /* bordeaux de l’affiche */
-    }
-    *{box-sizing:border-box}
-    html,body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
+  <!-- Icônes -->
+  <link rel="icon" href="/assets/images/samiah-C-favicon.svg" type="image/svg+xml">
+  <link rel="mask-icon" href="/safari-pinned-tab.svg" color="#0A0A0A">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <meta name="theme-color" content="#0A0A0A">
 
-    /* Header */
-    header{background:#fff;border-bottom:1px solid var(--border)}
-    .nav{max-width:1200px;margin:0 auto;display:flex;align-items:center;gap:12px;padding:12px 16px}
-    .logo{width:42px;height:42px;border-radius:10px;background:#0A0A0A;display:inline-flex;align-items:center;justify-content:center}
-    .logo svg{width:28px;height:28px}
-    .brand{display:flex;align-items:center;gap:10px}
-    .brand h1{margin:0;font:700 22px "Cormorant Garamond", ui-serif, serif; letter-spacing:.02em}
-
-    .wrap{max-width:1200px;margin:0 auto;padding:20px}
-
-    /* HERO */
-    .hero{display:grid;grid-template-columns:1fr;gap:14px;margin:18px 0 8px}
-    .hero-card{border:1px solid var(--border);border-radius:16px;overflow:hidden;background:#fff}
-    .hero-cta{display:flex;justify-content:flex-end;padding:10px 14px;background:#fff;border-top:1px solid var(--border)}
-    .btn{appearance:none;border:0;border-radius:12px;background:#111;color:#fff;padding:10px 14px;font-weight:700;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:8px}
-    .btn.secondary{background:#1111110d;color:#111;border:1px solid var(--border)}
-
-    /* Filtres */
-    .filters{display:grid;grid-template-columns:1fr 220px;gap:10px;margin:20px 0 12px}
-    @media(max-width:560px){.filters{grid-template-columns:1fr}}
-    input,select{padding:10px;border:1px solid var(--border);border-radius:10px;background:#fff}
-
-    /* Auto-complétion */
-    .suggest{position:relative}
-    .suggest-list{
-      position:absolute; top:100%; left:0; right:0; background:#fff; border:1px solid var(--border);
-      border-radius:12px; box-shadow:0 10px 30px rgba(0,0,0,.06); margin-top:6px; z-index:20; display:none;
-      max-height:240px; overflow:auto;
-    }
-    .suggest-list.show{display:block}
-    .suggest-item{padding:10px 12px; cursor:pointer; display:flex; justify-content:space-between; gap:8px}
-    .suggest-item:hover{background:#f7f7f7}
-    .suggest-k{font-weight:600}
-    .suggest-t{color:var(--muted); font-size:12px}
-
-    /* Grille Produits */
-    .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;align-items:stretch}
-    @media(max-width:1000px){.grid{grid-template-columns:repeat(3,1fr)}}
-    @media(max-width:700px){.grid{grid-template-columns:repeat(2,1fr)}}
-    @media(max-width:460px){.grid{grid-template-columns:1fr}}
-    .card{background:#fff;border:1px solid var(--border);border-radius:14px;overflow:hidden;display:flex;flex-direction:column}
-    .card img{width:100%;height:180px;object-fit:cover;background:#f3f3f3}
-    .card .b{padding:10px}
-    .title{font-weight:700}
-    .price{font-weight:700}
-    .muted{color:#6b7280;font-size:14px}
-    .tags{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
-    .pill{background:#111;color:#fff;padding:4px 8px;border-radius:999px;font-size:12px}
-    .cta{margin-top:8px;display:flex;gap:8px;flex-wrap:wrap}
-
-    /* Badge chrono */
-    .badge-timer{
-      display:inline-flex; align-items:center; gap:6px;
-      padding:4px 8px; border-radius:999px; font-size:12px; font-weight:700;
-      background:#fee2e2; color:#b91c1c; border:1px solid #fecaca;
-      margin:6px 0 0;
-    }
-    .badge-timer svg{width:14px;height:14px}
-
-    .empty{padding:18px;text-align:center;color:var(--muted)}
-
-    /* WhatsApp flottant */
-    .wa-float{
-      position:fixed; right:16px; bottom:16px; width:56px; height:56px; border-radius:9999px;
-      background:#25D366; color:#fff; display:flex; align-items:center; justify-content:center;
-      box-shadow:0 10px 25px rgba(0,0,0,.2); z-index:50; text-decoration:none;
-      transition:transform .15s ease, box-shadow .15s ease;
-    }
-    .wa-float:hover{ transform:translateY(-1px); box-shadow:0 14px 28px rgba(0,0,0,.25); }
-    .wa-float svg{ width:28px; height:28px; }
-
-    /* le SVG du hero s’ajuste au conteneur */
-    .hero-svg{width:100%; height:auto; display:block}
-  </style>
+  <!-- Styles du site -->
+  <link rel="stylesheet" href="/assets/css/styles.css" />
 </head>
 <body>
-  <header>
-    <div class="nav">
-      <span class="logo" title="Samiah">
-        <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-          <circle cx="50" cy="50" r="42" fill="none" stroke="#F5F2EA" stroke-width="6"/>
-          <circle cx="50" cy="50" r="34" fill="none" stroke="#D9B56C" stroke-width="6"/>
-          <g transform="translate(50,50)" fill="none" stroke="#F5F2EA" stroke-width="6" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M0,-14 C4,-24 16,-24 20,-14 C16,-4 4,-4 0,-14Z"/>
-            <path d="M-6,4 C-14,2 -18,8 -13,12 C-7,15 -2,10 -6,4Z"/>
-          </g>
-        </svg>
-      </span>
-      <div class="brand"><h1>Samiah Cosmetics</h1></div>
-      <div style="flex:1"></div>
-      <!-- PAS de bouton Admin ici -->
+  <!-- Bandeau numéro -->
+  <div class="topbar">Numéro WhatsApp : <strong>+235 62 75 21 05</strong></div>
+
+  <!-- En-tête -->
+  <header class="container header">
+    <div class="logo">
+      <img
+        src="/assets/images/samiah-C-final-transparent.svg?v=2"
+        onerror="this.onerror=null;this.src='/assets/images/samiah-C-avatar.svg';"
+        alt="Samiah Cosmetics"
+      />
     </div>
+    <div class="brand">SAMIAH COSMETICS</div>
   </header>
 
-  <main class="wrap">
-    <!-- HERO : affiche vectorielle + bouton Consulter -->
-    <section class="hero" aria-label="Consultation capillaire">
-      <article class="hero-card">
-        <!-- SVG inline : reprend le contenu textuel de ton visuel -->
-        <svg class="hero-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 1280" role="img" aria-label="Affiche Consultation capillaire Samiah">
-          <style>
-            .serif{ font-family:'Cormorant Garamond', ui-serif, Georgia, serif; }
-            .sans{  font-family:'Inter', ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; }
-          </style>
-          <!-- fond rose doux -->
-          <defs>
-            <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0" stop-color="#F8E4EA"/>
-              <stop offset="1" stop-color="#F6DCE5"/>
-            </linearGradient>
-          </defs>
-          <rect width="1080" height="1280" fill="url(#bg)"/>
-
-          <!-- petite fleur en haut -->
-          <g transform="translate(540,80)">
-            <circle r="9" fill="#7a2a3b"/>
-            <g fill="#7a2a3b">
-              <circle cx="0" cy="-30" r="12"/>
-              <circle cx="26" cy="-9" r="12"/>
-              <circle cx="16" cy="22" r="12"/>
-              <circle cx="-16" cy="22" r="12"/>
-              <circle cx="-26" cy="-9" r="12"/>
-            </g>
-          </g>
-
-          <!-- titres principaux -->
-          <text x="540" y="190" class="serif" text-anchor="middle"
-                font-size="110" font-weight="700" fill="#6f2432" letter-spacing=".3px">
-            Consultation
-          </text>
-          <text x="540" y="300" class="serif" text-anchor="middle"
-                font-size="110" font-weight="700" fill="#6f2432" letter-spacing=".3px">
-            Capillaire
-          </text>
-
-          <!-- EN LIGNE + badge prix -->
-          <text x="410" y="380" class="serif" text-anchor="end"
-                font-size="64" font-weight="700" fill="#6f2432" letter-spacing="4px">
-            EN LIGNE
-          </text>
-          <g transform="translate(430,334)">
-            <rect x="0" y="16" rx="30" ry="30" width="230" height="76"
-                  fill="none" stroke="#6f2432" stroke-width="3"/>
-            <text x="115" y="68" class="serif" text-anchor="middle"
-                  font-size="44" font-weight="700" fill="#6f2432">10.000F</text>
-          </g>
-
-          <!-- avec Samiah’Cosmetics -->
-          <text x="540" y="450" class="serif" text-anchor="middle"
-                font-size="48" font-weight="600" fill="#6f2432">
-            avec Samiah’Cosmetics
-          </text>
-
-          <!-- Au programme -->
-          <text x="540" y="540" class="serif" text-anchor="middle"
-                font-size="52" font-weight="700" fill="#6f2432">
-            Au programme:
-          </text>
-
-          <!-- Liste (texte fidèle, puces rondes) -->
-          <g class="sans" fill="#6f2432" font-size="34" font-weight="600">
-            <g transform="translate(130,600)">
-              <circle cx="0" cy="0" r="6"/>
-              <text x="20" y="10">Définition de votre profil capillaire</text>
-            </g>
-            <g transform="translate(130,650)">
-              <circle cx="0" cy="0" r="6"/>
-              <text x="20" y="10">Analyse de vos problèmes capillaires</text>
-            </g>
-            <g transform="translate(130,700)">
-              <circle cx="0" cy="0" r="6"/>
-              <text x="20" y="10">Correction de vos habitudes capillaires</text>
-            </g>
-            <g transform="translate(130,750)">
-              <circle cx="0" cy="0" r="6"/>
-              <text x="20" y="10">Evaluation de votre routine capillaire</text>
-            </g>
-            <g transform="translate(130,800)">
-              <circle cx="0" cy="0" r="6"/>
-              <text x="20" y="10">Mise en place d’une routine saine</text>
-            </g>
-            <g transform="translate(130,850)">
-              <circle cx="0" cy="0" r="6"/>
-              <text x="20" y="10">Gestes et techniques de manipulation</text>
-            </g>
-            <g transform="translate(130,900)">
-              <circle cx="0" cy="0" r="6"/>
-              <text x="20" y="10">Conseils et Astuces sur mesure</text>
-            </g>
-            <g transform="translate(130,970)">
-              <circle cx="0" cy="0" r="6"/>
-              <text x="20" y="10">Réservez dès maintenant via Whatsapp !</text>
-            </g>
-          </g>
-
-          <!-- Signature bas -->
-          <text x="540" y="1200" class="serif" text-anchor="middle"
-                font-size="64" font-weight="700" fill="#6f2432" letter-spacing=".3px">
-            Samiah’cosmetics
-          </text>
-        </svg>
-
-        <div class="hero-cta">
-          <a class="btn" href="https://wa.me/23562752105?text=Bonjour%20Samiah%20Cosmetics%2C%20je%20souhaite%20une%20consultation%20capillaire%20en%20ligne."
-             target="_blank" rel="noopener">Consulter</a>
+  <!-- HERO -->
+  <section class="hero">
+    <div class="container wrap">
+      <div>
+        <h1>Consultation capillaire en ligne</h1>
+        <p>
+          Définition de votre profil, analyse des problèmes, correction des habitudes,
+          mise en place d’une routine saine et conseils sur mesure.
+        </p>
+        <a class="btn gold" target="_blank" rel="noopener"
+           href="https://wa.me/23562752105?text=Bonjour%20Samiah%20Cosmetics%2C%20je%20souhaite%20r%C3%A9server%20une%20consultation%20capillaire%20(10.000F).">
+          Réserver via WhatsApp — 10 000 F
+        </a>
+        <div style="margin-top:10px">
+          <small class="muted">Disponible dans les grandes villes du Tchad. Réponse rapide.</small>
         </div>
-      </article>
-    </section>
-
-    <!-- Filtres catalogue -->
-    <div class="filters">
-      <div class="suggest">
-        <input id="q" placeholder="Recherche (titre, catégorie)…" autocomplete="off">
-        <div id="q_list" class="suggest-list" role="listbox" aria-label="Suggestions"></div>
       </div>
-      <select id="cat"></select>
+
+      <div>
+        <!-- Place ces fichiers dans ton repo :
+             /assets/images/consultation-hero.webp (optionnel)
+             /assets/images/consultation-hero.jpg  (obligatoire)
+        -->
+        <picture>
+          <source srcset="/assets/images/consultation-hero.webp?v=1" type="image/webp">
+          <img
+            src="/assets/images/consultation-hero.jpg?v=1"
+            alt="Consultation capillaire"
+            width="1200" height="1500"
+            loading="eager" decoding="async"
+            style="width:100%;border-radius:16px;border:1px solid #eee;box-shadow:0 10px 30px rgba(0,0,0,.08)"
+          />
+        </picture>
+      </div>
+    </div>
+  </section>
+
+  <!-- Contenu principal -->
+  <main class="container">
+    <h2 class="section-title">Catalogue</h2>
+
+    <div class="filters">
+      <input id="search" class="search" placeholder="Recherche produit..." />
+      <select id="category" title="Catégorie">
+        <option value="Toutes">Toutes les catégories</option>
+      </select>
+      <select id="city" title="Ville">
+        <option>Toutes</option>
+        <option>N’Djamena</option><option>Moundou</option><option>Sarh</option>
+        <option>Abéché</option><option>Bongor</option><option>Kélo</option>
+        <option>Pala</option><option>Koumra</option><option>Faya-Largeau</option>
+      </select>
     </div>
 
-    <!-- Grille produits -->
-    <div id="grid" class="grid" aria-live="polite"></div>
-    <div id="empty" class="empty" style="display:none">Aucun produit pour l’instant.</div>
+    <div id="products-grid" class="grid"></div>
+
+    <h2 class="section-title">Témoignages</h2>
+    <div class="grid">
+      <div class="card">
+        <img src="/assets/images/testimonial.png" alt="Témoignage WhatsApp">
+        <div class="p"><small class="muted">“J’ai testé tes produits... le résultat est incroyable.”</small></div>
+      </div>
+      <div class="card">
+        <img src="/assets/images/shampoos.png" alt="Shampoings">
+        <div class="p"><small class="muted">Shampoings Samiah : nourrissant & antipelliculaire.</small></div>
+      </div>
+      <div class="card">
+        <img src="/assets/images/butter.png" alt="Beurre capillaire">
+        <div class="p"><small class="muted">Beurre capillaire : hydrate et scelle l’humidité.</small></div>
+      </div>
+    </div>
+
+    <h2 class="section-title">Contact</h2>
+    <p>
+      WhatsApp :
+      <a class="btn" target="_blank" rel="noopener" href="https://wa.me/23562752105">
+        +235 62 75 21 05
+      </a>
+    </p>
   </main>
 
-  <!-- WhatsApp flottant -->
-  <a class="wa-float"
-     href="https://wa.me/23562752105?text=Bonjour%20Samiah%20Cosmetics%2C%20j%E2%80%99aimerais%20des%20informations."
-     target="_blank" rel="noopener" aria-label="Contacter Samiah sur WhatsApp">
-    <svg viewBox="0 0 32 32" aria-hidden="true"><path fill="#fff" d="M19.11 17.3c-.27-.14-1.6-.79-1.85-.88-.25-.09-.43-.14-.62.14-.18.27-.71.88-.87 1.06-.16.18-.32.2-.6.07-.27-.14-1.15-.42-2.2-1.34-.81-.72-1.36-1.6-1.52-1.87-.16-.27-.02-.41.12-.55.13-.13.27-.32.41-.48.14-.16.18-.27.27-.45.09-.18.05-.34-.02-.48-.07-.14-.62-1.49-.85-2.05-.22-.52-.44-.45-.62-.46l-.53-.01c-.18 0-.48.07-.73.34-.25.27-.96.94-.96 2.29 0 1.35.98 2.66 1.12 2.84.14.18 1.93 2.95 4.75 4.15.66.29 1.17.46 1.57.59.66.21 1.26.18 1.73.11.53-.08 1.6-.65 1.83-1.29.23-.64.23-1.18.16-1.29-.07-.11-.25-.18-.52-.31z"/><path fill="#fff" d="M26.6 5.39A12.55 12.55 0 0 0 16 .07C7.3.07.2 7.16.2 15.86c0 2.8.74 5.54 2.14 7.95L.03 32l8.34-2.19a15.67 15.67 0 0 0 7.63 1.95h.01c8.7 0 15.79-7.09 15.79-15.79a15.68 15.68 0 0 0-5.2-11.58z"/></svg>
-  </a>
+  <!-- Pied de page -->
+  <footer class="footer">
+    <div class="container">© 2025 Samiah Cosmetics — N’Djamena, Tchad</div>
+  </footer>
 
-  <!-- Supabase -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script>
-    /* ⚠️ Mets tes vraies valeurs ici */
-    const SUPABASE_URL  = 'https://XXXX.supabase.co';
-    const SUPABASE_ANON = 'ey...anon_key...';
-
-    const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
-    const fmt = n => new Intl.NumberFormat('fr-FR').format(n);
-    const $ = s => document.querySelector(s);
-    const $$ = s => Array.from(document.querySelectorAll(s));
-    const normalize = s => (s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
-
-    function formatRemaining(ms){ if(ms<=0) return 'expiré'; const sec=Math.floor(ms/1000); const h=Math.floor(sec/3600), m=Math.floor((sec%3600)/60), s=sec%60; if(h>0) return `${h}h ${m}m ${s}s`; if(m>0) return `${m}m ${s}s`; return `${s}s`; }
-    function expiryTs(p){ if(!p.publishedAt||!p.expiresAfterDays||p.expiresAfterDays<=0) return null; return Date.parse(p.publishedAt)+p.expiresAfterDays*86400000; }
-
-    function cardTpl(p){
-      const img = p.image ? `<img src="${p.image}" alt="">` : `<div style="height:180px;background:#f3f3f3"></div>`;
-      const tags = (p.cities||[]).slice(0,3).map(c=>`<span class="pill">${c}</span>`).join('');
-      const msg = encodeURIComponent(`Bonjour Samiah Cosmetics, je suis intéressé(e) par ${p.title} (${fmt(p.price)} XAF).`);
-      const wa = `https://wa.me/23562752105?text=${msg}`;
-      const exp = expiryTs(p);
-      let timer=''; if(exp){ const left=exp-Date.now(); if(left>0 && left<=3600000){ timer = `<span class="badge-timer countdown" data-exp="${exp}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 2h10v2H7V2zm5 4a8 8 0 100 16 8 8 0 000-16zm0 2a6 6 0 110 12A6 6 0 0112 8zm-.5 2v4.25l3.5 2.1-.75 1.23L10 15V10h1.5z" fill="#b91c1c"/></svg><span>Se termine dans <b data-remaining>${formatRemaining(left)}</b></span></span>`; } }
-      return `<article class="card">${img}<div class="b"><div class="title">${p.title}</div><div class="price">${fmt(p.price)} XAF</div><div class="muted">${p.category||''}</div>${timer}<div class="tags">${tags}</div><div class="cta"><a class="btn" href="${wa}" target="_blank" rel="noopener">WhatsApp</a>${p.image?`<a class="btn secondary" href="${p.image}" target="_blank" rel="noopener">Voir l’image</a>`:''}</div></div></article>`;
-    }
-
-    function applyFilters(list){ const q=normalize($('#q')?.value), cat=$('#cat')?.value||''; return list.filter(p=>{const okQ=!q||normalize(p.title+' '+(p.category||'')).includes(q); const okC=!cat||p.category===cat; return okQ&&okC;}); }
-    function fillCats(list){ const sel=$('#cat'); const cats=Array.from(new Set(list.map(p=>p.category).filter(Boolean))).sort(); sel.innerHTML=`<option value="">Toutes</option>`+cats.map(c=>`<option>${c}</option>`).join(''); }
-
-    // auto-complétion
-    let ALL=[]; let selIndex=-1;
-    function buildSuggestions(q){ if(!q) return []; const nq=normalize(q); const titles=[...new Set(ALL.map(p=>p.title).filter(Boolean))]; const cats=[...new Set(ALL.map(p=>p.category).filter(Boolean))]; const t=titles.filter(t=>normalize(t).includes(nq)).slice(0,5).map(t=>({k:t,t:'Titre'})); const c=cats.filter(c=>normalize(c).includes(nq)).slice(0,5).map(c=>({k:c,t:'Catégorie'})); return [...t,...c].slice(0,8); }
-    function renderSuggest(list){ const box=$('#q_list'); if(!list.length){box.classList.remove('show'); box.innerHTML=''; selIndex=-1; return;} box.innerHTML=list.map((it,i)=>`<div class="suggest-item" role="option" data-i="${i}"><span class="suggest-k">${it.k}</span><span class="suggest-t">${it.t}</span></div>`).join(''); box.classList.add('show'); selIndex=-1; }
-    function closeSuggest(){ $('#q_list').classList.remove('show'); selIndex=-1; }
-    function useSuggestion(v){ $('#q').value=v; closeSuggest(); renderFromDB(); }
-
-    async function fetchVisibleProducts(){
-      const { data, error } = await sb.from('products').select('id,title,price,currency,category,short_description,image,cities,active,published_at,expires_after_days').order('published_at',{ascending:false});
-      if(error){ console.error(error); return []; }
-      return data.map(p=>({ id:p.id, title:p.title, price:p.price, currency:p.currency||'XAF', category:p.category||'', shortDescription:p.short_description||'', image:p.image||'', cities:Array.isArray(p.cities)?p.cities:[], active:p.active!==false, publishedAt:p.published_at, expiresAfterDays:p.expires_after_days??null }));
-    }
-
-    async function renderFromDB(){
-      ALL = await fetchVisibleProducts();
-      fillCats(ALL);
-      const shown = applyFilters(ALL);
-      const grid=$('#grid'), empty=$('#empty');
-      if(!shown.length){ grid.innerHTML=''; empty.style.display='block'; }
-      else{ empty.style.display='none'; grid.innerHTML = shown.map(cardTpl).join(''); }
-      startCountdownLoop();
-    }
-
-    // chrono
-    let timerInterval=null;
-    function startCountdownLoop(){ if(timerInterval) clearInterval(timerInterval); const update=()=>{ const now=Date.now(); $$('.countdown').forEach(el=>{ const exp=parseInt(el.getAttribute('data-exp'),10); const left=exp-now; const tgt=el.querySelector('[data-remaining]'); if(!tgt) return; if(left<=0) el.style.display='none'; else tgt.textContent=formatRemaining(left); }); }; update(); timerInterval=setInterval(update,1000); }
-
-    // events
-    $('#q').addEventListener('input', e=> renderSuggest(buildSuggestions(e.target.value)));
-    $('#q').addEventListener('keydown', e=>{
-      const box=$('#q_list'); const items=$$('.suggest-item'); if(!box.classList.contains('show')) return;
-      if(e.key==='ArrowDown'){ selIndex=Math.min(selIndex+1,items.length-1); items.forEach((it,i)=>it.style.background=i===selIndex?'#f0f0f0':''); e.preventDefault();}
-      else if(e.key==='ArrowUp'){ selIndex=Math.max(selIndex-1,0); items.forEach((it,i)=>it.style.background=i===selIndex?'#f0f0f0':''); e.preventDefault();}
-      else if(e.key==='Enter'){ if(selIndex>=0){ const val=items[selIndex].querySelector('.suggest-k').textContent; useSuggestion(val);} else { closeSuggest(); renderFromDB(); } }
-      else if(e.key==='Escape'){ closeSuggest(); }
-    });
-    $('#q_list').addEventListener('click', e=>{ const it=e.target.closest('.suggest-item'); if(!it) return; const val=it.querySelector('.suggest-k').textContent; useSuggestion(val); });
-    document.addEventListener('click', e=>{ if(!e.target.closest('.suggest')) closeSuggest(); });
-    $('#cat').addEventListener('change', ()=> renderFromDB());
-
-    // rendu + realtime
-    renderFromDB();
-    sb.channel('public:products')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'products' }, () => renderFromDB())
-      .subscribe();
-  </script>
+  <!-- JS du site (module ES pour activer Supabase Realtime) -->
+  <script type="module" src="/assets/js/script.js"></script>
 </body>
 </html>
