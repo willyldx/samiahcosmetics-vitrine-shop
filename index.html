@@ -5,8 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Samiah Cosmetics — Consultation capillaire & produits</title>
 
-  <!-- SEO de base -->
-  <meta name="description" content="Consultation capillaire en ligne et produits cosmétiques. Réservez via WhatsApp." />
+  <!-- SEO -->
+  <meta name="description" content="Consultation capillaire en ligne et produits cosmétiques. Réservez via WhatsApp.">
   <meta property="og:title" content="Samiah Cosmetics — Consultation capillaire & produits">
   <meta property="og:description" content="Réservez votre consultation capillaire (10 000 F) et découvrez nos shampoings & soins.">
   <meta property="og:image" content="/assets/images/samiah-C-final-transparent.svg">
@@ -17,10 +17,10 @@
   <link rel="apple-touch-icon" href="/apple-touch-icon.png">
   <meta name="theme-color" content="#0A0A0A">
 
-  <!-- Styles globaux de ton site -->
+  <!-- Styles globaux -->
   <link rel="stylesheet" href="/assets/css/styles.css" />
 
-  <!-- Styles spécifiques (bouton WhatsApp + modal fiche produit) -->
+  <!-- Styles spécifiques (bouton WhatsApp + modale produit) -->
   <style>
     /* Bouton WhatsApp flottant */
     .wa-float{
@@ -32,25 +32,24 @@
     }
     .wa-float svg{ width: 28px; height: 28px; fill: currentColor }
 
-    /* Modal fiche produit (galerie) */
-    .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);display:none;z-index:1000}
-    .modal{position:fixed;inset:0;display:none;align-items:center;justify-content:center;z-index:1001}
-    .modal.open,.modal-overlay.open{display:flex}
-    .modal-card{background:#fff;max-width:980px;width:94%;border-radius:16px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.25)}
-    .modal-head{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-bottom:1px solid #eee}
-    .modal-body{display:grid;grid-template-columns:1.1fr .9fr;gap:16px;padding:14px}
-    @media(max-width:900px){.modal-body{grid-template-columns:1fr}}
-    .gal-main{border:1px solid #eee;border-radius:12px;overflow:hidden;display:flex;align-items:center;justify-content:center;background:#fff;aspect-ratio:4/3}
-    .gal-main img{max-width:100%;max-height:100%;display:block}
-    .gal-thumbs{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
-    .gal-thumbs img{width:72px;height:72px;object-fit:cover;border:1px solid #eee;border-radius:8px;cursor:pointer}
-    .modal .btn{appearance:none;border:0;border-radius:10px;background:#0A0A0A;color:#fff;padding:10px 14px;font-weight:700;cursor:pointer;text-decoration:none;display:inline-block}
-    .modal .btn.secondary{background:#1111110d;color:#111;border:1px solid #eaeaea}
-    .modal .muted{color:#6b7280}
-    .modal .price{font-weight:800;font-size:20px}
+    /* Modale fiche produit (pm*) */
+    #productModal{position:fixed;inset:0;background:rgba(0,0,0,.5);display:none;align-items:center;justify-content:center;padding:18px;z-index:80}
+    #productModal.show{display:flex}
+    .pm-card{background:#fff;border:1px solid #eaeaea;border-radius:16px;box-shadow:0 20px 60px rgba(0,0,0,.15);max-width:980px;width:100%;overflow:hidden;margin:auto}
+    .pm-head{display:flex;justify-content:flex-end;padding:8px}
+    .pm-wrap{display:grid;grid-template-columns:1.1fr .9fr;gap:18px;padding:12px 18px}
+    .pm-slides{position:relative;overflow:hidden;border:1px solid #eee;border-radius:12px;background:#fafafa;min-height:300px}
+    .pm-slides img{width:100%;height:420px;object-fit:cover;display:none}
+    .pm-slides img.active{display:block}
+    .pm-dots{display:flex;gap:6px;justify-content:center;margin-top:8px}
+    .pm-dots button{width:8px;height:8px;border-radius:999px;border:0;background:#ddd;cursor:pointer}
+    .pm-dots button.active{background:#111}
+    .pm-badge{background:#111;color:#fff;border-radius:999px;padding:4px 10px;font-size:12px}
+    @media(max-width:900px){.pm-wrap{grid-template-columns:1fr}}
   </style>
 </head>
 <body>
+
   <!-- Header -->
   <header class="container header">
     <div class="logo">
@@ -98,7 +97,10 @@
         <option>Bongor</option><option>Kélo</option><option>Pala</option><option>Koumra</option><option>Faya-Largeau</option>
       </select>
     </div>
+
+    <!-- Grille + message vide -->
     <div id="products-grid" class="grid"></div>
+    <div id="emptyMsg" class="empty" style="display:none">Aucun produit pour l’instant.</div>
 
     <!-- Témoignages -->
     <h2 class="section-title">Témoignages</h2>
@@ -110,9 +112,7 @@
 
     <!-- Contact (sans numéro affiché) -->
     <h2 class="section-title">Contact</h2>
-    <p>
-      <a class="btn" target="_blank" rel="noopener" href="https://wa.me/23562752105">Contacter sur WhatsApp</a>
-    </p>
+    <p><a class="btn" target="_blank" rel="noopener" href="https://wa.me/23562752105">Contacter sur WhatsApp</a></p>
   </main>
 
   <!-- Footer -->
@@ -127,76 +127,39 @@
     </svg>
   </a>
 
-  <!-- ========= MODAL FICHE PRODUIT (galerie) ========= -->
-  <div id="overlay" class="modal-overlay"></div>
-  <div id="productModal" class="modal" aria-hidden="true" role="dialog">
-    <div class="modal-card" role="document">
-      <div class="modal-head">
-        <div id="mTitle" style="font-weight:800">Titre du produit</div>
-        <button id="mClose" class="btn secondary">Fermer</button>
+  <!-- ===== Modale fiche produit (IDs pm*) ===== -->
+  <div id="productModal" aria-hidden="true" role="dialog" aria-label="Fiche produit">
+    <div class="pm-card">
+      <div class="pm-head">
+        <button id="pmClose" class="pm-close" aria-label="Fermer"
+                style="appearance:none;border:0;background:transparent;font-size:26px;line-height:26px;padding:6px 10px;cursor:pointer">×</button>
       </div>
-      <div class="modal-body">
-        <div>
-          <div class="gal-main"><img id="mMain" src="/assets/images/placeholder.png" alt=""></div>
-          <div id="mThumbs" class="gal-thumbs"></div>
+      <div class="pm-wrap">
+        <div class="pm-view">
+          <div id="pmSlides" class="pm-slides"></div>
+          <div class="pm-nav" style="position:absolute;top:50%;left:0;right:0;display:flex;justify-content:space-between;transform:translateY(-50%);pointer-events:none">
+            <button id="pmPrev" aria-label="Image précédente" style="pointer-events:auto;appearance:none;border:0;background:#00000088;color:#fff;width:38px;height:38px;border-radius:999px;cursor:pointer">‹</button>
+            <button id="pmNext" aria-label="Image suivante" style="pointer-events:auto;appearance:none;border:0;background:#00000088;color:#fff;width:38px;height:38px;border-radius:999px;cursor:pointer">›</button>
+          </div>
+          <div id="pmDots" class="pm-dots"></div>
         </div>
-        <div class="meta">
-          <div id="mPrice" class="price">—</div>
-          <div id="mCat" class="muted" style="margin-top:4px">—</div>
-          <div id="mDesc" style="margin-top:8px"></div>
-          <div id="mCities" class="muted" style="margin-top:8px"></div>
-          <div class="modal-actions" style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
-            <a id="mWhatsApp" class="btn" target="_blank" rel="noopener">Commander via WhatsApp</a>
-            <button id="mPrev" class="btn secondary">⟨ Préc</button>
-            <button id="mNext" class="btn secondary">Suiv ⟩</button>
+        <div class="pm-info">
+          <h3 id="pmTitle" class="pm-title" style="margin:0 0 6px;font-size:22px"></h3>
+          <div id="pmPrice" class="pm-price" style="font-weight:700;margin-bottom:4px"></div>
+          <div id="pmBadges" class="pm-badges" style="display:flex;gap:8px;flex-wrap:wrap;margin:10px 0"></div>
+          <p id="pmDesc" class="pm-desc" style="color:#444;margin-top:10px"></p>
+          <div id="pmCities" class="pm-meta" style="color:#6b7280;margin-top:10px;font-size:14px"></div>
+          <div style="margin-top:14px;display:flex;gap:10px;flex-wrap:wrap">
+            <a id="pmWhatsApp" class="btn gold" target="_blank" rel="noopener">Commander via WhatsApp</a>
+            <button id="pmClose2" class="btn secondary">Fermer</button>
           </div>
         </div>
       </div>
     </div>
   </div>
-  <!-- ========= FIN MODAL ========= -->
+  <!-- ===== Fin modale ===== -->
 
-  <!-- JS vitrine (Supabase + galerie + realtime) -->
+  <!-- JS (version module) -->
   <script type="module" src="/assets/js/script.js"></script>
-<!-- === Modal fiche produit (ID exact requis) === -->
-<div id="productModal" aria-hidden="true" role="dialog" aria-label="Fiche produit" style="display:none">
-  <div class="pm-card" style="background:#fff;border:1px solid #eaeaea;border-radius:16px;box-shadow:0 20px 60px rgba(0,0,0,.15);max-width:980px;width:100%;overflow:hidden;margin:auto">
-    <div class="pm-head" style="display:flex;justify-content:flex-end;padding:8px">
-      <button id="pmClose" class="pm-close" aria-label="Fermer" style="appearance:none;border:0;background:transparent;font-size:26px;line-height:26px;padding:6px 10px;cursor:pointer">×</button>
-    </div>
-    <div class="pm-wrap" style="display:grid;grid-template-columns:1.1fr .9fr;gap:18px;padding:12px 18px">
-      <div class="pm-view" style="position:relative">
-        <div id="pmSlides" class="pm-slides" style="position:relative;overflow:hidden;border:1px solid #eee;border-radius:12px;background:#fafafa;min-height:300px"></div>
-        <div class="pm-nav" style="position:absolute;top:50%;left:0;right:0;display:flex;justify-content:space-between;transform:translateY(-50%);pointer-events:none">
-          <button id="pmPrev" aria-label="Image précédente" style="pointer-events:auto;appearance:none;border:0;background:#00000088;color:#fff;width:38px;height:38px;border-radius:999px;cursor:pointer">‹</button>
-          <button id="pmNext" aria-label="Image suivante" style="pointer-events:auto;appearance:none;border:0;background:#00000088;color:#fff;width:38px;height:38px;border-radius:999px;cursor:pointer">›</button>
-        </div>
-        <div id="pmDots" class="pm-dots" style="display:flex;gap:6px;justify-content:center;margin-top:8px"></div>
-      </div>
-      <div class="pm-info">
-        <h3 id="pmTitle" class="pm-title" style="margin:0 0 6px;font-size:22px"></h3>
-        <div id="pmPrice" class="pm-price" style="font-weight:700;margin-bottom:4px"></div>
-        <div id="pmBadges" class="pm-badges" style="display:flex;gap:8px;flex-wrap:wrap;margin:10px 0"></div>
-        <p id="pmDesc" class="pm-desc" style="color:#444;margin-top:10px"></p>
-        <div id="pmCities" class="pm-meta" style="color:#6b7280;margin-top:10px;font-size:14px"></div>
-        <div style="margin-top:14px;display:flex;gap:10px;flex-wrap:wrap">
-          <a id="pmWhatsApp" class="btn gold" target="_blank" rel="noopener">Commander via WhatsApp</a>
-          <button id="pmClose2" class="btn secondary">Fermer</button>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- Overlay du modal -->
-<style>
-  #productModal{position:fixed;inset:0;background:rgba(0,0,0,.5);display:none;align-items:center;justify-content:center;padding:18px;z-index:80}
-  #productModal.show{display:flex}
-  .pm-slides img{width:100%;height:420px;object-fit:cover;display:none}
-  .pm-slides img.active{display:block}
-  .pm-dots button{width:8px;height:8px;border-radius:999px;border:0;background:#ddd;cursor:pointer}
-  .pm-dots button.active{background:#111}
-  .pm-badge{background:#111;color:#fff;border-radius:999px;padding:4px 10px;font-size:12px}
-  @media(max-width:900px){.pm-wrap{grid-template-columns:1fr}}
-</style>
+</body>
 </html>
