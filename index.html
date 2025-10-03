@@ -4,120 +4,89 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Samiah Cosmetics — Consultation capillaire & produits</title>
-  <meta name="description" content="Consultation capillaire en ligne et produits cosmétiques. Réservez via WhatsApp." />
 
-  <!-- Partage -->
+  <!-- SEO de base -->
+  <meta name="description" content="Consultation capillaire en ligne et produits cosmétiques. Réservez via WhatsApp." />
   <meta property="og:title" content="Samiah Cosmetics — Consultation capillaire & produits">
   <meta property="og:description" content="Réservez votre consultation capillaire (10 000 F) et découvrez nos shampoings & soins.">
   <meta property="og:image" content="/assets/images/samiah-C-final-transparent.svg">
 
-  <!-- Icônes -->
-  <link rel="icon" href="/assets/images/samiah-C-favicon.svg" type="image/svg+xml">
+  <!-- Favicons -->
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml" sizes="any">
   <link rel="mask-icon" href="/safari-pinned-tab.svg" color="#0A0A0A">
   <link rel="apple-touch-icon" href="/apple-touch-icon.png">
   <meta name="theme-color" content="#0A0A0A">
 
-  <!-- Styles globaux -->
+  <!-- Styles globaux de ton site -->
   <link rel="stylesheet" href="/assets/css/styles.css" />
 
-  <!-- Styles bouton WhatsApp flottant + HERO image solide -->
+  <!-- Styles spécifiques (bouton WhatsApp + modal fiche produit) -->
   <style>
+    /* Bouton WhatsApp flottant */
     .wa-float{
-      position:fixed;
-      right:max(16px, env(safe-area-inset-right));
-      bottom:max(16px, env(safe-area-inset-bottom));
-      width:56px;height:56px;border-radius:9999px;
-      background:#25D366;color:#fff;
-      display:flex;align-items:center;justify-content:center;
-      box-shadow:0 10px 25px rgba(0,0,0,.2);
-      z-index:1000;text-decoration:none;transition:transform .15s ease, box-shadow .15s ease;
+      position: fixed; right: 18px; bottom: 18px; z-index: 999;
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 56px; height: 56px; border-radius: 999px;
+      background: #25D366; color: #fff; text-decoration: none;
+      box-shadow: 0 10px 30px rgba(0,0,0,.2);
     }
-    .wa-float:hover{ transform:translateY(-1px); box-shadow:0 14px 28px rgba(0,0,0,.25); }
-    .wa-float svg{ width:28px;height:28px; }
+    .wa-float svg{ width: 28px; height: 28px; fill: currentColor }
 
-    /* HERO colonne droite en fond CSS : aucune déformation possible */
-    .hero-photo{
-      border:1px solid #eee; border-radius:16px; box-shadow:0 10px 30px rgba(0,0,0,.08);
-      background-color:#fff;
-      background-position:center; background-repeat:no-repeat;
-      background-size:contain;      /* montre toute l’affiche, sans recadrer */
-      aspect-ratio:3/4;             /* ratio type affiche (ajuste si besoin) */
-      min-height:320px;
-      width:100%;
-    }
-    @media (min-width:900px){ .hero-photo{ min-height:540px; } }
+    /* Modal fiche produit (galerie) */
+    .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);display:none;z-index:1000}
+    .modal{position:fixed;inset:0;display:none;align-items:center;justify-content:center;z-index:1001}
+    .modal.open,.modal-overlay.open{display:flex}
+    .modal-card{background:#fff;max-width:980px;width:94%;border-radius:16px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.25)}
+    .modal-head{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-bottom:1px solid #eee}
+    .modal-body{display:grid;grid-template-columns:1.1fr .9fr;gap:16px;padding:14px}
+    @media(max-width:900px){.modal-body{grid-template-columns:1fr}}
+    .gal-main{border:1px solid #eee;border-radius:12px;overflow:hidden;display:flex;align-items:center;justify-content:center;background:#fff;aspect-ratio:4/3}
+    .gal-main img{max-width:100%;max-height:100%;display:block}
+    .gal-thumbs{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+    .gal-thumbs img{width:72px;height:72px;object-fit:cover;border:1px solid #eee;border-radius:8px;cursor:pointer}
+    .modal .btn{appearance:none;border:0;border-radius:10px;background:#0A0A0A;color:#fff;padding:10px 14px;font-weight:700;cursor:pointer;text-decoration:none;display:inline-block}
+    .modal .btn.secondary{background:#1111110d;color:#111;border:1px solid #eaeaea}
+    .modal .muted{color:#6b7280}
+    .modal .price{font-weight:800;font-size:20px}
   </style>
 </head>
 <body>
-  <!-- (Supprimé) Bandeau numéro -->
-
-  <!-- En-tête -->
+  <!-- Header -->
   <header class="container header">
     <div class="logo">
       <img
         src="/assets/images/samiah-C-final-transparent.svg?v=2"
         onerror="this.onerror=null;this.src='/assets/images/samiah-C-avatar.svg';"
-        alt="Samiah Cosmetics"
-      />
+        alt="Samiah Cosmetics" />
     </div>
     <div class="brand">SAMIAH COSMETICS</div>
   </header>
 
-  <!-- HERO -->
+  <!-- Hero -->
   <section class="hero">
     <div class="container wrap">
       <div>
         <h1>Consultation capillaire en ligne</h1>
-        <p>
-          Définition de votre profil, analyse des problèmes, correction des habitudes,
-          mise en place d’une routine saine et conseils sur mesure.
-        </p>
+        <p>Définition de votre profil, analyse des problèmes, correction des habitudes, mise en place d’une routine saine et conseils sur mesure.</p>
         <a class="btn gold" target="_blank" rel="noopener"
            href="https://wa.me/23562752105?text=Bonjour%20Samiah%20Cosmetics%2C%20je%20souhaite%20r%C3%A9server%20une%20consultation%20capillaire%20(10.000F).">
           Réserver via WhatsApp — 10 000 F
         </a>
-        <div style="margin-top:10px">
-          <small class="muted">Disponible dans les grandes villes du Tchad. Réponse rapide.</small>
-        </div>
+        <div style="margin-top:10px"><small class="muted">Disponible dans les grandes villes du Tchad. Réponse rapide.</small></div>
       </div>
-
       <div>
-        <!-- Image robuste : fond CSS + auto-détection du bon fichier -->
-        <div id="heroPhoto" class="hero-photo" role="img" aria-label="Consultation capillaire"></div>
-        <script>
-          (function(){
-            const el = document.getElementById('heroPhoto');
-            // Essaye ces chemins/extensions (avec/sans slash) + cache-buster ?v=6
-            const pics = [
-              'assets/images/consultation-hero.jpg?v=6',
-              '/assets/images/consultation-hero.jpg?v=6',
-              'assets/images/consultation-hero.jpeg?v=6',
-              '/assets/images/consultation-hero.jpeg?v=6',
-              'assets/images/consultation-hero.png?v=6',
-              '/assets/images/consultation-hero.png?v=6',
-              'assets/images/flyer.png?v=6',
-              '/assets/images/flyer.png?v=6'
-            ];
-            (async function pick(){
-              for(const url of pics){
-                try{
-                  const r = await fetch(url, { method:'HEAD', cache:'no-store' });
-                  if(r.ok){ el.style.backgroundImage = `url('${url}')`; return; }
-                }catch(e){}
-              }
-              // ultime secours (placeholder)
-              el.style.backgroundImage = "url('/assets/images/placeholder.png')";
-            })();
-          })();
-        </script>
+        <img
+          src="/assets/images/consultation-hero.jpg?v=1"
+          alt="Consultation capillaire"
+          onerror="this.onerror=null;this.src='/assets/images/flyer.png';"
+          style="width:100%;border-radius:16px;border:1px solid #eee;box-shadow:0 10px 30px rgba(0,0,0,.08)"/>
       </div>
     </div>
   </section>
 
-  <!-- Contenu principal -->
+  <!-- Catalogue -->
   <main class="container">
     <h2 class="section-title">Catalogue</h2>
-
     <div class="filters">
       <input id="search" class="search" placeholder="Recherche produit..." />
       <select id="category" title="Catégorie">
@@ -125,53 +94,69 @@
       </select>
       <select id="city" title="Ville">
         <option>Toutes</option>
-        <option>N’Djamena</option><option>Moundou</option><option>Sarh</option>
-        <option>Abéché</option><option>Bongor</option><option>Kélo</option>
-        <option>Pala</option><option>Koumra</option><option>Faya-Largeau</option>
+        <option>N’Djamena</option><option>Moundou</option><option>Sarh</option><option>Abéché</option>
+        <option>Bongor</option><option>Kélo</option><option>Pala</option><option>Koumra</option><option>Faya-Largeau</option>
       </select>
     </div>
-
     <div id="products-grid" class="grid"></div>
 
+    <!-- Témoignages -->
     <h2 class="section-title">Témoignages</h2>
     <div class="grid">
-      <div class="card">
-        <img src="/assets/images/testimonial.png" alt="Témoignage WhatsApp">
-        <div class="p"><small class="muted">“J’ai testé tes produits... le résultat est incroyable.”</small></div>
-      </div>
-      <div class="card">
-        <img src="/assets/images/shampoos.png" alt="Shampoings">
-        <div class="p"><small class="muted">Shampoings Samiah : nourrissant & antipelliculaire.</small></div>
-      </div>
-      <div class="card">
-        <img src="/assets/images/butter.png" alt="Beurre capillaire">
-        <div class="p"><small class="muted">Beurre capillaire : hydrate et scelle l’humidité.</small></div>
-      </div>
+      <div class="card"><img src="/assets/images/testimonial.png" alt="Témoignage WhatsApp"><div class="p"><small class="muted">“J’ai testé tes produits... le résultat est incroyable.”</small></div></div>
+      <div class="card"><img src="/assets/images/shampoos.png" alt="Shampoings"><div class="p"><small class="muted">Shampoings Samiah : nourrissant & antipelliculaire.</small></div></div>
+      <div class="card"><img src="/assets/images/butter.png" alt="Beurre capillaire"><div class="p"><small class="muted">Beurre capillaire : hydrate et scelle l’humidité.</small></div></div>
     </div>
 
+    <!-- Contact (sans numéro affiché) -->
     <h2 class="section-title">Contact</h2>
     <p>
-      <!-- On retire le numéro, on garde seulement le bouton -->
-      <a class="btn" target="_blank" rel="noopener"
-         href="https://wa.me/23562752105?text=Bonjour%20Samiah%20Cosmetics%2C%20j%E2%80%99aimerais%20des%20informations.">
-        Contacter sur WhatsApp
-      </a>
+      <a class="btn" target="_blank" rel="noopener" href="https://wa.me/23562752105">Contacter sur WhatsApp</a>
     </p>
   </main>
 
-  <!-- Pied de page -->
+  <!-- Footer -->
   <footer class="footer">
     <div class="container">© 2025 Samiah Cosmetics — N’Djamena, Tchad</div>
   </footer>
 
   <!-- Bouton WhatsApp flottant -->
-  <a class="wa-float"
-     href="https://wa.me/23562752105?text=Bonjour%20Samiah%20Cosmetics%2C%20j%E2%80%99aimerais%20des%20informations."
-     target="_blank" rel="noopener" aria-label="Contacter Samiah sur WhatsApp">
-    <svg viewBox="0 0 32 32" aria-hidden="true"><path fill="#fff" d="M19.11 17.3c-.27-.14-1.6-.79-1.85-.88-.25-.09-.43-.14-.62.14-.18.27-.71.88-.87 1.06-.16.18-.32.2-.6.07-.27-.14-1.15-.42-2.2-1.34-.81-.72-1.36-1.6-1.52-1.87-.16-.27-.02-.41.12-.55.13-.13.27-.32.41-.48.14-.16.18-.27.27-.45.09-.18.05-.34-.02-.48-.07-.14-.62-1.49-.85-2.05-.22-.52-.44-.45-.62-.46l-.53-.01c-.18 0-.48.07-.73.34-.25.27-.96.94-.96 2.29 0 1.35.98 2.66 1.12 2.84.14.18 1.93 2.95 4.75 4.15.66.29 1.17.46 1.57.59.66.21 1.26.18 1.73.11.53-.08 1.6-.65 1.83-1.29.23-.64.23-1.18.16-1.29-.07-.11-.25-.18-.52-.31z"/><path fill="#fff" d="M26.6 5.39A12.55 12.55 0 0 0 16 .07C7.3.07.2 7.16.2 15.86c0 2.8.74 5.54 2.14 7.95L.03 32l8.34-2.19a15.67 15.67 0 0 0 7.63 1.95h.01c8.7 0 15.79-7.09 15.79-15.79a15.68 15.68 0 0 0-5.2-11.58z"/></svg>
+  <a class="wa-float" href="https://wa.me/23562752105" target="_blank" rel="noopener" aria-label="WhatsApp">
+    <svg viewBox="0 0 32 32" aria-hidden="true">
+      <path d="M19.11 17.31c-.28-.14-1.64-.81-1.89-.9-.25-.09-.43-.14-.62.14-.18.28-.71.9-.86 1.08-.16.18-.32.2-.6.07-.28-.14-1.18-.43-2.25-1.37-.83-.74-1.39-1.65-1.55-1.93-.16-.28-.02-.43.12-.57.12-.12.28-.32.41-.49.14-.16.18-.28.28-.46.09-.18.05-.35-.02-.49-.07-.14-.62-1.49-.85-2.04-.22-.53-.45-.46-.62-.46h-.53c-.18 0-.46.07-.7.35-.25.28-.96.94-.96 2.29s.98 2.66 1.12 2.85c.14.18 1.93 2.95 4.67 4.02.65.28 1.16.45 1.56.58.65.2 1.25.17 1.72.1.53-.08 1.64-.67 1.87-1.31.23-.64.23-1.19.16-1.31-.07-.12-.25-.2-.53-.34zM16 3C9.38 3 4 8.38 4 15c0 2.12.55 4.1 1.52 5.83L4 29l8.35-1.49A11.9 11.9 0 0 0 16 27c6.62 0 12-5.38 12-12S22.62 3 16 3z"/>
+    </svg>
   </a>
 
-  <!-- JS du site (module ES pour activer Supabase Realtime) -->
+  <!-- ========= MODAL FICHE PRODUIT (galerie) ========= -->
+  <div id="overlay" class="modal-overlay"></div>
+  <div id="productModal" class="modal" aria-hidden="true" role="dialog">
+    <div class="modal-card" role="document">
+      <div class="modal-head">
+        <div id="mTitle" style="font-weight:800">Titre du produit</div>
+        <button id="mClose" class="btn secondary">Fermer</button>
+      </div>
+      <div class="modal-body">
+        <div>
+          <div class="gal-main"><img id="mMain" src="/assets/images/placeholder.png" alt=""></div>
+          <div id="mThumbs" class="gal-thumbs"></div>
+        </div>
+        <div class="meta">
+          <div id="mPrice" class="price">—</div>
+          <div id="mCat" class="muted" style="margin-top:4px">—</div>
+          <div id="mDesc" style="margin-top:8px"></div>
+          <div id="mCities" class="muted" style="margin-top:8px"></div>
+          <div class="modal-actions" style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
+            <a id="mWhatsApp" class="btn" target="_blank" rel="noopener">Commander via WhatsApp</a>
+            <button id="mPrev" class="btn secondary">⟨ Préc</button>
+            <button id="mNext" class="btn secondary">Suiv ⟩</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- ========= FIN MODAL ========= -->
+
+  <!-- JS vitrine (Supabase + galerie + realtime) -->
   <script type="module" src="/assets/js/script.js"></script>
 </body>
 </html>
