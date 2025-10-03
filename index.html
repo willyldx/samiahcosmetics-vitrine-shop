@@ -158,5 +158,34 @@
 
   <!-- JS vitrine (Supabase + galerie + realtime) -->
   <script type="module" src="/assets/js/script.js"></script>
+<!-- Modal fiche produit -->
+<div id="productModal" aria-hidden="true" role="dialog" aria-label="Fiche produit">
+  <div class="pm-card">
+    <div class="pm-head">
+      <button id="pmClose" class="pm-close" aria-label="Fermer">×</button>
+    </div>
+    <div class="pm-wrap">
+      <div class="pm-view">
+        <div id="pmSlides" class="pm-slides"></div>
+        <div class="pm-nav">
+          <button id="pmPrev" aria-label="Image précédente">‹</button>
+          <button id="pmNext" aria-label="Image suivante">›</button>
+        </div>
+        <div id="pmDots" class="pm-dots"></div>
+      </div>
+      <div class="pm-info">
+        <h3 id="pmTitle" class="pm-title"></h3>
+        <div id="pmPrice" class="pm-price"></div>
+        <div id="pmBadges" class="pm-badges"></div>
+        <p id="pmDesc" class="pm-desc"></p>
+        <div id="pmCities" class="pm-meta"></div>
+        <div style="margin-top:14px;display:flex;gap:10px;flex-wrap:wrap">
+          <a id="pmWhatsApp" class="btn gold" target="_blank" rel="noopener">Commander sur WhatsApp</a>
+          <button id="pmClose2" class="btn secondary">Fermer</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
 </body>
 </html>
