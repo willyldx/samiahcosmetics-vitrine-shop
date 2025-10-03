@@ -145,7 +145,15 @@
               </div>
             </label>
           </div>
-
+          <!-- GALERIE (optionnel) -->
+<div style="grid-column:1 / -1">
+  <label>Photos supplémentaires (optionnel)<br/>
+    <input type="file" id="gh_multi" accept="image/*" multiple>
+    <button type="button" class="btn secondary" id="gh_multi_send">Téléverser images</button>
+    <small class="muted">Tu peux sélectionner plusieurs images (≤ 8 Mo chacune). iPhone OK.</small>
+  </label>
+  <div id="galleryPrev" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px"></div>
+</div>
           <!-- Expiration & Actif -->
           <div>
             <label>Expire dans (jours) — optionnel<br/>
@@ -198,273 +206,302 @@
   <div class="toast" id="toast">Enregistré</div>
 
   <script>
-    // ========= utilitaires =========
-    const fmt = n => new Intl.NumberFormat('fr-FR').format(n);
-    let items = [], editing = null;
-    const $ = s => document.querySelector(s), $$ = s => Array.from(document.querySelectorAll(s));
-    const els = { q:$('#q'), cat:$('#catFilter'), tbody:$('#tbl tbody'), empty:$('#empty'),
-      f_title:$('#f_title'), f_price:$('#f_price'), f_category:$('#f_category'),
-      f_id:$('#f_id'), f_desc:$('#f_desc'), f_image:$('#f_image'), f_cities:$('#f_cities'),
-      f_expDays:$('#f_expDays'), f_active:$('#f_active'),
-      formTitle:$('#formTitle'), del:$('#del'), toast:$('#toast') };
+  // ========= utilitaires =========
+  const fmt = n => new Intl.NumberFormat('fr-FR').format(n);
+  let items = [], editing = null, currentGallery = [];
+  const $ = s => document.querySelector(s), $$ = s => Array.from(document.querySelectorAll(s));
+  const els = {
+    q:$('#q'), cat:$('#catFilter'), tbody:$('#tbl tbody'), empty:$('#empty'),
+    f_title:$('#f_title'), f_price:$('#f_price'), f_category:$('#f_category'),
+    f_id:$('#f_id'), f_desc:$('#f_desc'), f_image:$('#f_image'), f_cities:$('#f_cities'),
+    f_expDays:$('#f_expDays'), f_active:$('#f_active'),
+    toast:$('#toast'),
+    gh_file:$('#gh_uploader'), gh_btn:$('#gh_send'),
+    gh_multi:$('#gh_multi'), gh_multi_btn:$('#gh_multi_send'), galleryPrev:$('#galleryPrev'),
+  };
 
-    function slugify(s){return (s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'');}
-    function show(txt){ els.toast.textContent=txt; els.toast.classList.add('show'); setTimeout(()=>els.toast.classList.remove('show'),1700); }
-    function escapeHtml(s){return (''+s).replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
-    async function readResp(resp){ const ct=resp.headers.get('content-type')||''; if(ct.includes('application/json')){try{return await resp.json();}catch{}} const t=await resp.text(); return {__text:t}; }
-    function stamp(){ const d=new Date(); return d.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit',second:'2-digit'}); }
+  function slugify(s){return (s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'');}
+  function show(txt){ els.toast.textContent=txt; els.toast.classList.add('show'); setTimeout(()=>els.toast.classList.remove('show'),1700); }
+  function escapeHtml(s){return (''+s).replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]);}
+  async function readResp(resp){ const ct=resp.headers.get('content-type')||''; if(ct.includes('application/json')){try{return await resp.json();}catch{}} const t=await resp.text(); return {__text:t}; }
+  function stamp(){ const d=new Date(); return d.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit',second:'2-digit'}); }
 
-    // Helpers UI pour boutons
-    function setBtnLoading(btn, labelEl, loadingText){ btn.dataset.prev=(labelEl.textContent||''); btn.disabled=true; labelEl.textContent=loadingText; }
-    function setBtnDone(btn, labelEl, finalText='Terminé'){ labelEl.textContent=finalText; setTimeout(()=>{ labelEl.textContent=btn.dataset.prev||labelEl.textContent; btn.disabled=false;},1200); }
-    function setBtnIdle(btn, labelEl){ labelEl.textContent = btn.dataset.prev || labelEl.textContent; btn.disabled=false; }
+  // Helpers UI bouton
+  function setBtnLoading(btn, labelOrBtn, txt){ btn.dataset.prev=(labelOrBtn.textContent||btn.textContent||''); btn.disabled=true; (labelOrBtn.textContent!==undefined?labelOrBtn:btn).textContent=txt; }
+  function setBtnDone(btn, labelOrBtn, final='Terminé'){ (labelOrBtn.textContent!==undefined?labelOrBtn:btn).textContent=final; setTimeout(()=>{ (labelOrBtn.textContent!==undefined?labelOrBtn:btn).textContent=(btn.dataset.prev||''); btn.disabled=false;},1200); }
+  function setBtnIdle(btn, labelOrBtn){ (labelOrBtn.textContent!==undefined?labelOrBtn:btn).textContent = btn.dataset.prev || (labelOrBtn.textContent||btn.textContent); btn.disabled=false; }
 
-    // ========= chargement =========
-    async function load(){
-      ensureAdminSecret();
-      try{
-        const secret = getAdminSecret();
-        const r = await fetch('/api/admin/list-products', { headers: { 'x-admin-secret': secret } });
-        const j = await r.json();
-        items = Array.isArray(j.items) ? j.items : [];
-      }catch{ items = []; }
-      fillCats(); render(); bindOnce();
-    }
-
-    function fillCats(){
-      const cats = Array.from(new Set(items.map(p=>p.category).filter(Boolean))).sort();
-      $('#catFilter').innerHTML = '<option value="">Toutes</option>' + cats.map(c=>`<option>${c}</option>`).join('');
-    }
-
-    function render(){
-      const q = ($('#q')?.value||'').toLowerCase(), cat = ($('#catFilter')?.value||'');
-      const data = items.filter(p=> ((p.title+' '+(p.category||'')).toLowerCase().includes(q)) && (!cat || p.category===cat));
-      els.tbody.innerHTML = data.map((p,i)=>rowTpl(p,i)).join('');
-      els.empty.style.display = data.length?'none':'block';
-    }
-
-    function rowTpl(p,i){
-      const cities=(p.cities||[]).slice(0,3).join(', ')+((p.cities||[]).length>3?'…':'');
-      const img = p.image? `<img src="${p.image}" alt="" style="width:60px;height:40px;object-fit:cover;border:1px solid #eee;border-radius:6px">` : '<span class="muted">—</span>';
-      return `<tr data-i="${i}">
-        <td>${escapeHtml(p.title||'')}</td>
-        <td>${fmt(p.price||0)} XAF</td>
-        <td>${escapeHtml(p.category||'')}</td>
-        <td>${escapeHtml(cities)}</td>
-        <td>${img}</td>
-        <td class="actions">
-          <button class="btn secondary" onclick="edit(${i})">Éditer</button>
-          <button class="btn" style="background:#b42318" onclick="removeItem(${i})">Supprimer</button>
-        </td>
-      </tr>`;
-    }
-
-    function edit(i){
-      const p=items[i]; editing=i; els.formTitle.textContent='Modifier le produit'; els.del.style.display='';
-      els.f_title.value=p.title||''; els.f_price.value=p.price||0; els.f_category.value=p.category||''; els.f_id.value=p.id||'';
-      els.f_desc.value=p.shortDescription||''; els.f_image.value=p.image||'';
-      els.f_active.checked = (p.active !== false);
-      els.f_expDays.value = (typeof p.expiresAfterDays === 'number') ? p.expiresAfterDays : '';
-      Array.from(els.f_cities.options).forEach(o=>o.selected=(p.cities||[]).includes(o.value));
-      updatePreviewThumb(p.image||'');
-      updateWAPreview(); window.scrollTo({top:0,behavior:'smooth'});
-    }
-
-    async function removeItem(i){
-      const p = items[i];
-      if(!confirm('Supprimer ce produit ?')) return;
-      try{
-        const secret = getAdminSecret();
-        if (p?.id && secret){
-          await fetch('/api/admin/delete-product', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'x-admin-secret': secret },
-            body: JSON.stringify({ id: p.id })
-          });
-        }
-      }catch(e){ /* ignore */ }
-      items.splice(i,1);
-      editing=null;
-      render();
-      show('Produit supprimé');
-    }
-
-    let bound = false;
-    function bindOnce(){
-      if(bound) return; bound = true;
-      $('#q').oninput = $('#catFilter').onchange = render;
-      $$('#f_title,#f_price,#f_category,#f_id,#f_desc,#f_expDays,#f_cities,#f_active').forEach(el=>el.addEventListener('input',updateWAPreview));
-      $('#save').onclick=save; $('#reset').onclick=reset; els.del.onclick=()=>{ if(editing!=null){ removeItem(editing); reset(); } };
-
-      // Publier
-      const pubBtn = document.getElementById('publishBtn');
-      const pubLabel = document.getElementById('pubLabel');
-      const pubStatus = document.getElementById('pubStatus');
-      pubBtn.onclick = () => publishToBackend(pubBtn, pubLabel, pubStatus);
-
-      // Rafraîchir
-      document.getElementById('refreshBtn').onclick = () => { load(); show('Rechargé'); };
-
-      // Upload image
-      document.getElementById('gh_send').onclick=uploadToGitHub;
-
-      // Menu ⋯
-      const menuBtn = document.getElementById('menuBtn');
-      const menu    = document.getElementById('menu');
-      const miChange= document.getElementById('miChangeSecret');
-      const miLogout= document.getElementById('miLogout');
-      const openMenu=()=>{menu.classList.add('open');menuBtn.setAttribute('aria-expanded','true');menu.setAttribute('aria-hidden','false');};
-      const closeMenu=()=>{menu.classList.remove('open');menuBtn.setAttribute('aria-expanded','false');menu.setAttribute('aria-hidden','true');};
-      const toggleMenu=()=> menu.classList.contains('open')?closeMenu():openMenu();
-      menuBtn.addEventListener('click', e=>{ e.stopPropagation(); toggleMenu(); });
-      document.addEventListener('click', e=>{ if(!menu.contains(e.target) && e.target!==menuBtn) closeMenu(); });
-      document.addEventListener('keydown', e=>{ if(e.key==='Escape') closeMenu(); });
-      miChange.addEventListener('click', ()=>{ closeMenu(); changeAdminSecret(); });
-      miLogout.addEventListener('click', ()=>{ closeMenu(); logoutAdmin(); });
-
-      // Popup publication
-      const pubModal = $('#pubModal');
-      const pubClose = $('#pubClose');
-      pubClose.onclick = ()=> hideModal(pubModal);
-      pubModal.addEventListener('click', e=>{ if(e.target===pubModal) hideModal(pubModal); });
-      document.addEventListener('keydown', e=>{ if(e.key==='Escape') hideModal(pubModal); });
-    }
-
-    function selectedCities(){ return Array.from(els.f_cities.selectedOptions).map(o=>o.value); }
-
-    function save(){
-      const nowIso = new Date().toISOString();
-      const expDays = parseInt((els.f_expDays?.value || '').trim(), 10);
-
-      const p = {
-        id: (els.f_id.value||slugify(els.f_title.value)).trim(),
-        title: els.f_title.value.trim(),
-        price: parseInt(els.f_price.value||'0',10),
-        currency:'XAF',
-        category: els.f_category.value.trim(),
-        shortDescription: els.f_desc.value.trim(),
-        image: els.f_image.value.trim(),
-        cities: selectedCities(),
-        active: els.f_active.checked,
-        expiresAfterDays: isNaN(expDays) ? null : expDays,
-        publishedAt: items[editing]?.publishedAt || nowIso
-      };
-      if(!p.title){ alert('Titre requis'); return; }
-      if(isNaN(p.price)){ alert('Prix invalide'); return; }
-
-      if(editing!=null){ items[editing]=p; show('Produit mis à jour'); }
-      else { items.unshift(p); show('Produit ajouté'); }
-
-      reset(false); render();
-    }
-
-    function reset(clear=true){
-      editing=null; els.formTitle.textContent='Nouveau produit'; els.del.style.display='none';
-      if(clear){
-        els.f_title.value=els.f_price.value=els.f_category.value=els.f_id.value=els.f_desc.value=els.f_image.value='';
-        els.f_active.checked=true; els.f_expDays.value=''; updatePreviewThumb('');
-        Array.from(els.f_cities.options).forEach(o=>o.selected=false);
-      }
-      updateWAPreview();
-    }
-
-    function updateWAPreview(){
-      const title=els.f_title.value||'Nom du produit';
-      const price=els.f_price.value? fmt(parseInt(els.f_price.value,10))+' XAF' : 'Prix à préciser';
-      $('#waPreview').textContent = `Bonjour Samiah Cosmetics, je suis intéressé(e) par ${title} (${price}).`;
-    }
-
-    function updatePreviewThumb(url){
-      const wrap = document.getElementById('img_wrap');
-      const img  = document.getElementById('img_preview');
-      if(url){ img.src=url; wrap.style.display='block'; }
-      else { img.removeAttribute('src'); wrap.style.display='none'; }
-    }
-
-    // ========= admin secret =========
-    const SECRET_KEY='samiah_admin_secret';
-    function getAdminSecret(){ return localStorage.getItem(SECRET_KEY) || ''; }
-    function ensureAdminSecret(){ if(!getAdminSecret()){ changeAdminSecret(); } }
-    function changeAdminSecret(){
-      const current = getAdminSecret();
-      const v = prompt('Code admin ?', current ? '••••••' : '');
-      if(v && v!=='••••••'){ localStorage.setItem(SECRET_KEY, v.trim()); show('Code enregistré'); }
-    }
-    function logoutAdmin(){ localStorage.removeItem(SECRET_KEY); show('Déconnecté'); setTimeout(()=>location.reload(),400); }
-
-    // ========= popup helpers =========
-    function showModal(m){ m.classList.add('show'); m.setAttribute('aria-hidden','false'); }
-    function hideModal(m){ m.classList.remove('show'); m.setAttribute('aria-hidden','true'); }
-
-    // ========= publier vers la DB (API) =========
-    async function publishToBackend(pubBtn, pubLabel, pubStatus){
+  // ========= chargement =========
+  async function load(){
+    ensureAdminSecret();
+    try{
       const secret = getAdminSecret();
-      if(!secret){ changeAdminSecret(); return; }
-      try{
-        setBtnLoading(pubBtn, pubLabel, 'Publication…');
-        const resp = await fetch('/api/admin/save-products', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'x-admin-secret': secret },
-          body: JSON.stringify({ products: items })
-        });
-        const out = await readResp(resp);
-        if (!resp.ok){ throw new Error(out?.error || out?.__text || resp.statusText); }
-        show('Publié ✅'); setBtnDone(pubBtn, pubLabel, 'Publié ✅');
-        if (pubStatus) pubStatus.textContent = `Dernière publication : ${stamp()}`;
-        showModal(document.getElementById('pubModal'));
-      }catch(e){
-        setBtnIdle(pubBtn, pubLabel);
-        alert('Échec publication: ' + e.message);
-      }
-    }
+      const r = await fetch('/api/admin/list-products', { headers: { 'x-admin-secret': secret } });
+      const j = await r.json();
+      items = Array.isArray(j.items) ? j.items : [];
+    }catch{ items = []; }
+    fillCats(); render(); bind();
+  }
 
-    // ========= Upload image (vers stockage via /api/upload-image) =========
-    const MAX_MB = 8; // 8 Mo
-    function fileToBase64(file){
-      return new Promise((resolve,reject)=>{
-        const r=new FileReader();
-        r.onload=()=>{ const s=(r.result||'').toString(); resolve(s.includes(',')?s.split(',')[1]:s); };
-        r.onerror=reject; r.readAsDataURL(file);
-      });
-    }
-    async function uploadToGitHub(){
-      const upBtn = document.getElementById('gh_send');
-      const f = document.getElementById('gh_uploader').files[0];
-      if(!f){ alert('Choisis une image'); return; }
-      if (f.size > MAX_MB*1024*1024){ alert('Image trop lourde (> '+MAX_MB+' Mo).'); return; }
+  function fillCats(){
+    const cats = Array.from(new Set(items.map(p=>p.category).filter(Boolean))).sort();
+    $('#catFilter').innerHTML = '<option value="">Toutes</option>' + cats.map(c=>`<option>${c}</option>`).join('');
+  }
 
-      const secret = getAdminSecret(); if(!secret){ changeAdminSecret(); return; }
+  function render(){
+    const q = ($('#q')?.value||'').toLowerCase(), cat = ($('#catFilter')?.value||'');
+    const data = items.filter(p=> ((p.title+' '+(p.category||'')).toLowerCase().includes(q)) && (!cat || p.category===cat));
+    els.tbody.innerHTML = data.map((p,i)=>rowTpl(p,i)).join('');
+    els.empty.style.display = data.length?'none':'block';
+  }
 
-      try{
-        upBtn.disabled = true; upBtn.textContent = 'Téléversement…';
+  function rowTpl(p,i){
+    const cities=(p.cities||[]).slice(0,3).join(', ')+((p.cities||[]).length>3?'…':'');
+    const img = p.image? `<img src="${p.image}" alt="" style="width:60px;height:40px;object-fit:cover;border:1px solid #eee;border-radius:6px">` : '<span class="muted">—</span>';
+    const gal = p.gallery?.length ? `<span class="muted">+${p.gallery.length} photos</span>` : '';
+    return `<tr data-i="${i}">
+      <td>${escapeHtml(p.title||'')}</td>
+      <td>${fmt(p.price||0)} XAF</td>
+      <td>${escapeHtml(p.category||'')}</td>
+      <td>${escapeHtml(cities)}</td>
+      <td>${img} ${gal}</td>
+      <td class="actions">
+        <button class="btn secondary" onclick="edit(${i})">Éditer</button>
+        <button class="btn" style="background:#b42318" onclick="removeItem(${i})">Supprimer</button>
+      </td>
+    </tr>`;
+  }
 
-        const base64 = await fileToBase64(f);
+  // ————— Galerie (UI) —————
+  function renderGallery(){
+    const box = els.galleryPrev;
+    if (!box) return;
+    box.innerHTML = (currentGallery||[]).map((u,idx)=>`
+      <div style="position:relative">
+        <img src="${u}" alt="" style="width:70px;height:70px;object-fit:cover;border:1px solid #eee;border-radius:8px">
+        <button type="button" title="Retirer" onclick="removeGal(${idx})"
+          style="position:absolute;top:-6px;right:-6px;border:0;background:#b42318;color:#fff;width:22px;height:22px;border-radius:999px;cursor:pointer">×</button>
+      </div>`).join('');
+  }
+  window.removeGal = (i)=>{ currentGallery.splice(i,1); renderGallery(); };
+
+  function fileToBase64(file){
+    return new Promise((resolve,reject)=>{
+      const r=new FileReader();
+      r.onload=()=>{ const s=(r.result||'').toString(); resolve(s.includes(',')?s.split(',')[1]:s); };
+      r.onerror=reject; r.readAsDataURL(file);
+    });
+  }
+
+  async function uploadMain(){
+    const f = els.gh_file?.files?.[0];
+    if(!f){ alert('Choisis une image'); return; }
+    if (f.size > 8*1024*1024){ alert('Image trop lourde (>8 Mo)'); return; }
+    const secret = getAdminSecret(); if(!secret){ changeAdminSecret(); return; }
+    try{
+      setBtnLoading(els.gh_btn, els.gh_btn, 'Téléversement…');
+      const b64 = await fileToBase64(f);
+      const ext = (f.name.split('.').pop()||'jpg').toLowerCase().replace(/[^a-z0-9]/g,'')||'jpg';
+      const base = (els.f_title.value || f.name.replace(/\.[^.]+$/,'') || 'image').toLowerCase();
+      const name = `${Date.now()}-${slugify(base)}.${ext}`;
+      const r = await fetch('/api/upload-image',{method:'POST',headers:{'Content-Type':'application/json','x-admin-secret':secret},body:JSON.stringify({filename:name,contentBase64:b64})});
+      const out = await readResp(r);
+      if(!r.ok) throw new Error(out?.error || out?.__text || r.statusText);
+      els.f_image.value = out.siteUrl;
+      show('Image envoyée ✅'); setBtnDone(els.gh_btn, els.gh_btn, 'Téléversé ✅');
+    }catch(e){ setBtnIdle(els.gh_btn, els.gh_btn); alert('Erreur upload: '+e.message); }
+  }
+
+  async function uploadMultiple(){
+    const files = Array.from(els.gh_multi?.files||[]);
+    if(!files.length){ alert('Sélectionne 1 ou plusieurs images'); return; }
+    const secret = getAdminSecret(); if(!secret){ changeAdminSecret(); return; }
+    els.gh_multi_btn.disabled = true; els.gh_multi_btn.textContent = 'Envoi…';
+
+    try{
+      for (const f of files){
+        if (f.size > 8*1024*1024) { alert(`"${f.name}" dépasse 8 Mo`); continue; }
+        const b64 = await fileToBase64(f);
         const ext = (f.name.split('.').pop()||'jpg').toLowerCase().replace(/[^a-z0-9]/g,'')||'jpg';
         const base = (els.f_title.value || f.name.replace(/\.[^.]+$/,'') || 'image').toLowerCase();
         const name = `${Date.now()}-${slugify(base)}.${ext}`;
+        const r = await fetch('/api/upload-image',{method:'POST',headers:{'Content-Type':'application/json','x-admin-secret':secret},body:JSON.stringify({filename:name,contentBase64:b64})});
+        const out = await readResp(r);
+        if (!r.ok) throw new Error(out?.error || out?.__text || r.statusText);
+        currentGallery.push(out.siteUrl);
+        renderGallery();
+      }
+      show('Photos téléversées ✅');
+    }catch(e){
+      alert('Erreur envoi: '+e.message);
+    }finally{
+      els.gh_multi_btn.disabled = false; els.gh_multi_btn.textContent = 'Téléverser images';
+      els.gh_multi.value = '';
+    }
+  }
 
-        const resp = await fetch('/api/upload-image', {
+  // ========= édition =========
+  window.edit = function(i){
+    const p=items[i]; editing=i;
+    $('#formTitle').textContent='Modifier le produit'; $('#del').style.display='';
+    els.f_title.value=p.title||''; els.f_price.value=p.price||0; els.f_category.value=p.category||''; els.f_id.value=p.id||'';
+    els.f_desc.value=p.shortDescription||''; els.f_image.value=p.image||'';
+    els.f_active.checked = (p.active !== false);
+    els.f_expDays.value = (typeof p.expiresAfterDays === 'number') ? p.expiresAfterDays : '';
+    Array.from(els.f_cities.options).forEach(o=>o.selected=(p.cities||[]).includes(o.value));
+    currentGallery = Array.isArray(p.gallery)? [...p.gallery] : [];
+    renderGallery();
+    updateWAPreview(); window.scrollTo({top:0,behavior:'smooth'});
+  };
+
+  async function removeItem(i){
+    const p = items[i];
+    if(!confirm('Supprimer ce produit ?')) return;
+    try{
+      const secret = getAdminSecret();
+      if (p?.id && secret){
+        await fetch('/api/admin/delete-product', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'x-admin-secret': secret },
-          body: JSON.stringify({ filename:name, contentBase64:base64 })
+          body: JSON.stringify({ id: p.id })
         });
-        const out = await readResp(resp);
-        if (!resp.ok){ throw new Error(out?.error || out?.details || out?.__text || resp.statusText); }
-
-        els.f_image.value = out.siteUrl;     // ex: /assets/uploads/...
-        updatePreviewThumb(out.siteUrl);     // voir tout de suite
-        show('Image envoyée ✅');
-        upBtn.textContent = 'Téléversé ✅';
-        setTimeout(()=>{ upBtn.textContent='Téléverser'; upBtn.disabled=false; }, 1200);
-
-      }catch(e){
-        upBtn.textContent='Téléverser'; upBtn.disabled=false;
-        alert('Erreur upload: ' + e.message);
       }
-    }
+    }catch(e){ /* ignore */ }
+    items.splice(i,1); editing=null; render(); show('Produit supprimé');
+  }
+  window.removeItem = removeItem;
 
-    // Lancer
-    load();
-  </script>
+  function selectedCities(){ return Array.from(els.f_cities.selectedOptions).map(o=>o.value); }
+
+  function save(){
+    const nowIso = new Date().toISOString();
+    const expDays = parseInt((els.f_expDays?.value || '').trim(), 10);
+
+    const p = {
+      id: (els.f_id.value||slugify(els.f_title.value)).trim(),
+      title: els.f_title.value.trim(),
+      price: parseInt(els.f_price.value||'0',10),
+      currency:'XAF',
+      category: els.f_category.value.trim(),
+      shortDescription: els.f_desc.value.trim(),
+      image: els.f_image.value.trim(),
+      cities: selectedCities(),
+      active: els.f_active.checked,
+      expiresAfterDays: isNaN(expDays) ? null : expDays,
+      publishedAt: items[editing]?.publishedAt || nowIso,
+      gallery: currentGallery.slice(),
+    };
+    if(!p.title){ alert('Titre requis'); return; }
+    if(isNaN(p.price)){ alert('Prix invalide'); return; }
+    if(editing!=null){ items[editing]=p; show('Produit mis à jour'); } else { items.unshift(p); show('Produit ajouté'); }
+    reset(false); render();
+  }
+
+  function reset(clear=true){
+    editing=null; $('#formTitle').textContent='Nouveau produit'; $('#del').style.display='none';
+    if(clear){
+      els.f_title.value=els.f_price.value=els.f_category.value=els.f_id.value=els.f_desc.value=els.f_image.value='';
+      els.f_active.checked=true; els.f_expDays.value='';
+      Array.from(els.f_cities.options).forEach(o=>o.selected=false);
+    }
+    currentGallery = []; renderGallery();
+    updateWAPreview();
+  }
+
+  function updateWAPreview(){
+    const title=els.f_title.value||'Nom du produit';
+    const price=els.f_price.value? fmt(parseInt(els.f_price.value,10))+' XAF' : 'Prix à préciser';
+    $('#waPreview').textContent = `Bonjour Samiah Cosmetics, je suis intéressé(e) par ${title} (${price}).`;
+  }
+
+  // ========= admin secret =========
+  const SECRET_KEY='samiah_admin_secret';
+  function getAdminSecret(){ return localStorage.getItem(SECRET_KEY) || ''; }
+  function ensureAdminSecret(){ if(!getAdminSecret()){ changeAdminSecret(); } }
+  function changeAdminSecret(){
+    const current = getAdminSecret();
+    const v = prompt('Code admin ?', current ? '••••••' : '');
+    if(v && v!=='••••••'){ localStorage.setItem(SECRET_KEY, v.trim()); show('Code enregistré'); }
+  }
+  function logoutAdmin(){ localStorage.removeItem(SECRET_KEY); show('Déconnecté'); setTimeout(()=>location.reload(),400); }
+
+  // ========= publier vers la DB =========
+  async function publishToBackend(pubBtn, pubLabel, pubStatus){
+    const secret = getAdminSecret();
+    if(!secret){ changeAdminSecret(); return; }
+    try{
+      setBtnLoading(pubBtn, pubLabel, 'Publication…');
+      // 1) produits
+      let resp = await fetch('/api/admin/save-products', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-admin-secret': secret },
+        body: JSON.stringify({ products: items })
+      });
+      let out = await readResp(resp);
+      if (!resp.ok) throw new Error(out?.error || out?.__text || resp.statusText);
+
+      // 2) galeries (en une fois)
+      const galleries = items
+        .filter(p => Array.isArray(p.gallery) && p.gallery.length)
+        .map(p => ({ productId: p.id, urls: p.gallery }));
+
+      if (galleries.length){
+        resp = await fetch('/api/admin/save-gallery', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'x-admin-secret': secret },
+          body: JSON.stringify({ galleries })
+        });
+        out = await readResp(resp);
+        if (!resp.ok) throw new Error(out?.error || out?.__text || resp.statusText);
+      }
+
+      show('Publié ✅'); setBtnDone(pubBtn, pubLabel, 'Publié ✅');
+      if (pubStatus) pubStatus.textContent = `Dernière publication : ${stamp()}`;
+      showModal($('#pubModal'));
+    }catch(e){
+      setBtnIdle(pubBtn, pubLabel);
+      alert('Échec publication: ' + e.message);
+    }
+  }
+
+  // ========= Popup & menu (inchangé) =========
+  function showModal(m){ m.classList.add('show'); m.setAttribute('aria-hidden','false'); }
+  function hideModal(m){ m.classList.remove('show'); m.setAttribute('aria-hidden','true'); }
+
+  function bind(){
+    $('#q').oninput = $('#catFilter').onchange = render;
+    $$('input,textarea,select').forEach(el=>el.addEventListener('input',updateWAPreview));
+    $('#save').onclick=save; $('#reset').onclick=reset; $('#del').onclick=()=>{ if(editing!=null){ removeItem(editing); reset(); } };
+
+    const pubBtn = document.getElementById('publishBtn');
+    const pubLabel = document.getElementById('pubLabel');
+    const pubStatus = document.getElementById('pubStatus');
+    pubBtn.onclick = () => publishToBackend(pubBtn, pubLabel, pubStatus);
+
+    els.gh_btn?.addEventListener('click', uploadMain);
+    els.gh_multi_btn?.addEventListener('click', uploadMultiple);
+
+    const menuBtn = document.getElementById('menuBtn');
+    const menu    = document.getElementById('menu');
+    const miChange= document.getElementById('miChangeSecret');
+    const miLogout= document.getElementById('miLogout');
+    const openMenu=()=>{menu.classList.add('open');menuBtn.setAttribute('aria-expanded','true');menu.setAttribute('aria-hidden','false');};
+    const closeMenu=()=>{menu.classList.remove('open');menuBtn.setAttribute('aria-expanded','false');menu.setAttribute('aria-hidden','true');};
+    const toggleMenu=()=> menu.classList.contains('open')?closeMenu():openMenu();
+    menuBtn.addEventListener('click', e=>{ e.stopPropagation(); toggleMenu(); });
+    document.addEventListener('click', e=>{ if(!menu.contains(e.target) && e.target!==menuBtn) closeMenu(); });
+    document.addEventListener('keydown', e=>{ if(e.key==='Escape') closeMenu(); });
+    miChange.addEventListener('click', ()=>{ closeMenu(); changeAdminSecret(); });
+    miLogout.addEventListener('click', ()=>{ closeMenu(); logoutAdmin(); });
+
+    const pubModal = $('#pubModal');
+    const pubClose = $('#pubClose');
+    pubClose.onclick = ()=> hideModal(pubModal);
+    pubModal.addEventListener('click', e=>{ if(e.target===pubModal) hideModal(pubModal); });
+    document.addEventListener('keydown', e=>{ if(e.key==='Escape') hideModal(pubModal); });
+  }
+
+  load();
+</script>
 </body>
 </html>
