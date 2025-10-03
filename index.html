@@ -19,37 +19,6 @@
 
   <!-- Styles globaux -->
   <link rel="stylesheet" href="/assets/css/styles.css" />
-
-  <!-- Styles spécifiques (bouton WhatsApp + modale) -->
-  <style>
-    /* Bouton WhatsApp flottant */
-    .wa-float{
-      position: fixed; right: 18px; bottom: 18px; z-index: 999;
-      display: inline-flex; align-items: center; justify-content: center;
-      width: 56px; height: 56px; border-radius: 999px;
-      background: #25D366; color: #fff; text-decoration: none;
-      box-shadow: 0 10px 30px rgba(0,0,0,.2);
-    }
-    .wa-float svg{ width: 28px; height: 28px; fill: currentColor }
-
-    /* Modale produit (IDs m*) */
-    .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);display:none;z-index:1000}
-    .modal-overlay.open{display:block}
-    .modal{position:fixed;inset:0;display:none;align-items:center;justify-content:center;z-index:1001}
-    .modal.open{display:flex}
-    .modal-card{background:#fff;max-width:980px;width:94%;border-radius:16px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.25)}
-    .modal-head{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-bottom:1px solid #eee}
-    .modal-body{display:grid;grid-template-columns:1.1fr .9fr;gap:16px;padding:14px}
-    @media(max-width:900px){.modal-body{grid-template-columns:1fr}}
-    .gal-main{border:1px solid #eee;border-radius:12px;overflow:hidden;display:flex;align-items:center;justify-content:center;background:#fff;aspect-ratio:4/3}
-    .gal-main img{max-width:100%;max-height:100%;display:block}
-    .gal-thumbs{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
-    .gal-thumbs img{width:72px;height:72px;object-fit:cover;border:1px solid #eee;border-radius:8px;cursor:pointer}
-    .modal .btn{appearance:none;border:0;border-radius:10px;background:#0A0A0A;color:#fff;padding:10px 14px;font-weight:700;cursor:pointer;text-decoration:none;display:inline-block}
-    .modal .btn.secondary{background:#1111110d;color:#111;border:1px solid #eaeaea}
-    .modal .muted{color:#6b7280}
-    .modal .price{font-weight:800;font-size:20px}
-  </style>
 </head>
 <body>
 
@@ -101,7 +70,6 @@
       </select>
     </div>
 
-    <!-- Grille + message vide -->
     <div id="products-grid" class="grid"></div>
     <div id="emptyMsg" class="empty" style="display:none">Aucun produit pour l’instant.</div>
 
@@ -124,42 +92,13 @@
   </footer>
 
   <!-- Bouton WhatsApp flottant -->
-  <a class="wa-float" href="https://wa.me/23562752105" target="_blank" rel="noopener" aria-label="WhatsApp">
-    <svg viewBox="0 0 32 32" aria-hidden="true">
+  <a class="wa-float" href="https://wa.me/23562752105" target="_blank" rel="noopener" aria-label="WhatsApp" style="position:fixed;right:18px;bottom:18px;z-index:999;display:inline-flex;align-items:center;justify-content:center;width:56px;height:56px;border-radius:999px;background:#25D366;color:#fff;box-shadow:0 10px 30px rgba(0,0,0,.2);text-decoration:none">
+    <svg viewBox="0 0 32 32" aria-hidden="true" style="width:28px;height:28px;fill:currentColor">
       <path d="M19.11 17.31c-.28-.14-1.64-.81-1.89-.9-.25-.09-.43-.14-.62.14-.18.28-.71.9-.86 1.08-.16.18-.32.2-.6.07-.28-.14-1.18-.43-2.25-1.37-.83-.74-1.39-1.65-1.55-1.93-.16-.28-.02-.43.12-.57.12-.12.28-.32.41-.49.14-.16.18-.28.28-.46.09-.18.05-.35-.02-.49-.07-.14-.62-1.49-.85-2.04-.22-.53-.45-.46-.62-.46h-.53c-.18 0-.46.07-.7.35-.25.28-.96.94-.96 2.29s.98 2.66 1.12 2.85c.14.18 1.93 2.95 4.67 4.02.65.28 1.16.45 1.56.58.65.2 1.25.17 1.72.1.53-.08 1.64-.67 1.87-1.31.23-.64.23-1.19.16-1.31-.07-.12-.25-.2-.53-.34zM16 3C9.38 3 4 8.38 4 15c0 2.12.55 4.1 1.52 5.83L4 29l8.35-1.49A11.9 11.9 0 0 0 16 27c6.62 0 12-5.38 12-12S22.62 3 16 3z"/>
     </svg>
   </a>
 
-  <!-- ===== MODALE PRODUIT (unique) ===== -->
-  <div id="overlay" class="modal-overlay" aria-hidden="true"></div>
-  <div id="productModal" class="modal" aria-hidden="true" role="dialog" aria-label="Fiche produit">
-    <div class="modal-card" role="document">
-      <div class="modal-head">
-        <div id="mTitle" style="font-weight:800">Titre du produit</div>
-        <button id="mClose" class="btn secondary">Fermer</button>
-      </div>
-      <div class="modal-body">
-        <div>
-          <div class="gal-main"><img id="mMain" src="" alt=""></div>
-          <div id="mThumbs" class="gal-thumbs"></div>
-        </div>
-        <div class="meta">
-          <div id="mPrice" class="price">—</div>
-          <div id="mCat" class="muted" style="margin-top:4px">—</div>
-          <div id="mDesc" style="margin-top:8px"></div>
-          <div id="mCities" class="muted" style="margin-top:8px"></div>
-          <div class="modal-actions" style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
-            <a id="mWhatsApp" class="btn" target="_blank" rel="noopener">Commander via WhatsApp</a>
-            <button id="mPrev" class="btn secondary">⟨ Préc</button>
-            <button id="mNext" class="btn secondary">Suiv ⟩</button>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-  <!-- ===== FIN MODALE PRODUIT ===== -->
-
-  <!-- JS (module) -->
+  <!-- Script (module) -->
   <script type="module" src="/assets/js/script.js"></script>
 </body>
 </html>
