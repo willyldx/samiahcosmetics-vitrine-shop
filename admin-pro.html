@@ -5,78 +5,110 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <title>Samiah Cosmetics — Admin Pro</title>
   <meta name="robots" content="noindex,nofollow"/>
-
   <style>
-    :root{--charcoal:#0A0A0A;--ivory:#F5F2EA;--gold:#D9B56C;--soft:#f7f5f2;--border:#eaeaea;--muted:#6b7280;--danger:#b42318}
-    *{box-sizing:border-box} html,body{margin:0;background:#fafafa;color:#111;font-family:Inter,ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
+    :root{--charcoal:#0A0A0A;--ivory:#F5F2EA;--gold:#D9B56C;--soft:#f7f5f2;--border:#eaeaea;--muted:#6b7280}
+    *{box-sizing:border-box}
+    html,body{margin:0;background:#fafafa;color:#111;font-family:Inter,ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
     .topbar{position:sticky;top:0;z-index:10;background:#fff;border-bottom:1px solid var(--border)}
-    .nav{max-width:1200px;margin:0 auto;display:flex;gap:14px;align-items:center;padding:12px 16px}
+    .nav{max-width:1200px;margin:0 auto;display:flex;gap:10px;align-items:center;padding:12px 16px;position:relative}
     .brand{display:flex;gap:10px;align-items:center}
-    .brand h1{font-size:16px;margin:0;font-weight:800;letter-spacing:.06em}
-    .btn{appearance:none;border:0;border-radius:10px;background:#111;color:#fff;padding:10px 14px;font-weight:700;cursor:pointer}
+    .logo{display:inline-flex;width:42px;height:42px;border-radius:10px;background:var(--charcoal);align-items:center;justify-content:center}
+    .logo svg{width:28px;height:28px}
+    .brand h1{font-size:16px;margin:0;font-weight:700;letter-spacing:.06em}
+    .nav .spacer{flex:1}
+    .btn{appearance:none;border:0;border-radius:10px;background:var(--charcoal);color:#fff;padding:10px 14px;font-weight:600;cursor:pointer}
     .btn.secondary{background:#1111110d;color:#111;border:1px solid var(--border)}
-    .btn.gold{background:var(--gold);color:#222}
-    .btn.danger{background:var(--danger)}
+    .btn.green{background:#16a34a}
+    .btn:disabled{opacity:.7;cursor:not-allowed}
+    .iconbtn{appearance:none;border:1px solid var(--border);background:#fff;border-radius:10px;padding:8px;display:inline-flex;align-items:center;justify-content:center;cursor:pointer}
+    .iconbtn:hover{background:#f8f8f8}
+    .menu-wrap{position:relative}
+    .menu{position:absolute;right:0;top:44px;background:#fff;border:1px solid var(--border);border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,.06);min-width:190px;display:none;overflow:hidden}
+    .menu.open{display:block}
+    .menu-item{display:block;width:100%;text-align:left;padding:10px 12px;background:#fff;border:0;cursor:pointer;font-weight:500}
+    .menu-item:hover{background:#f6f6f6}
     .wrap{max-width:1200px;margin:0 auto;padding:20px}
     .panel{background:#fff;border:1px solid var(--border);border-radius:16px;box-shadow:0 10px 30px rgba(0,0,0,.04);padding:16px;margin-bottom:18px}
-    .grid{display:grid;grid-template-columns:1.3fr .7fr;gap:18px} @media(max-width:950px){.grid{grid-template-columns:1fr}}
+    .grid{display:grid;grid-template-columns:1.2fr .8fr;gap:18px}
+    @media(max-width:900px){.grid{grid-template-columns:1fr}}
     h2{margin:0 0 10px;font-size:20px}
-    .filters{display:flex;gap:10px;flex-wrap:wrap;margin:8px 0 14px}
-    input[type="text"],input[type="number"],input[type="datetime-local"],select,textarea{width:100%;padding:10px;border:1px solid var(--border);border-radius:10px;background:#fff}
-    textarea{min-height:110px}
-    table{width:100%;border-collapse:collapse} th,td{font-size:14px;padding:10px;border-bottom:1px solid var(--border);text-align:left;vertical-align:top}
+    .filters{display:flex;gap:10px;flex-wrap:wrap;margin:10px 0 14px}
+    input[type="text"],input[type="number"],select,textarea{width:100%;padding:10px;border:1px solid var(--border);border-radius:10px;background:#fff}
+    textarea{min-height:100px}
+    table{width:100%;border-collapse:collapse}
+    th,td{font-size:14px;padding:10px;border-bottom:1px solid var(--border);text-align:left;vertical-align:top}
     th{position:sticky;top:0;background:#fff;z-index:1}
-    .actions{display:flex;gap:8px;flex-wrap:wrap}
+    .actions{display:flex;gap:8px}
     .muted{color:var(--muted)}
-    .note{background:var(--soft);border:1px dashed var(--border);border-radius:12px;padding:10px 12px;color:#444}
     .empty{padding:20px;text-align:center;color:var(--muted)}
+    .footer{padding:20px 0 40px;color:#777;font-size:13px;text-align:center}
     .toast{position:fixed;bottom:16px;right:16px;background:#111;color:#fff;padding:12px 14px;border-radius:10px;opacity:0;transform:translateY(10px);transition:.25s;pointer-events:none}
     .toast.show{opacity:1;transform:translateY(0)}
-    .row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-    .row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
-    .thumbs{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}
-    .thumbs img{width:64px;height:64px;object-fit:cover;border:1px solid #eee;border-radius:8px}
-    .pill{display:inline-block;border-radius:999px;background:#111;color:#fff;font-size:11px;padding:4px 8px}
+    .note{background:#f7f5f2;border:1px dashed var(--border);border-radius:12px;padding:10px 12px;color:#444}
+    /* Popup (modal) */
+    .modal{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:center;justify-content:center;padding:16px;z-index:50}
+    .modal.show{display:flex}
+    .modal-card{background:#fff;border:1px solid var(--border);border-radius:16px;box-shadow:0 20px 60px rgba(0,0,0,.12);max-width:460px;width:100%;padding:18px}
+    .modal-title{margin:0 0 6px;font-size:18px}
+    .modal-text{margin:0 0 12px;color:#444}
+    .modal-actions{display:flex;gap:8px;justify-content:flex-end}
   </style>
-
-  <!-- Uploadcare -->
-  <script>window.UPLOADCARE_PUBLIC_KEY='aff6343f97db42a35956';</script>
-  <script src="https://ucarecdn.com/libs/widget/3.x/uploadcare.full.min.js"></script>
 </head>
 <body>
   <div class="topbar">
     <div class="nav">
-      <div class="brand"><h1>SAMIAH — Admin Pro</h1></div>
-      <div style="flex:1"></div>
-      <button class="btn secondary" id="btnRefresh">Rafraîchir</button>
-      <button class="btn gold" id="btnChangeKey">Changer mot de passe</button>
+      <div class="brand">
+        <span class="logo" title="Samiah">
+          <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <circle cx="50" cy="50" r="42" fill="none" stroke="#F5F2EA" stroke-width="6"/>
+            <circle cx="50" cy="50" r="34" fill="none" stroke="#D9B56C" stroke-width="6"/>
+            <g transform="translate(50,50)" fill="none" stroke="#F5F2EA" stroke-width="6" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M0,-14 C4,-24 16,-24 20,-14 C16,-4 4,-4 0,-14Z"/>
+              <path d="M-6,4 C-14,2 -18,8 -13,12 C-7,15 -2,10 -6,4Z"/>
+            </g>
+          </svg>
+        </span>
+        <h1>SAMIAH — Admin Pro</h1>
+      </div>
+      <div class="spacer"></div>
+
+      <button class="btn secondary" id="refreshBtn">Rafraîchir</button>
+      <button class="btn green" id="publishBtn"><span id="pubLabel">Publier</span></button>
+      <span id="pubStatus" class="muted" style="margin-left:8px"></span>
+
+      <div class="menu-wrap">
+        <button class="iconbtn" id="menuBtn" aria-haspopup="true" aria-expanded="false" aria-label="Menu">
+          <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true">
+            <circle cx="5" cy="12" r="2" fill="#111"/><circle cx="12" cy="12" r="2" fill="#111"/><circle cx="19" cy="12" r="2" fill="#111"/>
+          </svg>
+        </button>
+        <div class="menu" id="menu" role="menu" aria-hidden="true">
+          <button class="menu-item" id="miChangeSecret" role="menuitem">Changer le code admin</button>
+          <button class="menu-item" id="miLogout" role="menuitem">Se déconnecter</button>
+        </div>
+      </div>
     </div>
   </div>
 
   <div class="wrap">
-    <div class="panel" id="topnote" style="display:none">
-      Connecté. <span class="muted">Le mot de passe est stocké localement. “Changer mot de passe” pour le remettre.</span>
-    </div>
-
     <div class="grid">
-      <!-- LISTE -->
       <div class="panel">
         <h2>Catalogue</h2>
         <div class="filters">
           <input type="text" id="q" placeholder="Recherche (titre, catégorie)…"/>
-          <select id="catFilter"><option value="">Toutes</option></select>
+          <select id="catFilter"></select>
         </div>
-        <div class="note">Astuce : cliquer sur une ligne pour l’éditer. Les images acceptent **jusqu’à 8 Mo** par fichier.</div>
-        <div style="overflow:auto;max-height:560px;margin-top:10px;border:1px solid var(--border);border-radius:12px">
+        <div class="note">Astuce : clique sur une ligne pour l’éditer. Téléverse une image depuis l’appareil, puis <strong>Publier</strong> pour enregistrer en base.</div>
+        <div style="overflow:auto;max-height:520px;margin-top:10px;border:1px solid var(--border);border-radius:12px">
           <table id="tbl">
             <thead>
               <tr>
                 <th style="min-width:200px">Titre</th>
                 <th style="min-width:100px">Prix</th>
-                <th style="min-width:120px">Catégorie</th>
-                <th style="min-width:140px">Villes</th>
+                <th style="min-width:140px">Catégorie</th>
+                <th>Villes</th>
                 <th style="min-width:120px">Aperçu</th>
-                <th style="min-width:160px"></th>
+                <th style="min-width:150px"></th>
               </tr>
             </thead>
             <tbody></tbody>
@@ -85,70 +117,60 @@
         <div class="empty" id="empty" style="display:none">Aucun produit</div>
       </div>
 
-      <!-- FORMULAIRE -->
       <div class="panel">
         <h2 id="formTitle">Nouveau produit</h2>
-        <div class="note" style="margin-bottom:10px">Champs requis : <strong>Titre</strong>, <strong>Prix</strong>. L’ID (slug) est auto-généré si vide. <span class="pill">8 Mo max/image</span></div>
+        <div class="note" style="margin-bottom:10px">
+          Champs requis : <strong>Titre</strong>, <strong>Prix</strong>. L’ID (slug) est auto-généré si vide.
+          <span class="muted" style="margin-left:6px">Images: JPG/PNG, <strong>8 Mo max</strong>.</span>
+        </div>
 
-        <div class="row2">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
           <div><label>Titre<br/><input id="f_title"></label></div>
           <div><label>Prix XAF<br/><input id="f_price" type="number" min="0" step="100"></label></div>
-        </div>
-
-        <div class="row3" style="margin-top:10px">
-          <div><label>Catégorie<br/><input id="f_category" placeholder="Shampoings, Soins cheveux…"></label></div>
+          <div><label>Catégorie<br/><input id="f_category" placeholder="Shampoings, Soins cheveux, Services"></label></div>
           <div><label>ID (slug)<br/><input id="f_id" placeholder="auto si vide"></label></div>
-          <div><label>Actif<br/>
-            <select id="f_active"><option value="true" selected>Oui</option><option value="false">Non</option></select>
-          </label></div>
-        </div>
+          <div style="grid-column:1 / -1"><label>Description courte<br/><textarea id="f_desc" placeholder="Texte court…"></textarea></label></div>
 
-        <div style="margin-top:10px"><label>Description courte<br/><textarea id="f_desc" placeholder="Texte court…"></textarea></label></div>
-
-        <div class="row2" style="margin-top:10px">
+          <!-- Uploader (fichier uniquement) -->
           <div>
-            <label>Image principale (upload ou URL)<br/>
+            <label>Image<br/>
               <input type="hidden" id="f_image">
-              <input type="file" id="uploader"
-                     data-uploadcare-uploader data-images-only data-clearable
-                     data-tabs="file camera url" data-multiple="false"/>
-              <small class="muted">PNG/JPG ≤ 8 Mo (vidéo non autorisée).</small>
+              <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+                <input type="file" id="gh_uploader" accept="image/*">
+                <button type="button" class="btn secondary" id="gh_send">Téléverser</button>
+                <small class="muted">Depuis la galerie ou l’appareil (8 Mo max).</small>
+              </div>
+              <div id="img_wrap" style="margin-top:8px;display:none">
+                <img id="img_preview" alt="Aperçu" style="width:120px;height:80px;object-fit:cover;border:1px solid #eee;border-radius:8px"/>
+              </div>
             </label>
           </div>
-          <div><label>Villes (Ctrl/Cmd pour multi)<br/>
-            <select id="f_cities" multiple size="6" style="height:120px">
+
+          <!-- Expiration & Actif -->
+          <div>
+            <label>Expire dans (jours) — optionnel<br/>
+              <input id="f_expDays" type="number" min="0" placeholder="ex: 2">
+            </label>
+            <small class="muted">Laisser vide pour “pas d’expiration”.</small>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;margin-top:6px">
+            <input id="f_active" type="checkbox" checked>
+            <label for="f_active">Activer l’affichage</label>
+          </div>
+
+          <div><label>Villes (liste)<br/>
+            <select id="f_cities" multiple size="6" style="height:140px">
               <option>N’Djamena</option><option>Moundou</option><option>Sarh</option><option>Abéché</option><option>Bongor</option>
               <option>Kélo</option><option>Pala</option><option>Koumra</option><option>Faya-Largeau</option>
             </select>
-          </label></div>
-        </div>
-
-        <!-- Photos supplémentaires -->
-        <div style="margin-top:10px">
-          <label>Photos supplémentaires (optionnel)<br/>
-            <input type="hidden" id="f_images">
-            <input type="file" id="uploaderExtra"
-                   data-uploadcare-uploader data-images-only data-clearable
-                   data-tabs="file camera url" data-multiple="true"/>
-            <small class="muted">Tu peux sélectionner plusieurs images (≤ 8 Mo chacune).</small>
-          </label>
-          <div class="thumbs" id="extraThumbs"></div>
-          <div style="margin-top:6px">
-            <label>… ou coller des URLs (séparées par des virgules)<br/>
-              <input type="text" id="f_images_urls" placeholder="https://… , https://…">
-            </label>
+            <small class="muted">Maintenir Ctrl/Cmd pour multisélection</small>
           </div>
-        </div>
-
-        <div class="row2" style="margin-top:10px">
-          <div><label>Publié le<br/><input id="f_published" type="datetime-local"></label></div>
-          <div><label>Expire après (jours)<br/><input id="f_expires" type="number" min="0" step="1" placeholder="ex: 14"></label></div>
         </div>
 
         <div style="display:flex;gap:10px;margin-top:12px">
           <button class="btn" id="save">Enregistrer</button>
-          <button class="btn secondary" id="reset">Nouveau</button>
-          <button class="btn danger" id="del" style="display:none">Supprimer</button>
+          <button class="btn secondary" id="reset">Annuler</button>
+          <button class="btn" id="del" style="display:none;background:#b42318">Supprimer</button>
         </div>
 
         <div style="margin-top:14px">
@@ -158,182 +180,72 @@
       </div>
     </div>
 
-    <div class="panel">
-      <h2>Import / Export</h2>
-      <p class="muted">Export pour sauvegarder localement (JSON). Import est désactivé si tu utilises Supabase.</p>
-      <div class="actions">
-        <button class="btn gold" id="exportBtn">Exporter JSON</button>
-        <button class="btn secondary" id="importBtn" style="display:none">Importer JSON</button>
-        <input type="file" id="file" accept="application/json" style="display:none"/>
-      </div>
-    </div>
-
-    <div class="muted" style="text-align:center;padding:20px 0 36px">© 2025 Samiah Cosmetics — Admin Pro</div>
+    <div class="footer">© 2025 Samiah Cosmetics — Admin Pro</div>
   </div>
 
-  <div class="toast" id="toast">OK</div>
+  <!-- Popup publication -->
+  <div class="modal" id="pubModal" aria-hidden="true" role="dialog" aria-labelledby="pubTitle">
+    <div class="modal-card">
+      <h3 class="modal-title" id="pubTitle">Catalogue publié ✅</h3>
+      <p class="modal-text" id="pubMsg">Les changements ont été envoyés en base. La vitrine se met à jour automatiquement.</p>
+      <div class="modal-actions">
+        <button class="btn secondary" id="pubClose">Fermer</button>
+        <a href="/" class="btn" id="pubView">Voir le site</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast">Enregistré</div>
 
   <script>
-    // ===== Config =====
-    const API = {
-      list:  '/api/admin/list-products',
-      save:  '/api/admin/save-products',
-      del:   '/api/admin/delete-product',
-      ping:  '/api/admin/ping'
-    };
-    const MAX_MB = 8;
-    const MAX_BYTES = MAX_MB * 1024 * 1024;
+    // ========= utilitaires =========
+    const fmt = n => new Intl.NumberFormat('fr-FR').format(n);
+    let items = [], editing = null;
+    const $ = s => document.querySelector(s), $$ = s => Array.from(document.querySelectorAll(s));
+    const els = { q:$('#q'), cat:$('#catFilter'), tbody:$('#tbl tbody'), empty:$('#empty'),
+      f_title:$('#f_title'), f_price:$('#f_price'), f_category:$('#f_category'),
+      f_id:$('#f_id'), f_desc:$('#f_desc'), f_image:$('#f_image'), f_cities:$('#f_cities'),
+      f_expDays:$('#f_expDays'), f_active:$('#f_active'),
+      formTitle:$('#formTitle'), del:$('#del'), toast:$('#toast') };
 
-    // ===== Utils / État =====
-    const fmt = n => new Intl.NumberFormat('fr-FR').format(n||0);
-    const $  = s => document.querySelector(s);
-    const $$ = s => Array.from(document.querySelectorAll(s));
-    const escapeHtml = s => String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-    const slugify = s => (s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'');
-    function show(txt){ const t=$('#toast'); t.textContent=txt; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),1700); }
-    function selectedCities(sel){ return Array.from(sel.selectedOptions).map(o=>o.value); }
-    function toLocalInput(iso){ if(!iso) return ''; const d=new Date(iso); const p=n=>String(n).padStart(2,'0'); return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`; }
-    function fromLocalInput(v){ if(!v) return null; const d=new Date(v); return isNaN(d)? null : d.toISOString(); }
+    function slugify(s){return (s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'');}
+    function show(txt){ els.toast.textContent=txt; els.toast.classList.add('show'); setTimeout(()=>els.toast.classList.remove('show'),1700); }
+    function escapeHtml(s){return (''+s).replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+    async function readResp(resp){ const ct=resp.headers.get('content-type')||''; if(ct.includes('application/json')){try{return await resp.json();}catch{}} const t=await resp.text(); return {__text:t}; }
+    function stamp(){ const d=new Date(); return d.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit',second:'2-digit'}); }
 
-    let items = []; let editing = null; let ADMIN_SECRET = localStorage.getItem('ADMIN_SECRET')||'';
-    const els = {
-      q: $('#q'), cat: $('#catFilter'), tbody: $('#tbl tbody'), empty: $('#empty'),
-      f_title: $('#f_title'), f_price: $('#f_price'), f_category: $('#f_category'),
-      f_id: $('#f_id'), f_desc: $('#f_desc'), f_image: $('#f_image'), f_cities: $('#f_cities'),
-      f_published: $('#f_published'), f_expires: $('#f_expires'), f_active: $('#f_active'),
-      formTitle: $('#formTitle'), del: $('#del'), toast: $('#toast'),
-      topnote: $('#topnote'),
-      f_images: $('#f_images'), f_images_urls: $('#f_images_urls'), extraThumbs: $('#extraThumbs')
-    };
+    // Helpers UI pour boutons
+    function setBtnLoading(btn, labelEl, loadingText){ btn.dataset.prev=(labelEl.textContent||''); btn.disabled=true; labelEl.textContent=loadingText; }
+    function setBtnDone(btn, labelEl, finalText='Terminé'){ labelEl.textContent=finalText; setTimeout(()=>{ labelEl.textContent=btn.dataset.prev||labelEl.textContent; btn.disabled=false;},1200); }
+    function setBtnIdle(btn, labelEl){ labelEl.textContent = btn.dataset.prev || labelEl.textContent; btn.disabled=false; }
 
-    // ===== Auth simple =====
-    async function ensureSecret(){
-      while(!ADMIN_SECRET){
-        const s = prompt('Mot de passe admin (ADMIN_SECRET) :');
-        if(s && s.trim()){ ADMIN_SECRET = s.trim(); localStorage.setItem('ADMIN_SECRET', ADMIN_SECRET); break; }
-        else alert('Mot de passe requis.');
-      }
-      const ok = await fetch(API.ping, { headers:{'x-admin-secret': ADMIN_SECRET} }).then(r=>r.ok).catch(()=>false);
-      if(!ok){ localStorage.removeItem('ADMIN_SECRET'); ADMIN_SECRET=''; alert('Mot de passe incorrect.'); return ensureSecret(); }
-      els.topnote.style.display='block';
-    }
-
-    // ===== API helpers =====
-    async function apiList(){
-      const r = await fetch(API.list, { headers:{'x-admin-secret': ADMIN_SECRET} });
-      if(!r.ok) throw new Error('Liste indisponible');
-      const j = await r.json(); return j.items||[];
-    }
-    async function apiSave(arr){
-      const r = await fetch(API.save, {
-        method:'POST',
-        headers:{'Content-Type':'application/json','x-admin-secret': ADMIN_SECRET},
-        body: JSON.stringify({ products: arr })
-      });
-      const j = await r.json().catch(()=>null);
-      if(!r.ok) throw new Error((j&&j.error)||'Échec sauvegarde');
-      return j;
-    }
-    async function apiDelete(id){
-      const r = await fetch(API.del, {
-        method:'POST',
-        headers:{'Content-Type':'application/json','x-admin-secret': ADMIN_SECRET},
-        body: JSON.stringify({ id })
-      });
-      const j = await r.json().catch(()=>null);
-      if(!r.ok) throw new Error((j&&j.error)||'Échec suppression');
-      return j;
-    }
-
-    // ===== Uploadcare widgets + limite 8 Mo =====
-    let widgetMain=null, widgetExtra=null;
-
-    function initUploaders(){
-      if(window.uploadcare){
-        widgetMain = uploadcare.Widget('#uploader');
-        widgetExtra = uploadcare.Widget('#uploaderExtra');
-
-        // Image principale
-        widgetMain.onUploadComplete(info=>{
-          if (info?.size > MAX_BYTES){ alert(`Image trop lourde (${(info.size/1048576).toFixed(1)} Mo). Max ${MAX_MB} Mo.`); return; }
-          const url = info?.cdnUrl || (info?.uuid ? `https://ucarecdn.com/${info.uuid}/` : '');
-          if(url){ els.f_image.value = url; show('Image principale téléversée'); }
-        });
-        widgetMain.onChange(file=>{ if(!file){ els.f_image.value=''; } });
-
-        // Images supplémentaires (on affiche les miniatures quand prêtes)
-        widgetExtra.onChange(async val=>{
-          els.extraThumbs.innerHTML = '';
-          const files = val && val.files ? val.files() : [];
-          for (const f of files){
-            try{
-              const info = await f.promise();
-              if (info?.size > MAX_BYTES){ alert(`Une image fait ${(info.size/1048576).toFixed(1)} Mo (> ${MAX_MB} Mo). Ignorée.`); continue; }
-              const url = info?.cdnUrl || (info?.uuid ? `https://ucarecdn.com/${info.uuid}/` : '');
-              if (url){
-                const img = new Image(); img.src = url; img.width=64; img.height=64; img.style.objectFit='cover'; img.style.border='1px solid #eee'; img.style.borderRadius='8px';
-                els.extraThumbs.appendChild(img);
-              }
-            }catch(e){}
-          }
-        });
-      }
-    }
-
-    async function resolveImageUrl(){
-      const existing = (els.f_image.value||'').trim();
-      if (existing) return existing;
+    // ========= chargement =========
+    async function load(){
+      ensureAdminSecret();
       try{
-        const file = widgetMain?.value?.(); if(!file) return '';
-        if (file.cdnUrl) return file.cdnUrl;
-        const info = await file.promise();
-        if (info?.size > MAX_BYTES){ alert(`Image trop lourde (${(info.size/1048576).toFixed(1)} Mo). Max ${MAX_MB} Mo.`); return ''; }
-        return info?.cdnUrl || (info?.uuid ? `https://ucarecdn.com/${info.uuid}/` : '');
-      }catch(e){ return existing; }
+        const secret = getAdminSecret();
+        const r = await fetch('/api/admin/list-products', { headers: { 'x-admin-secret': secret } });
+        const j = await r.json();
+        items = Array.isArray(j.items) ? j.items : [];
+      }catch{ items = []; }
+      fillCats(); render(); bindOnce();
     }
 
-    async function resolveExtraImages(){
-      const urls = [];
-      // URLs tapées manuellement
-      (els.f_images_urls.value||'').split(',').map(s=>s.trim()).filter(Boolean).forEach(u=>urls.push(u));
-      // Uploader multiple
-      try{
-        const val = widgetExtra?.value?.();
-        const files = val && val.files ? val.files() : [];
-        for (const f of files){
-          try{
-            const info = await f.promise();
-            if (info?.size > MAX_BYTES){ alert(`Une image fait ${(info.size/1048576).toFixed(1)} Mo (> ${MAX_MB} Mo). Ignorée.`); continue; }
-            const url = info?.cdnUrl || (info?.uuid ? `https://ucarecdn.com/${info.uuid}/` : '');
-            if(url) urls.push(url);
-          }catch(e){}
-        }
-      }catch(e){}
-      // dédoublonnage
-      return Array.from(new Set(urls.filter(Boolean)));
-    }
-
-    // ===== UI/table =====
     function fillCats(){
       const cats = Array.from(new Set(items.map(p=>p.category).filter(Boolean))).sort();
-      els.cat.innerHTML = '<option value="">Toutes</option>' + cats.map(c=>`<option>${escapeHtml(c)}</option>`).join('');
+      $('#catFilter').innerHTML = '<option value="">Toutes</option>' + cats.map(c=>`<option>${c}</option>`).join('');
     }
+
     function render(){
-      const q = (els.q.value||'').toLowerCase();
-      const cat = (els.cat.value||'');
-      const data = items.filter(p=>{
-        const okQ = (p.title+' '+(p.category||'')).toLowerCase().includes(q);
-        const okC = !cat || p.category===cat;
-        return okQ && okC;
-      });
+      const q = ($('#q')?.value||'').toLowerCase(), cat = ($('#catFilter')?.value||'');
+      const data = items.filter(p=> ((p.title+' '+(p.category||'')).toLowerCase().includes(q)) && (!cat || p.category===cat));
       els.tbody.innerHTML = data.map((p,i)=>rowTpl(p,i)).join('');
-      els.empty.style.display = data.length? 'none':'block';
+      els.empty.style.display = data.length?'none':'block';
     }
+
     function rowTpl(p,i){
-      const cities = (p.cities||[]).slice(0,3).join(', ') + ((p.cities||[]).length>3? '…':'');
-      const firstImg = (Array.isArray(p.images)&&p.images[0]) || p.image || '/assets/images/placeholder.png';
-      const img = `<img src="${firstImg}" alt="" style="width:60px;height:40px;object-fit:cover;border:1px solid #eee;border-radius:6px"
-                   onerror="this.onerror=null;this.src='/assets/images/placeholder.png'">`;
+      const cities=(p.cities||[]).slice(0,3).join(', ')+((p.cities||[]).length>3?'…':'');
+      const img = p.image? `<img src="${p.image}" alt="" style="width:60px;height:40px;object-fit:cover;border:1px solid #eee;border-radius:6px">` : '<span class="muted">—</span>';
       return `<tr data-i="${i}">
         <td>${escapeHtml(p.title||'')}</td>
         <td>${fmt(p.price||0)} XAF</td>
@@ -342,108 +254,217 @@
         <td>${img}</td>
         <td class="actions">
           <button class="btn secondary" onclick="edit(${i})">Éditer</button>
-          <button class="btn danger" onclick="removeItem(${i})">Supprimer</button>
+          <button class="btn" style="background:#b42318" onclick="removeItem(${i})">Supprimer</button>
         </td>
       </tr>`;
     }
 
     function edit(i){
-      const p = items[i]; if(!p) return;
-      editing = i; els.formTitle.textContent='Modifier le produit'; els.del.style.display='';
-      els.f_title.value=p.title||''; els.f_price.value=p.price||0; els.f_category.value=p.category||'';
-      els.f_id.value=p.id||''; els.f_desc.value=p.short_description||p.shortDescription||''; els.f_image.value=p.image||'';
+      const p=items[i]; editing=i; els.formTitle.textContent='Modifier le produit'; els.del.style.display='';
+      els.f_title.value=p.title||''; els.f_price.value=p.price||0; els.f_category.value=p.category||''; els.f_id.value=p.id||'';
+      els.f_desc.value=p.shortDescription||''; els.f_image.value=p.image||'';
+      els.f_active.checked = (p.active !== false);
+      els.f_expDays.value = (typeof p.expiresAfterDays === 'number') ? p.expiresAfterDays : '';
       Array.from(els.f_cities.options).forEach(o=>o.selected=(p.cities||[]).includes(o.value));
-      els.f_published.value = p.published_at? toLocalInput(p.published_at): (p.publishedAt? toLocalInput(p.publishedAt):'');
-      els.f_expires.value = (p.expires_after_days ?? p.expiresAfterDays ?? '');
-      els.f_active.value = (p.active!==false? 'true':'false');
-      // extras
-      els.f_images.value = JSON.stringify(p.images||[]);
-      els.f_images_urls.value = Array.isArray(p.images)? p.images.join(', '):'';
-      els.extraThumbs.innerHTML = (p.images||[]).map(u=>`<img src="${u}">`).join('');
+      updatePreviewThumb(p.image||'');
       updateWAPreview(); window.scrollTo({top:0,behavior:'smooth'});
+    }
+
+    async function removeItem(i){
+      const p = items[i];
+      if(!confirm('Supprimer ce produit ?')) return;
+      try{
+        const secret = getAdminSecret();
+        if (p?.id && secret){
+          await fetch('/api/admin/delete-product', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'x-admin-secret': secret },
+            body: JSON.stringify({ id: p.id })
+          });
+        }
+      }catch(e){ /* ignore */ }
+      items.splice(i,1);
+      editing=null;
+      render();
+      show('Produit supprimé');
+    }
+
+    let bound = false;
+    function bindOnce(){
+      if(bound) return; bound = true;
+      $('#q').oninput = $('#catFilter').onchange = render;
+      $$('#f_title,#f_price,#f_category,#f_id,#f_desc,#f_expDays,#f_cities,#f_active').forEach(el=>el.addEventListener('input',updateWAPreview));
+      $('#save').onclick=save; $('#reset').onclick=reset; els.del.onclick=()=>{ if(editing!=null){ removeItem(editing); reset(); } };
+
+      // Publier
+      const pubBtn = document.getElementById('publishBtn');
+      const pubLabel = document.getElementById('pubLabel');
+      const pubStatus = document.getElementById('pubStatus');
+      pubBtn.onclick = () => publishToBackend(pubBtn, pubLabel, pubStatus);
+
+      // Rafraîchir
+      document.getElementById('refreshBtn').onclick = () => { load(); show('Rechargé'); };
+
+      // Upload image
+      document.getElementById('gh_send').onclick=uploadToGitHub;
+
+      // Menu ⋯
+      const menuBtn = document.getElementById('menuBtn');
+      const menu    = document.getElementById('menu');
+      const miChange= document.getElementById('miChangeSecret');
+      const miLogout= document.getElementById('miLogout');
+      const openMenu=()=>{menu.classList.add('open');menuBtn.setAttribute('aria-expanded','true');menu.setAttribute('aria-hidden','false');};
+      const closeMenu=()=>{menu.classList.remove('open');menuBtn.setAttribute('aria-expanded','false');menu.setAttribute('aria-hidden','true');};
+      const toggleMenu=()=> menu.classList.contains('open')?closeMenu():openMenu();
+      menuBtn.addEventListener('click', e=>{ e.stopPropagation(); toggleMenu(); });
+      document.addEventListener('click', e=>{ if(!menu.contains(e.target) && e.target!==menuBtn) closeMenu(); });
+      document.addEventListener('keydown', e=>{ if(e.key==='Escape') closeMenu(); });
+      miChange.addEventListener('click', ()=>{ closeMenu(); changeAdminSecret(); });
+      miLogout.addEventListener('click', ()=>{ closeMenu(); logoutAdmin(); });
+
+      // Popup publication
+      const pubModal = $('#pubModal');
+      const pubClose = $('#pubClose');
+      pubClose.onclick = ()=> hideModal(pubModal);
+      pubModal.addEventListener('click', e=>{ if(e.target===pubModal) hideModal(pubModal); });
+      document.addEventListener('keydown', e=>{ if(e.key==='Escape') hideModal(pubModal); });
+    }
+
+    function selectedCities(){ return Array.from(els.f_cities.selectedOptions).map(o=>o.value); }
+
+    function save(){
+      const nowIso = new Date().toISOString();
+      const expDays = parseInt((els.f_expDays?.value || '').trim(), 10);
+
+      const p = {
+        id: (els.f_id.value||slugify(els.f_title.value)).trim(),
+        title: els.f_title.value.trim(),
+        price: parseInt(els.f_price.value||'0',10),
+        currency:'XAF',
+        category: els.f_category.value.trim(),
+        shortDescription: els.f_desc.value.trim(),
+        image: els.f_image.value.trim(),
+        cities: selectedCities(),
+        active: els.f_active.checked,
+        expiresAfterDays: isNaN(expDays) ? null : expDays,
+        publishedAt: items[editing]?.publishedAt || nowIso
+      };
+      if(!p.title){ alert('Titre requis'); return; }
+      if(isNaN(p.price)){ alert('Prix invalide'); return; }
+
+      if(editing!=null){ items[editing]=p; show('Produit mis à jour'); }
+      else { items.unshift(p); show('Produit ajouté'); }
+
+      reset(false); render();
     }
 
     function reset(clear=true){
       editing=null; els.formTitle.textContent='Nouveau produit'; els.del.style.display='none';
       if(clear){
-        ['f_title','f_price','f_category','f_id','f_desc','f_image','f_published','f_expires','f_images','f_images_urls'].forEach(k=>els[k].value='');
-        els.extraThumbs.innerHTML='';
+        els.f_title.value=els.f_price.value=els.f_category.value=els.f_id.value=els.f_desc.value=els.f_image.value='';
+        els.f_active.checked=true; els.f_expDays.value=''; updatePreviewThumb('');
         Array.from(els.f_cities.options).forEach(o=>o.selected=false);
-        els.f_active.value='true';
       }
       updateWAPreview();
     }
 
-    async function load(){
-      try{ items = await apiList(); }catch(e){ items=[]; alert('Impossible de charger la liste (API).'); }
-      fillCats(); render();
-    }
-
-    async function save(){
-      const imageUrl = await resolveImageUrl();
-      const extra = await resolveExtraImages();
-
-      const p = {
-        id:(els.f_id.value||slugify(els.f_title.value)).trim(),
-        title: els.f_title.value.trim(),
-        price: parseInt(els.f_price.value||'0',10),
-        currency: 'XAF',
-        category: (els.f_category.value||'').trim() || null,
-        short_description: (els.f_desc.value||'').trim() || null,
-        image: imageUrl || null,
-        images: extra,                              // tableau d’URLs
-        cities: selectedCities(els.f_cities),
-        active: (els.f_active.value==='true'),
-        published_at: fromLocalInput(els.f_published.value) || new Date().toISOString(),
-        expires_after_days: els.f_expires.value? parseInt(els.f_expires.value,10) : null
-      };
-
-      if(!p.title){ alert('Titre requis'); return; }
-      if(isNaN(p.price)){ alert('Prix invalide'); return; }
-
-      try{
-        await apiSave([p]);
-        show(editing!=null? 'Produit mis à jour' : 'Produit ajouté');
-        reset(false);
-        await load();
-      }catch(e){ alert('Erreur sauvegarde: '+e.message); }
-    }
-
-    async function removeItem(i){
-      const p = items[i]; if(!p || !p.id) return;
-      if(!confirm('Supprimer "'+(p.title||p.id)+'" ?')) return;
-      try{ await apiDelete(p.id); show('Produit supprimé'); reset(); await load(); }
-      catch(e){ alert('Erreur suppression: '+e.message); }
-    }
-
-    function exportJSON(){
-      const blob = new Blob([JSON.stringify(items,null,2)], {type:'application/json'});
-      const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='products-backup.json'; a.click(); URL.revokeObjectURL(a.href);
-      show('Exporté');
-    }
-
     function updateWAPreview(){
       const title=els.f_title.value||'Nom du produit';
-      const price=els.f_price.value? fmt(parseInt(els.f_price.value,10))+' XAF':'Prix à préciser';
+      const price=els.f_price.value? fmt(parseInt(els.f_price.value,10))+' XAF' : 'Prix à préciser';
       $('#waPreview').textContent = `Bonjour Samiah Cosmetics, je suis intéressé(e) par ${title} (${price}).`;
     }
 
-    function bind(){
-      $('#q').oninput = $('#catFilter').onchange = render;
-      $('#save').onclick = save; $('#reset').onclick = ()=>reset(true); els.del.onclick = ()=>{ if(editing!=null){ removeItem(editing); } };
-      $('#exportBtn').onclick = exportJSON;
-      $('#btnRefresh').onclick = load;
-      $('#btnChangeKey').onclick = ()=>{ localStorage.removeItem('ADMIN_SECRET'); ADMIN_SECRET=''; ensureSecret().then(load); };
+    function updatePreviewThumb(url){
+      const wrap = document.getElementById('img_wrap');
+      const img  = document.getElementById('img_preview');
+      if(url){ img.src=url; wrap.style.display='block'; }
+      else { img.removeAttribute('src'); wrap.style.display='none'; }
     }
 
-    window.edit = edit; window.removeItem = removeItem;
+    // ========= admin secret =========
+    const SECRET_KEY='samiah_admin_secret';
+    function getAdminSecret(){ return localStorage.getItem(SECRET_KEY) || ''; }
+    function ensureAdminSecret(){ if(!getAdminSecret()){ changeAdminSecret(); } }
+    function changeAdminSecret(){
+      const current = getAdminSecret();
+      const v = prompt('Code admin ?', current ? '••••••' : '');
+      if(v && v!=='••••••'){ localStorage.setItem(SECRET_KEY, v.trim()); show('Code enregistré'); }
+    }
+    function logoutAdmin(){ localStorage.removeItem(SECRET_KEY); show('Déconnecté'); setTimeout(()=>location.reload(),400); }
 
-    (async function start(){
-      await ensureSecret();
-      bind();
-      initUploaders();
-      await load();
-    })();
+    // ========= popup helpers =========
+    function showModal(m){ m.classList.add('show'); m.setAttribute('aria-hidden','false'); }
+    function hideModal(m){ m.classList.remove('show'); m.setAttribute('aria-hidden','true'); }
+
+    // ========= publier vers la DB (API) =========
+    async function publishToBackend(pubBtn, pubLabel, pubStatus){
+      const secret = getAdminSecret();
+      if(!secret){ changeAdminSecret(); return; }
+      try{
+        setBtnLoading(pubBtn, pubLabel, 'Publication…');
+        const resp = await fetch('/api/admin/save-products', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'x-admin-secret': secret },
+          body: JSON.stringify({ products: items })
+        });
+        const out = await readResp(resp);
+        if (!resp.ok){ throw new Error(out?.error || out?.__text || resp.statusText); }
+        show('Publié ✅'); setBtnDone(pubBtn, pubLabel, 'Publié ✅');
+        if (pubStatus) pubStatus.textContent = `Dernière publication : ${stamp()}`;
+        showModal(document.getElementById('pubModal'));
+      }catch(e){
+        setBtnIdle(pubBtn, pubLabel);
+        alert('Échec publication: ' + e.message);
+      }
+    }
+
+    // ========= Upload image (vers stockage via /api/upload-image) =========
+    const MAX_MB = 8; // 8 Mo
+    function fileToBase64(file){
+      return new Promise((resolve,reject)=>{
+        const r=new FileReader();
+        r.onload=()=>{ const s=(r.result||'').toString(); resolve(s.includes(',')?s.split(',')[1]:s); };
+        r.onerror=reject; r.readAsDataURL(file);
+      });
+    }
+    async function uploadToGitHub(){
+      const upBtn = document.getElementById('gh_send');
+      const f = document.getElementById('gh_uploader').files[0];
+      if(!f){ alert('Choisis une image'); return; }
+      if (f.size > MAX_MB*1024*1024){ alert('Image trop lourde (> '+MAX_MB+' Mo).'); return; }
+
+      const secret = getAdminSecret(); if(!secret){ changeAdminSecret(); return; }
+
+      try{
+        upBtn.disabled = true; upBtn.textContent = 'Téléversement…';
+
+        const base64 = await fileToBase64(f);
+        const ext = (f.name.split('.').pop()||'jpg').toLowerCase().replace(/[^a-z0-9]/g,'')||'jpg';
+        const base = (els.f_title.value || f.name.replace(/\.[^.]+$/,'') || 'image').toLowerCase();
+        const name = `${Date.now()}-${slugify(base)}.${ext}`;
+
+        const resp = await fetch('/api/upload-image', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'x-admin-secret': secret },
+          body: JSON.stringify({ filename:name, contentBase64:base64 })
+        });
+        const out = await readResp(resp);
+        if (!resp.ok){ throw new Error(out?.error || out?.details || out?.__text || resp.statusText); }
+
+        els.f_image.value = out.siteUrl;     // ex: /assets/uploads/...
+        updatePreviewThumb(out.siteUrl);     // voir tout de suite
+        show('Image envoyée ✅');
+        upBtn.textContent = 'Téléversé ✅';
+        setTimeout(()=>{ upBtn.textContent='Téléverser'; upBtn.disabled=false; }, 1200);
+
+      }catch(e){
+        upBtn.textContent='Téléverser'; upBtn.disabled=false;
+        alert('Erreur upload: ' + e.message);
+      }
+    }
+
+    // Lancer
+    load();
   </script>
 </body>
 </html>
