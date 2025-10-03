@@ -1,70 +1,80 @@
-// /assets/js/script.js  — FINAL (ES module) avec fallback + diagnostics
+// /assets/js/script.js — version anti-glitch (idempotent + debounce + no ugly error UI)
 
-// 1) Import Supabase (fallback si le CDN principal est bloqué)
+// Import Supabase avec fallback
 let createClient;
-try {
-  ({ createClient } = await import('https://esm.sh/@supabase/supabase-js@2'));
-} catch (e) {
-  console.warn('esm.sh indisponible, fallback jsDelivr…', e);
-  ({ createClient } = await import('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm'));
-}
+try { ({ createClient } = await import('https://esm.sh/@supabase/supabase-js@2')); }
+catch { ({ createClient } = await import('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm')); }
 
-// 2) Config Supabase (tes valeurs)
+// Config Supabase
 const SB_URL  = 'https://dzzblqlteirtzyegplgu.supabase.co';
 const SB_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR6emJscWx0ZWlydHp5ZWdwbGd1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk0MjgyMDgsImV4cCI6MjA3NTAwNDIwOH0.WbjNAjF2qxly8QMu-3VJLPQE88UgzkeAn9XPj0lcb1Y';
 const supabase = createClient(SB_URL, SB_ANON);
 
-// 3) Sélecteurs
-const $ = (s) => document.querySelector(s);
+// DOM utils
+const $  = (s)=>document.querySelector(s);
 const els = { grid: $('#products-grid'), search: $('#search'), category: $('#category'), city: $('#city') };
-const fmt = (n) => new Intl.NumberFormat('fr-FR').format(Number(n || 0));
-const escapeHtml = (s) => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fmt = (n)=> new Intl.NumberFormat('fr-FR').format(Number(n||0));
+const escapeHtml = (s)=> String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
-// 4) Récupération + rendu
+// État pour éviter les glitches
+let lastFetchId = 0;
+let hasRenderedOnce = false;
+let fillingCats = false;
+
+// Récupération + rendu (idempotent)
 async function fetchProducts() {
+  const myId = ++lastFetchId;
   try {
+    // valeurs de filtres (on traite '' comme 'Toutes')
+    const term = (els.search?.value ?? '').trim();
+    const cat  = (els.category?.value ?? 'Toutes') || 'Toutes';
+    const city = (els.city?.value ?? 'Toutes') || 'Toutes';
+
     let q = supabase.from('products').select('*').order('created_at', { ascending: false });
 
-    const term = (els.search?.value || '').trim();
-    const cat  = (els.category?.value || 'Toutes');
-    const city = (els.city?.value || 'Toutes');
-
     if (term) q = q.or(`title.ilike.%${term}%,category.ilike.%${term}%`);
-    if (cat && cat !== 'Toutes')   q = q.eq('category', cat);
-    if (city && city !== 'Toutes') q = q.contains('cities', [city]);
+    if (cat !== 'Toutes')  q = q.eq('category', cat);
+    if (city !== 'Toutes') q = q.contains('cities', [city]);
 
     const { data, error } = await q;
+
+    // si une autre requête plus récente a démarré, on ignore ce résultat
+    if (myId !== lastFetchId) return;
+
     if (error) throw error;
 
-    render(data || []);
     fillCategories(data || []);
+    render(data || []);
+    hasRenderedOnce = true;
   } catch (err) {
-    console.error('fetchProducts error:', err);
-    els.grid.innerHTML = `<div class="card"><div class="p">Erreur de chargement des produits.<br><small class="muted">(${escapeHtml(err.message||'voir console')})</small></div></div>`;
+    console.warn('fetchProducts (soft error):', err?.message || err);
+    // pas d'écran d'erreur si on a déjà un rendu; on garde l’ancien contenu
+    if (!hasRenderedOnce) {
+      els.grid.innerHTML = `<div class="card"><div class="p">Erreur de chargement des produits.<br><small class="muted">(${escapeHtml(err?.message||'réseau')})</small></div></div>`;
+    }
   }
 }
 
-function waLink(p) {
+function waLink(p){
   const price = p?.price ? `${fmt(p.price)} XAF` : 'Prix ?';
   const msg = encodeURIComponent(`Bonjour Samiah Cosmetics, je suis intéressé(e) par ${p.title} (${price}).`);
   return `https://wa.me/23562752105?text=${msg}`;
 }
 
-function productCard(p) {
+function productCard(p){
   const img = p.image || '/assets/images/placeholder.png';
   const price = p?.price ? `${fmt(p.price)} XAF` : '';
   const cities = Array.isArray(p.cities) ? p.cities.join(', ') : '';
   const sd = p.short_description || p.shortDescription || '';
-
   return `
   <div class="card">
     <img src="${img}" alt="${escapeHtml(p.title||'')}"
          onerror="this.onerror=null;this.src='/assets/images/placeholder.png'">
     <div class="p">
-      <div style="font-weight:700">${escapeHtml(p.title || '')}</div>
+      <div style="font-weight:700">${escapeHtml(p.title||'')}</div>
       <div class="muted" style="margin:2px 0 6px">${escapeHtml(sd)}</div>
       <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
-        <small class="muted">${escapeHtml(p.category || '')}</small>
+        <small class="muted">${escapeHtml(p.category||'')}</small>
         <strong>${price}</strong>
       </div>
       ${cities ? `<div><small class="muted">${escapeHtml(cities)}</small></div>` : ''}
@@ -73,44 +83,51 @@ function productCard(p) {
   </div>`;
 }
 
-function render(list) {
-  if (!list.length) {
+function render(list){
+  if (!list.length){
     els.grid.innerHTML = `<div class="card"><div class="p muted">Aucun produit pour l’instant.</div></div>`;
     return;
   }
   els.grid.innerHTML = list.map(productCard).join('');
 }
 
-function fillCategories(list) {
+// Évite de déclencher un fetch pendant qu’on remplit la liste des catégories
+function fillCategories(list){
   if (!els.category) return;
-  const cats = [...new Set(list.map(p => p.category).filter(Boolean))].sort();
+  fillingCats = true;
+  const cats = [...new Set(list.map(p=>p.category).filter(Boolean))].sort();
   const current = els.category.value || 'Toutes';
   els.category.innerHTML =
     `<option value="Toutes">Toutes les catégories</option>` +
-    cats.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
-  if ([...els.category.options].some(o => o.value === current)) els.category.value = current;
+    cats.map(c=>`<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
+  if ([...els.category.options].some(o=>o.value===current)) els.category.value = current;
+  else els.category.value = 'Toutes';
+  fillingCats = false;
 }
 
-// Écouteurs
-[els.search, els.category, els.city].forEach(el => { if (el) el.addEventListener('input', debounce(fetchProducts, 150)); });
+// debounce helper
+function debounce(fn, d=200){ let t; return (...a)=>{ clearTimeout(t); t=setTimeout(()=>fn(...a), d); }; }
 
-// Realtime (auto-actualisation)
-function setupRealtime() {
-  try {
-    const channel = supabase
+// Listeners (on ignore si on est en train de remplir les catégories)
+[els.search, els.category, els.city].forEach(el=>{
+  if (!el) return;
+  el.addEventListener('input', ()=>{ if (!fillingCats) debouncedFetch(); });
+  el.addEventListener('change', ()=>{ if (!fillingCats) debouncedFetch(); });
+});
+const debouncedFetch = debounce(fetchProducts, 150);
+
+// Realtime auto-refresh
+function setupRealtime(){
+  try{
+    const ch = supabase
       .channel('public:products-changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'products' }, () => fetchProducts())
-      .subscribe((status) => { if (status === 'SUBSCRIBED') fetchProducts(); });
-
-    window.addEventListener('beforeunload', () => { supabase.removeChannel(channel); });
-  } catch (e) {
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'products' }, ()=>fetchProducts())
+      .subscribe((status)=>{ if (status==='SUBSCRIBED') fetchProducts(); });
+    window.addEventListener('beforeunload', ()=>{ supabase.removeChannel(ch); });
+  }catch(e){
     console.warn('Realtime désactivé:', e);
     fetchProducts();
   }
 }
 
-// utils
-function debounce(fn, delay=200){ let t; return (...a)=>{ clearTimeout(t); t=setTimeout(()=>fn(...a), delay); }; }
-
-// start
 setupRealtime();
