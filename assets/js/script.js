@@ -1,9 +1,9 @@
-/* /assets/js/script.js  —  Vitrine Samiah (Supabase + Fiche produit)
-   - AUCUN alias SQL dans .select()
-   - Mapping snake_case -> camelCase côté JS
+/* /assets/js/script.js — Vitrine Supabase + fiche produit
+   - Pas d'alias SQL (PostgREST)
+   - Mapping snake_case -> camelCase
    - Filtres robustes (“Toutes”, “Toutes les catégories”, vide…)
-   - Galerie modale + WhatsApp
-   - Realtime
+   - Galerie + WhatsApp
+   - Realtime (auto-refresh)
 */
 import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
 
@@ -53,15 +53,15 @@ let emptyMsgEl = $("#emptyMsg");
 if(!emptyMsgEl){
   emptyMsgEl = document.createElement("div");
   emptyMsgEl.id = "emptyMsg";
-  emptyMsgEl.className = "muted";
-  emptyMsgEl.style.margin = "12px 0 0";
+  emptyMsgEl.className = "empty";
+  emptyMsgEl.textContent = "Aucun produit pour l’instant.";
   gridEl?.parentNode?.insertBefore(emptyMsgEl, gridEl?.nextSibling || null);
 }
 const searchEl   = $("#search");
 const categoryEl = $("#category");
 const cityEl     = $("#city");
 
-/* === Modal fiche produit === */
+/* === Modal fiche produit (IDs m*) === */
 const overlay  = $("#overlay");
 const modal    = $("#productModal");
 const mTitle   = $("#mTitle");
@@ -93,8 +93,7 @@ const isAll = (v) => {
 function ensureDefaultOptions(){
   // Catégorie: s’assurer qu’on a une option “Toutes”
   if (categoryEl){
-    const hasAll = Array.from(categoryEl.options)
-      .some(o => isAll(o.value || o.textContent));
+    const hasAll = Array.from(categoryEl.options).some(o => isAll(o.value || o.textContent));
     if (!hasAll){
       const opt = document.createElement("option");
       opt.value = "Toutes";
@@ -105,8 +104,7 @@ function ensureDefaultOptions(){
   }
   // Ville: idem
   if (cityEl){
-    const hasAllC = Array.from(cityEl.options)
-      .some(o => isAll(o.value || o.textContent));
+    const hasAllC = Array.from(cityEl.options).some(o => isAll(o.value || o.textContent));
     if (!hasAllC){
       const opt = document.createElement("option");
       opt.value = "Toutes";
@@ -220,48 +218,52 @@ function render(){
    ============================== */
 function openModalAt(index){
   if (index < 0 || index >= filtered.length) return;
+
+  // Vérifie la présence des éléments requis
+  if (!overlay || !modal || !mTitle || !mMain || !mThumbs || !mWA || !mPrev || !mNext || !mClose) {
+    console.warn("Modal manquante ou IDs différents (#productModal, #overlay, #mTitle, #mMain, #mThumbs, #mWhatsApp, #mPrev, #mNext, #mClose).");
+    alert("Fiche produit indisponible (modale manquante).");
+    return;
+  }
+
   currentIdx = index;
   const p = filtered[currentIdx];
 
-  mTitle && (mTitle.textContent = p.title || "");
-  mPrice && (mPrice.textContent = `${fmt(p.price)} ${p.currency || "XAF"}`);
-  mCat   && (mCat.textContent   = p.category || "");
-  mDesc  && (mDesc.textContent  = p.longDescription || p.shortDescription || "");
-  mCities&& (mCities.textContent= (p.cities||[]).length ? `Villes: ${p.cities.join(", ")}` : "");
+  mTitle.textContent = p.title || "";
+  mPrice.textContent = `${fmt(p.price)} ${p.currency || "XAF"}`;
+  mCat.textContent   = p.category || "";
+  mDesc.textContent  = p.longDescription || p.shortDescription || "";
+  mCities.textContent= (p.cities||[]).length ? `Villes: ${p.cities.join(", ")}` : "";
 
   const msg = `Bonjour Samiah Cosmetics, je suis intéressé(e) par ${p.title} (${fmt(p.price)} ${p.currency||"XAF"}).`;
-  const wa  = `https://wa.me/23562752105?text=${encodeURIComponent(msg)}`;
-  mWA && (mWA.href = wa);
+  mWA.href = `https://wa.me/23562752105?text=${encodeURIComponent(msg)}`;
 
   const imgs = Array.isArray(p.images) && p.images.length ? p.images : (p.image ? [p.image] : []);
-  mMain && (mMain.src = imgs[0] || "");
+  mMain.src = imgs[0] || "";
+  mThumbs.innerHTML = imgs.map((u,k)=>(
+    `<img data-k="${k}" src="${u}" alt="" ${k===0?"style='outline:2px solid #111'":""}>`
+  )).join("");
+  mThumbs.onclick = (e)=>{
+    const k = e.target?.dataset?.k;
+    if (k==null) return;
+    const i = parseInt(k, 10);
+    mMain.src = imgs[i] || "";
+    [...mThumbs.querySelectorAll("img")].forEach((im,ix)=>{
+      im.style.outline = (ix===i) ? "2px solid #111" : "none";
+    });
+  };
 
-  if (mThumbs){
-    mThumbs.innerHTML = imgs.map((u,k)=>(
-      `<img data-k="${k}" src="${u}" alt="" ${k===0?"style='outline:2px solid #111'":""}>`
-    )).join("");
-    mThumbs.onclick = (e)=>{
-      const k = e.target?.dataset?.k;
-      if (k==null) return;
-      const i = parseInt(k, 10);
-      mMain && (mMain.src = imgs[i] || "");
-      $$(".gal-thumbs img", mThumbs).forEach((im,ix)=>{
-        im.style.outline = (ix===i) ? "2px solid #111" : "none";
-      });
-    };
-  }
+  mPrev.disabled = currentIdx<=0;
+  mNext.disabled = currentIdx>=filtered.length-1;
 
-  mPrev && (mPrev.disabled = currentIdx<=0);
-  mNext && (mNext.disabled = currentIdx>=filtered.length-1);
-
-  overlay && overlay.classList.add("open");
-  modal   && modal.classList.add("open");
-  modal?.setAttribute("aria-hidden","false");
+  overlay.classList.add("open");
+  modal.classList.add("open");
+  modal.setAttribute("aria-hidden","false");
 }
 
 function closeModal(){
-  overlay && overlay.classList.remove("open");
-  modal   && modal.classList.remove("open");
+  overlay?.classList.remove("open");
+  modal?.classList.remove("open");
   modal?.setAttribute("aria-hidden","true");
   currentIdx = -1;
 }
