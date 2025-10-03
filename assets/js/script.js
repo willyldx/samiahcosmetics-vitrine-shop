@@ -1,244 +1,263 @@
-/********** Config Supabase **********/
-const SUPABASE_URL = 'https://dzzblqlteirtzyegplgu.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR6emJscWx0ZWlydHp5ZWdwbGd1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk0MjgyMDgsImV4cCI6MjA3NTAwNDIwOH0.WbjNAjF2qxly8QMu-3VJLPQE88UgzkeAn9XPj0lcb1Y';
+// === Supabase (use module import) ===
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm'
 
-const $ = s => document.querySelector(s);
-const $$ = s => Array.from(document.querySelectorAll(s));
-const fmt = n => new Intl.NumberFormat('fr-FR').format(n);
+// ⚙️ Renseigne tes clés (celles que tu m’as données)
+const SUPABASE_URL = 'https://dzzblqlteirtzyegplgu.supabase.co'
+const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR6emJscWx0ZWlydHp5ZWdwbGd1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk0MjgyMDgsImV4cCI6MjA3NTAwNDIwOH0.WbjNAjF2qxly8QMu-3VJLPQE88UgzkeAn9XPj0lcb1Y'
 
-let state = { products: [], byId: new Map(), autoTimer: null };
+const supabase = createClient(SUPABASE_URL, SUPABASE_ANON)
 
-/********** Build REST query **********/
-function productsUrl() {
-  const select = [
-    'id','title','price','currency','category',
-    'short_description','image','cities','active',
-    'expires_after_days','published_at','created_at',
-    'product_images(url,sort)'
-  ].join(',');
-  const p = new URLSearchParams();
-  p.set('select', select);
-  p.append('order', 'published_at.desc.nullslast');
-  p.append('order', 'created_at.desc.nullslast');
-  p.append('product_images.order', 'sort.asc');
-  return `${SUPABASE_URL}/rest/v1/products?${p.toString()}`;
+// === Helpers UI ===
+const $ = s => document.querySelector(s)
+const $$ = s => Array.from(document.querySelectorAll(s))
+const fmt = n => new Intl.NumberFormat('fr-FR').format(n)
+
+// Éléments de la vitrine
+const grid = $('#products-grid')
+const emptyMsg = $('#emptyMsg')
+const searchEl = $('#search')
+const catEl = $('#category')
+const cityEl = $('#city')
+
+// Éléments de la modale (IDs pm*)
+const modal = $('#productModal')
+const pmClose = $('#pmClose')
+const pmClose2 = $('#pmClose2')
+const pmTitle = $('#pmTitle')
+const pmPrice = $('#pmPrice')
+const pmBadges = $('#pmBadges')
+const pmDesc = $('#pmDesc')
+const pmCities = $('#pmCities')
+const pmWhatsApp = $('#pmWhatsApp')
+const pmSlides = $('#pmSlides')
+const pmDots = $('#pmDots')
+const pmPrev = $('#pmPrev')
+const pmNext = $('#pmNext')
+
+// État courant
+let allProducts = []
+let filtered = []
+let currentIndex = -1
+
+// =======================
+//  Chargement des produits
+// =======================
+async function fetchProducts () {
+  // On lit les produits actifs + leurs images associées (table product_images)
+  const { data, error } = await supabase
+    .from('products')
+    .select(`
+      id, title, price, currency, category, shortDescription, image, cities,
+      active, expiresAfterDays, long_description, created_at,
+      product_images ( url, sort )
+    `)
+    .eq('active', true)
+    .order('created_at', { ascending: false })
+
+  if (error) {
+    console.error('Erreur Supabase:', error)
+    showEmpty(true, `(erreur: ${error.message})`)
+    return
+  }
+
+  allProducts = Array.isArray(data) ? data : []
+  // remplit la liste des catégories
+  fillCategories()
+  // rend la grille
+  applyFiltersAndRender()
 }
 
-async function fetchProducts() {
-  const r = await fetch(productsUrl(), {
-    headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` }
-  });
-  const rows = await r.json();
-  if (!r.ok) throw new Error(rows?.message || 'Erreur de chargement des produits');
-
-  const items = (rows||[])
-    .filter(p => p.active !== false)
-    .map(p => ({
-      id: p.id,
-      title: p.title,
-      price: p.price,
-      currency: p.currency || 'XAF',
-      category: p.category || '',
-      shortDescription: p.short_description || '',
-      image: p.image || '',
-      cities: Array.isArray(p.cities) ? p.cities : [],
-      expiresAfterDays: p.expires_after_days ?? null,
-      publishedAt: p.published_at || p.created_at || null,
-      gallery: Array.isArray(p.product_images) ? p.product_images.map(x => x.url).filter(Boolean) : []
-    }));
-
-  state.products = items;
-  state.byId = new Map(items.map(p => [p.id, p]));
-  console.log('[vitrine] produits chargés :', items.length);
-  return items;
+function fillCategories () {
+  const cats = Array.from(new Set(allProducts.map(p => p.category).filter(Boolean))).sort()
+  // garde “Toutes”
+  const current = catEl.value || 'Toutes'
+  catEl.innerHTML = `<option value="Toutes">Toutes les catégories</option>` +
+    cats.map(c => `<option>${escapeHtml(c)}</option>`).join('')
+  catEl.value = current
 }
 
-/********** Helpers expiration **********/
-function daysLeft(p){
-  if(!p.expiresAfterDays || !p.publishedAt) return null;
-  const pub = new Date(p.publishedAt);
-  const end = new Date(pub.getTime()+p.expiresAfterDays*86400_000);
-  const diffMs = end - new Date();
-  return Math.ceil(diffMs/86400_000);
-}
-function expiresSoon(p){
-  const d = daysLeft(p);
-  return (d!=null && d<=1) ? d : null;
+function applyFiltersAndRender () {
+  const q = (searchEl.value || '').toLowerCase().trim()
+  const cat = catEl.value || 'Toutes'
+  const city = (cityEl.value || 'Toutes').trim()
+
+  filtered = allProducts.filter(p => {
+    const okQ = (p.title + ' ' + (p.category || '') + ' ' + (p.shortDescription || '')).toLowerCase().includes(q)
+    const okC = (cat === 'Toutes') || (p.category === cat)
+    const okCity = (city === 'Toutes') || ((p.cities || []).includes(city))
+    return okQ && okC && okCity
+  })
+
+  renderGrid()
 }
 
-/********** Rendu catalogue **********/
-function escapeHtml(s){return (''+s).replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function renderGrid () {
+  grid.innerHTML = filtered.map(p => cardTpl(p)).join('')
+  // click sur une carte => ouvre la modale
+  $$('button[data-open]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const id = btn.getAttribute('data-open')
+      const idx = filtered.findIndex(x => x.id === id)
+      if (idx >= 0) openModalAt(idx)
+    })
+  })
 
-function cardTpl(p){
-  const soon = expiresSoon(p);
-  const badge = soon!=null ? `<span class="pm-badge" style="position:absolute;top:8px;left:8px">Bientôt expiré</span>` : '';
+  showEmpty(filtered.length === 0)
+}
+
+function showEmpty (isEmpty, extra = '') {
+  if (!emptyMsg) return
+  emptyMsg.style.display = isEmpty ? 'block' : 'none'
+  if (extra) emptyMsg.textContent = `Aucun produit pour l’instant ${extra}`.trim()
+}
+
+// Carte produit
+function cardTpl (p) {
+  const price = typeof p.price === 'number' ? `${fmt(p.price)} ${p.currency || 'XAF'}` : ''
+  const img = safeFirstImage(p)
   return `
-  <div class="card" data-id="${escapeHtml(p.id)}" style="cursor:pointer;position:relative">
-    ${badge}
-    <img src="${escapeHtml(p.image||'')}" alt="${escapeHtml(p.title)}">
+  <div class="card">
+    <img src="${escapeAttr(img)}" alt="${escapeAttr(p.title || '')}">
     <div class="p">
-      <div class="title">${escapeHtml(p.title)}</div>
-      <div class="price">${fmt(p.price)} ${p.currency||'XAF'}</div>
-      <div class="muted" style="font-size:12px;margin-top:4px">${escapeHtml(p.category||'')}</div>
+      <div class="title">${escapeHtml(p.title || '')}</div>
+      <div class="muted">${escapeHtml(p.category || '')}</div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px">
+        <div style="font-weight:700">${escapeHtml(price)}</div>
+        <button class="btn secondary" data-open="${escapeAttr(p.id)}">Voir</button>
+      </div>
     </div>
-  </div>`;
+  </div>
+  `
 }
 
-function renderProducts(){
-  const grid = $('#products-grid');
-  if(!grid) return;
-
-  const q = ($('#search')?.value||'').trim().toLowerCase();
-  const cat = ($('#category')?.value||'Toutes');
-  const city = ($('#city')?.value||'Toutes');
-
-  const data = state.products.filter(p=>{
-    const okQ = (p.title+' '+(p.category||'')+' '+(p.shortDescription||'')).toLowerCase().includes(q);
-    const okC = (cat==='Toutes') || (p.category===cat);
-    const okCity = (city==='Toutes') || (Array.isArray(p.cities) && p.cities.includes(city));
-    return okQ && okC && okCity;
-  });
-
-  grid.innerHTML = data.map(cardTpl).join('');
-
-  // ouvrir le modal au clic
-  grid.onclick = (e)=>{
-    const card = e.target.closest('[data-id]');
-    if(!card) return;
-    openModal(card.getAttribute('data-id'));
-  };
+function safeFirstImage (p) {
+  const img = p?.image
+  const extras = (p?.product_images || []).sort((a, b) => (a.sort ?? 0) - (b.sort ?? 0))
+  const firstExtra = extras[0]?.url
+  return img || firstExtra || '/assets/images/placeholder.png'
 }
 
-function fillCategories(){
-  const sel = $('#category'); if(!sel) return;
-  const cats = Array.from(new Set(state.products.map(p=>p.category).filter(Boolean))).sort();
-  sel.innerHTML = `<option value="Toutes">Toutes les catégories</option>` + cats.map(c=>`<option>${escapeHtml(c)}</option>`).join('');
-}
+// =======================
+//  Modale fiche produit
+// =======================
+function openModalAt (idx) {
+  currentIndex = idx
+  const p = filtered[currentIndex]
+  if (!p) return
 
-/********** Modal **********/
-const modal = $('#productModal');
-const pmClose = $('#pmClose');
-const pmClose2 = $('#pmClose2');
-const pmSlides = $('#pmSlides');
-const pmDots = $('#pmDots');
-const pmPrev = $('#pmPrev');
-const pmNext = $('#pmNext');
-const pmTitle = $('#pmTitle');
-const pmPrice = $('#pmPrice');
-const pmBadges = $('#pmBadges');
-const pmDesc = $('#pmDesc');
-const pmCities = $('#pmCities');
-const pmWhatsApp = $('#pmWhatsApp');
-
-let slideIndex = 0, currentImages = [], currentProduct = null;
-
-function ensureModal(){
-  const ok = modal && pmClose && pmClose2 && pmSlides && pmDots && pmPrev && pmNext && pmTitle && pmPrice && pmBadges && pmDesc && pmCities && pmWhatsApp;
-  if(!ok){
-    console.error('[vitrine] IDs du modal introuvables — vérifie le bloc HTML du modal.');
+  // titre / prix / badges
+  pmTitle.textContent = p.title || ''
+  pmPrice.textContent = typeof p.price === 'number' ? `${fmt(p.price)} ${p.currency || 'XAF'}` : ''
+  pmBadges.innerHTML = ''
+  if (p.category) pmBadges.innerHTML += `<span class="pm-badge">${escapeHtml(p.category)}</span>`
+  if (Array.isArray(p.cities) && p.cities.length) {
+    pmBadges.innerHTML += `<span class="pm-badge">${escapeHtml(p.cities.slice(0,3).join(', '))}${p.cities.length>3?'…':''}</span>`
   }
-  return ok;
+
+  pmDesc.textContent = p.long_description || p.shortDescription || ''
+  pmCities.textContent = Array.isArray(p.cities) && p.cities.length
+    ? `Villes : ${p.cities.join(', ')}`
+    : ''
+
+  // lien WhatsApp
+  const msg = encodeURIComponent(`Bonjour Samiah Cosmetics, je suis intéressé(e) par ${p.title || ''} (${typeof p.price==='number' ? fmt(p.price)+' '+(p.currency||'XAF') : ''}).`)
+  pmWhatsApp.href = `https://wa.me/23562752105?text=${msg}`
+
+  // images = image principale + product_images triées
+  const images = []
+  if (p.image) images.push(p.image)
+  const extras = (p.product_images || []).slice().sort((a, b) => (a.sort ?? 0) - (b.sort ?? 0))
+  for (const e of extras) if (e?.url && !images.includes(e.url)) images.push(e.url)
+  if (!images.length) images.push('/assets/images/placeholder.png')
+
+  // slides + dots
+  pmSlides.innerHTML = images.map((url, i) => `<img src="${escapeAttr(url)}" alt="" class="${i===0?'active':''}">`).join('')
+  pmDots.innerHTML = images.map((_, i) => `<button data-i="${i}" class="${i===0?'active':''}" aria-label="Aller à l’image ${i+1}"></button>`).join('')
+
+  // interactions dots
+  $$('#pmDots button').forEach(btn => {
+    btn.onclick = () => setActiveSlide(parseInt(btn.dataset.i, 10))
+  })
+
+  // boutons nav
+  pmPrev.onclick = () => navigate(-1)
+  pmNext.onclick = () => navigate(+1)
+
+  // fermer
+  pmClose.onclick = closeModal
+  if (pmClose2) pmClose2.onclick = closeModal
+  document.addEventListener('keydown', onEscOnce, { once: true })
+
+  // afficher
+  modal.classList.add('show')
+  modal.setAttribute('aria-hidden', 'false')
 }
 
-function openModal(productId){
-  if(!ensureModal()) return;
+function closeModal () {
+  modal.classList.remove('show')
+  modal.setAttribute('aria-hidden', 'true')
+}
 
-  const p = state.byId.get(productId);
-  if(!p){
-    console.warn('[vitrine] produit introuvable pour id:', productId);
-    return;
+function onEscOnce (e) {
+  if (e.key === 'Escape') closeModal()
+}
+
+function setActiveSlide (idx) {
+  const imgs = $$('#pmSlides img')
+  const dots = $$('#pmDots button')
+  if (!imgs.length) return
+  imgs.forEach((im, i) => im.classList.toggle('active', i === idx))
+  dots.forEach((d, i) => d.classList.toggle('active', i === idx))
+}
+
+function navigate (dir) {
+  // navigation d’images
+  const imgs = $$('#pmSlides img')
+  if (imgs.length) {
+    const cur = imgs.findIndex(im => im.classList.contains('active'))
+    const next = (cur + dir + imgs.length) % imgs.length
+    setActiveSlide(next)
+    return
   }
-  currentProduct = p;
+  // navigation de produit (si besoin)
+}
+
+// =======================
+//  Filtre & évènements
+// =======================
+searchEl?.addEventListener('input', applyFiltersAndRender)
+catEl?.addEventListener('change', applyFiltersAndRender)
+cityEl?.addEventListener('change', applyFiltersAndRender)
+
+// =======================
+//  Realtime (auto refresh)
+// =======================
+function setupRealtime () {
+  // produits
+  supabase
+    .channel('realtime:products')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'products' }, () => fetchProducts())
+    .subscribe()
 
   // images
-  const imgs = [];
-  if(p.image) imgs.push(p.image);
-  if(Array.isArray(p.gallery)) for(const u of p.gallery){ if(u && !imgs.includes(u)) imgs.push(u); }
-  currentImages = imgs.length ? imgs : [''];
-
-  // infos
-  pmTitle.textContent = p.title || '—';
-  pmPrice.textContent = `${fmt(p.price)} ${p.currency||'XAF'}`;
-  pmDesc.textContent = p.shortDescription || '';
-  pmCities.textContent = (Array.isArray(p.cities)&&p.cities.length) ? `Villes: ${p.cities.join(', ')}` : '';
-  pmBadges.innerHTML = expiresSoon(p)!=null ? `<span class="pm-badge">Expire bientôt</span>` : '';
-
-  const msg = `Bonjour Samiah Cosmetics, je suis intéressé(e) par ${p.title} (${fmt(p.price)} ${p.currency||'XAF'}).`;
-  pmWhatsApp.href = `https://wa.me/23562752105?text=${encodeURIComponent(msg)}`;
-
-  // slides
-  renderSlides();
-  setActiveSlide(0);
-
-  // show
-  modal.classList.add('show');
-  modal.style.display = 'flex';
-  modal.setAttribute('aria-hidden','false');
-  document.body.style.overflow = 'hidden';
-
-  // deep link
-  location.hash = `#p/${encodeURIComponent(p.id)}`;
-
-  console.log('[vitrine] modal ouvert:', { id:p.id, images: currentImages });
+  supabase
+    .channel('realtime:product_images')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'product_images' }, () => fetchProducts())
+    .subscribe()
 }
 
-function closeModal(){
-  if(!modal) return;
-  modal.classList.remove('show');
-  modal.style.display = 'none';
-  modal.setAttribute('aria-hidden','true');
-  document.body.style.overflow = '';
-  if(location.hash.startsWith('#p/')){
-    history.replaceState(null,'',location.pathname+location.search);
-  }
+// =======================
+//  Utils
+// =======================
+function escapeHtml (s) {
+  return (s || '').toString().replace(/[&<>"']/g, c => (
+    { '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]
+  ))
+}
+function escapeAttr (s) {
+  return escapeHtml(s).replace(/"/g, '&quot;')
 }
 
-function renderSlides(){
-  pmSlides.innerHTML = currentImages.map((u,i)=>`<img src="${escapeHtml(u)}" alt="Image ${i+1}" ${i===0?'class="active"':''}>`).join('');
-  pmDots.innerHTML = currentImages.map((_,i)=>`<button data-i="${i}" ${i===0?'class="active"':''} aria-label="Aller à l’image ${i+1}"></button>`).join('');
-}
-
-function setActiveSlide(i){
-  if(!currentImages.length) return;
-  slideIndex = (i + currentImages.length) % currentImages.length;
-  $$('#pmSlides img').forEach((img,idx)=> img.classList.toggle('active', idx===slideIndex));
-  $$('#pmDots button').forEach((b,idx)=> b.classList.toggle('active', idx===slideIndex));
-}
-
-pmPrev?.addEventListener('click', ()=> setActiveSlide(slideIndex-1));
-pmNext?.addEventListener('click', ()=> setActiveSlide(slideIndex+1));
-pmDots?.addEventListener('click', e=>{
-  const b = e.target.closest('button[data-i]');
-  if(b) setActiveSlide(parseInt(b.dataset.i,10));
-});
-pmClose?.addEventListener('click', closeModal);
-pmClose2?.addEventListener('click', closeModal);
-modal?.addEventListener('click', e=>{ if(e.target===modal) closeModal(); });
-document.addEventListener('keydown', e=>{ if(e.key==='Escape' && modal.classList.contains('show')) closeModal(); });
-
-/********** Init + auto refresh **********/
-function startAutoRefresh(){
-  if(state.autoTimer) clearInterval(state.autoTimer);
-  state.autoTimer = setInterval(async ()=>{
-    try{ await fetchProducts(); renderProducts(); }catch(_e){}
-  }, 20000);
-}
-
-async function init(){
-  $('#search')?.addEventListener('input', renderProducts);
-  $('#category')?.addEventListener('change', renderProducts);
-  $('#city')?.addEventListener('change', renderProducts);
-
-  try{ await fetchProducts(); }catch(e){ console.error(e); }
-  fillCategories();
-  renderProducts();
-  startAutoRefresh();
-
-  // open deep link if present
-  if(location.hash.startsWith('#p/')){
-    const id = decodeURIComponent(location.hash.slice(3));
-    if(id) openModal(id);
-  }
-}
-if (document.readyState !== 'loading') init();
-else document.addEventListener('DOMContentLoaded', init);
+// Démarrage
+fetchProducts()
+setupRealtime()
