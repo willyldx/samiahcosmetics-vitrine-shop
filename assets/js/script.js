@@ -1,16 +1,15 @@
 /* /assets/js/script.js  —  Vitrine Samiah (Supabase + Fiche produit)
-   - Sélection sans alias SQL (PostgREST) pour éviter l'erreur
+   - AUCUN alias SQL dans .select()
    - Mapping snake_case -> camelCase côté JS
-   - Chargement + filtres + galerie d’images
-   - Realtime (auto-refresh)
+   - Filtres robustes (“Toutes”, “Toutes les catégories”, vide…)
+   - Galerie modale + WhatsApp
+   - Realtime
 */
-
 import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
 
 /* === CONFIG SUPABASE === */
 const SUPABASE_URL  = "https://dzzblqlteirtzyegplgu.supabase.co";
 const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR6emJscWx0ZWlydHp5ZWdwbGd1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk0MjgyMDgsImV4cCI6MjA3NTAwNDIwOH0.WbjNAjF2qxly8QMu-3VJLPQE88UgzkeAn9XPj0lcb1Y";
-
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON);
 
 /* === Sélection PostgREST (PAS de AS ici) === */
@@ -48,7 +47,7 @@ function mapRow(r){
   };
 }
 
-/* === Éléments principaux === */
+/* === Éléments === */
 const gridEl   = $("#products-grid");
 let emptyMsgEl = $("#emptyMsg");
 if(!emptyMsgEl){
@@ -58,12 +57,11 @@ if(!emptyMsgEl){
   emptyMsgEl.style.margin = "12px 0 0";
   gridEl?.parentNode?.insertBefore(emptyMsgEl, gridEl?.nextSibling || null);
 }
-
 const searchEl   = $("#search");
 const categoryEl = $("#category");
 const cityEl     = $("#city");
 
-/* === Modal fiche produit (IDs m… comme dans index.html) === */
+/* === Modal fiche produit === */
 const overlay  = $("#overlay");
 const modal    = $("#productModal");
 const mTitle   = $("#mTitle");
@@ -84,17 +82,51 @@ let filtered    = [];
 let currentIdx  = -1;
 
 /* ==============================
-   CHARGEMENT DU CATALOGUE
+   UTILITAIRES FILTRES
+   ============================== */
+const isAll = (v) => {
+  if (v == null) return true;
+  const s = String(v).trim().toLowerCase();
+  return !s || s === "toutes" || s.includes("toutes les catégories");
+};
+
+function ensureDefaultOptions(){
+  // Catégorie: s’assurer qu’on a une option “Toutes”
+  if (categoryEl){
+    const hasAll = Array.from(categoryEl.options)
+      .some(o => isAll(o.value || o.textContent));
+    if (!hasAll){
+      const opt = document.createElement("option");
+      opt.value = "Toutes";
+      opt.textContent = "Toutes les catégories";
+      categoryEl.insertBefore(opt, categoryEl.firstChild);
+      categoryEl.selectedIndex = 0;
+    }
+  }
+  // Ville: idem
+  if (cityEl){
+    const hasAllC = Array.from(cityEl.options)
+      .some(o => isAll(o.value || o.textContent));
+    if (!hasAllC){
+      const opt = document.createElement("option");
+      opt.value = "Toutes";
+      opt.textContent = "Toutes";
+      cityEl.insertBefore(opt, cityEl.firstChild);
+      cityEl.selectedIndex = 0;
+    }
+  }
+}
+
+/* ==============================
+   CHARGEMENT
    ============================== */
 async function fetchProducts(){
-  // Essai principal : order by created_at
   let { data, error } = await supabase
     .from("products")
     .select(SELECT_COLS)
     .eq("active", true)
     .order("created_at", { ascending: false });
 
-  // Fallback si created_at n'existe pas
   if (error && /created_at/i.test(error.message)) {
     ({ data, error } = await supabase
       .from("products")
@@ -117,8 +149,8 @@ async function fetchProducts(){
   render();
 }
 
-/* === Filtres === */
 function buildCategoryFilter(list){
+  ensureDefaultOptions();
   if (categoryEl && categoryEl.options.length <= 1){
     const cats = Array.from(new Set(list.map(p=>p.category).filter(Boolean))).sort();
     const frag = document.createDocumentFragment();
@@ -131,20 +163,22 @@ function buildCategoryFilter(list){
   }
 }
 
+/* ==============================
+   RENDU & FILTRES
+   ============================== */
 function applyFilters(){
-  const q   = (searchEl?.value || "").toLowerCase().trim();
-  const cat = categoryEl?.value || "Toutes";
-  const city= cityEl?.value || "Toutes";
+  const qRaw   = (searchEl?.value || "").toLowerCase().trim();
+  const catRaw = (categoryEl?.value || categoryEl?.options?.[categoryEl.selectedIndex]?.text || "").trim();
+  const cityRaw= (cityEl?.value || cityEl?.options?.[cityEl.selectedIndex]?.text || "").trim();
 
   filtered = allProducts.filter(p=>{
-    const okQ   = !q   || (p.title + " " + (p.category||"") + " " + (p.shortDescription||"")).toLowerCase().includes(q);
-    const okCat = cat === "Toutes"  || p.category === cat;
-    const okCity= city=== "Toutes"  || (p.cities||[]).includes(city);
+    const okQ   = !qRaw || (p.title + " " + (p.category||"") + " " + (p.shortDescription||"")).toLowerCase().includes(qRaw);
+    const okCat = isAll(catRaw) || (p.category||"").toLowerCase() === catRaw.toLowerCase();
+    const okCity= isAll(cityRaw) || (p.cities||[]).some(c => (c||"").toLowerCase() === cityRaw.toLowerCase());
     return okQ && okCat && okCity;
   });
 }
 
-/* === Rendu === */
 function firstImage(p){
   if (Array.isArray(p.images) && p.images.length) return p.images[0];
   return p.image || "";
@@ -166,7 +200,9 @@ function cardTpl(p, idx){
 }
 
 function render(){
+  ensureDefaultOptions();
   applyFilters();
+
   if(!gridEl) return;
 
   gridEl.innerHTML = filtered.map((p,i)=>cardTpl(p,i)).join("");
@@ -180,26 +216,23 @@ function render(){
 }
 
 /* ==============================
-   FICHE PRODUIT (GALERIE)
+   MODALE PRODUIT
    ============================== */
 function openModalAt(index){
   if (index < 0 || index >= filtered.length) return;
   currentIdx = index;
   const p = filtered[currentIdx];
 
-  // Meta
   mTitle && (mTitle.textContent = p.title || "");
   mPrice && (mPrice.textContent = `${fmt(p.price)} ${p.currency || "XAF"}`);
   mCat   && (mCat.textContent   = p.category || "");
   mDesc  && (mDesc.textContent  = p.longDescription || p.shortDescription || "");
   mCities&& (mCities.textContent= (p.cities||[]).length ? `Villes: ${p.cities.join(", ")}` : "");
 
-  // WhatsApp
   const msg = `Bonjour Samiah Cosmetics, je suis intéressé(e) par ${p.title} (${fmt(p.price)} ${p.currency||"XAF"}).`;
   const wa  = `https://wa.me/23562752105?text=${encodeURIComponent(msg)}`;
   mWA && (mWA.href = wa);
 
-  // Galerie
   const imgs = Array.isArray(p.images) && p.images.length ? p.images : (p.image ? [p.image] : []);
   mMain && (mMain.src = imgs[0] || "");
 
@@ -218,11 +251,9 @@ function openModalAt(index){
     };
   }
 
-  // Nav
   mPrev && (mPrev.disabled = currentIdx<=0);
   mNext && (mNext.disabled = currentIdx>=filtered.length-1);
 
-  // Show
   overlay && overlay.classList.add("open");
   modal   && modal.classList.add("open");
   modal?.setAttribute("aria-hidden","false");
@@ -268,6 +299,7 @@ function subscribeRealtime(){
 
 /* === Boot === */
 (async function init(){
+  ensureDefaultOptions();
   bindUI();
   await fetchProducts();
   subscribeRealtime();
