@@ -1,7 +1,14 @@
-module.exports = async (req, res) => {
-  if (req.method === 'OPTIONS') return res.status(200).end();
-  const key = req.headers['x-admin-secret'];
-  if (!key || key !== process.env.ADMIN_SECRET) return res.status(401).json({ error: 'unauthorized' });
-  res.setHeader('Content-Type', 'application/json');
-  res.status(200).json({ ok: true });
-};
+export default async function handler(req, res) {
+  const ok =
+    !!process.env.SUPABASE_URL &&
+    !!process.env.SUPABASE_SERVICE_ROLE &&
+    !!process.env.ADMIN_SECRET;
+  res.status(ok ? 200 : 500).json({
+    ok,
+    present: {
+      SUPABASE_URL: !!process.env.SUPABASE_URL,
+      SUPABASE_SERVICE_ROLE: !!process.env.SUPABASE_SERVICE_ROLE,
+      ADMIN_SECRET: !!process.env.ADMIN_SECRET
+    }
+  });
+}
