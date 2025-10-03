@@ -1,263 +1,293 @@
-// === Supabase (use module import) ===
-import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm'
+/* /assets/js/script.js  —  Vitrine Samiah (Supabase + Fiche produit)
+   - Mapping snake_case -> camelCase
+   - Chargement + filtres + galerie d’images
+   - Realtime (auto-refresh)
+*/
 
-// ⚙️ Renseigne tes clés (celles que tu m’as données)
-const SUPABASE_URL = 'https://dzzblqlteirtzyegplgu.supabase.co'
-const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR6emJscWx0ZWlydHp5ZWdwbGd1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk0MjgyMDgsImV4cCI6MjA3NTAwNDIwOH0.WbjNAjF2qxly8QMu-3VJLPQE88UgzkeAn9XPj0lcb1Y'
+import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
 
-const supabase = createClient(SUPABASE_URL, SUPABASE_ANON)
+/* === CONFIG SUPABASE (clé publique OK côté client) === */
+const SUPABASE_URL  = "https://dzzblqlteirtzyegplgu.supabase.co";
+const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR6emJscWx0ZWlydHp5ZWdwbGd1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk0MjgyMDgsImV4cCI6MjA3NTAwNDIwOH0.WbjNAjF2qxly8QMu-3VJLPQE88UgzkeAn9XPj0lcb1Y";
 
-// === Helpers UI ===
-const $ = s => document.querySelector(s)
-const $$ = s => Array.from(document.querySelectorAll(s))
-const fmt = n => new Intl.NumberFormat('fr-FR').format(n)
+export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON);
 
-// Éléments de la vitrine
-const grid = $('#products-grid')
-const emptyMsg = $('#emptyMsg')
-const searchEl = $('#search')
-const catEl = $('#category')
-const cityEl = $('#city')
+/* === Sélection avec alias -> camelCase attendu par l’UI === */
+const SELECT_COLS = `
+  id, title, price, currency, category,
+  short_description  as shortDescription,
+  long_description   as longDescription,
+  image, images, cities, active,
+  expires_after_days as expiresAfterDays,
+  published_at       as publishedAt,
+  created_at
+`;
 
-// Éléments de la modale (IDs pm*)
-const modal = $('#productModal')
-const pmClose = $('#pmClose')
-const pmClose2 = $('#pmClose2')
-const pmTitle = $('#pmTitle')
-const pmPrice = $('#pmPrice')
-const pmBadges = $('#pmBadges')
-const pmDesc = $('#pmDesc')
-const pmCities = $('#pmCities')
-const pmWhatsApp = $('#pmWhatsApp')
-const pmSlides = $('#pmSlides')
-const pmDots = $('#pmDots')
-const pmPrev = $('#pmPrev')
-const pmNext = $('#pmNext')
+/* === Helpers DOM & format === */
+const $  = (s, r=document) => r.querySelector(s);
+const $$ = (s, r=document) => Array.from(r.querySelectorAll(s));
+const fmt = (n) => new Intl.NumberFormat("fr-FR").format(n || 0);
 
-// État courant
-let allProducts = []
-let filtered = []
-let currentIndex = -1
+/* === Mapping snake_case -> camelCase pour le realtime aussi === */
+function mapRow(r){
+  if(!r) return null;
+  return {
+    id: r.id,
+    title: r.title,
+    price: r.price,
+    currency: r.currency || "XAF",
+    category: r.category || "",
+    shortDescription: r.short_description ?? r.shortDescription ?? "",
+    longDescription:  r.long_description  ?? r.longDescription  ?? "",
+    image: r.image || "",
+    images: Array.isArray(r.images) ? r.images : [],
+    cities: Array.isArray(r.cities) ? r.cities : [],
+    active: r.active !== false,
+    expiresAfterDays: r.expires_after_days ?? r.expiresAfterDays ?? null,
+    publishedAt: r.published_at ?? r.publishedAt ?? null,
+    created_at: r.created_at ?? null,
+  };
+}
 
-// =======================
-//  Chargement des produits
-// =======================
-async function fetchProducts () {
-  // On lit les produits actifs + leurs images associées (table product_images)
-  const { data, error } = await supabase
-    .from('products')
-    .select(`
-      id, title, price, currency, category, shortDescription, image, cities,
-      active, expiresAfterDays, long_description, created_at,
-      product_images ( url, sort )
-    `)
-    .eq('active', true)
-    .order('created_at', { ascending: false })
+/* === Éléments principaux === */
+const gridEl   = $("#products-grid");
+let emptyMsgEl = $("#emptyMsg");
+if(!emptyMsgEl){
+  emptyMsgEl = document.createElement("div");
+  emptyMsgEl.id = "emptyMsg";
+  emptyMsgEl.className = "muted";
+  emptyMsgEl.style.margin = "12px 0 0";
+  gridEl?.parentNode?.insertBefore(emptyMsgEl, gridEl?.nextSibling || null);
+}
 
-  if (error) {
-    console.error('Erreur Supabase:', error)
-    showEmpty(true, `(erreur: ${error.message})`)
-    return
+const searchEl   = $("#search");
+const categoryEl = $("#category");
+const cityEl     = $("#city");
+
+/* === Modal (version « m… » comme dans ton index) === */
+const overlay  = $("#overlay");
+const modal    = $("#productModal");
+const mTitle   = $("#mTitle");
+const mPrice   = $("#mPrice");
+const mCat     = $("#mCat");
+const mDesc    = $("#mDesc");
+const mCities  = $("#mCities");
+const mMain    = $("#mMain");
+const mThumbs  = $("#mThumbs");
+const mWA      = $("#mWhatsApp");
+const mPrev    = $("#mPrev");
+const mNext    = $("#mNext");
+const mClose   = $("#mClose");
+
+/* === État local === */
+let allProducts = [];
+let filtered    = [];
+let currentIdx  = -1;
+
+/* ==============================
+   CHARGEMENT DU CATALOGUE
+   ============================== */
+async function fetchProducts(){
+  // 1er essai: order by created_at
+  let { data, error } = await supabase
+    .from("products")
+    .select(SELECT_COLS)
+    .eq("active", true)
+    .order("created_at", { ascending: false });
+
+  // Fallback si la colonne n'existe pas
+  if (error && /created_at/i.test(error.message)) {
+    ({ data, error } = await supabase
+      .from("products")
+      .select(SELECT_COLS)
+      .eq("active", true)
+      .order("published_at", { ascending: false, nullsFirst: false }));
   }
 
-  allProducts = Array.isArray(data) ? data : []
-  // remplit la liste des catégories
-  fillCategories()
-  // rend la grille
-  applyFiltersAndRender()
+  if (error){
+    console.error(error);
+    allProducts = [];
+    render();
+    emptyMsgEl.style.display = "block";
+    emptyMsgEl.textContent = `Aucun produit pour l’instant (erreur: ${error.message})`;
+    return;
+  }
+
+  allProducts = (data || []).map(mapRow);
+  buildCategoryFilter(allProducts);
+  render();
 }
 
-function fillCategories () {
-  const cats = Array.from(new Set(allProducts.map(p => p.category).filter(Boolean))).sort()
-  // garde “Toutes”
-  const current = catEl.value || 'Toutes'
-  catEl.innerHTML = `<option value="Toutes">Toutes les catégories</option>` +
-    cats.map(c => `<option>${escapeHtml(c)}</option>`).join('')
-  catEl.value = current
+/* === Filtres === */
+function buildCategoryFilter(list){
+  // Si le select ne contient que l’option « Toutes », on remplit
+  if (categoryEl && categoryEl.options.length <= 1){
+    const cats = Array.from(new Set(list.map(p=>p.category).filter(Boolean))).sort();
+    const frag = document.createDocumentFragment();
+    cats.forEach(c=>{
+      const o = document.createElement("option");
+      o.value = c; o.textContent = c;
+      frag.appendChild(o);
+    });
+    categoryEl.appendChild(frag);
+  }
 }
 
-function applyFiltersAndRender () {
-  const q = (searchEl.value || '').toLowerCase().trim()
-  const cat = catEl.value || 'Toutes'
-  const city = (cityEl.value || 'Toutes').trim()
+function applyFilters(){
+  const q   = (searchEl?.value || "").toLowerCase().trim();
+  const cat = categoryEl?.value || "Toutes";
+  const city= cityEl?.value || "Toutes";
 
-  filtered = allProducts.filter(p => {
-    const okQ = (p.title + ' ' + (p.category || '') + ' ' + (p.shortDescription || '')).toLowerCase().includes(q)
-    const okC = (cat === 'Toutes') || (p.category === cat)
-    const okCity = (city === 'Toutes') || ((p.cities || []).includes(city))
-    return okQ && okC && okCity
-  })
-
-  renderGrid()
+  filtered = allProducts.filter(p=>{
+    const okQ   = !q   || (p.title + " " + (p.category||"") + " " + (p.shortDescription||"")).toLowerCase().includes(q);
+    const okCat = cat === "Toutes"  || p.category === cat;
+    const okCity= city=== "Toutes"  || (p.cities||[]).includes(city);
+    return okQ && okCat && okCity;
+  });
 }
 
-function renderGrid () {
-  grid.innerHTML = filtered.map(p => cardTpl(p)).join('')
-  // click sur une carte => ouvre la modale
-  $$('button[data-open]').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const id = btn.getAttribute('data-open')
-      const idx = filtered.findIndex(x => x.id === id)
-      if (idx >= 0) openModalAt(idx)
-    })
-  })
+/* === Rendu des cartes === */
+function render(){
+  applyFilters();
 
-  showEmpty(filtered.length === 0)
+  if(!gridEl) return;
+  gridEl.innerHTML = filtered.map((p,i)=>cardTpl(p,i)).join("");
+
+  if (filtered.length === 0){
+    emptyMsgEl.style.display = "block";
+    if (!emptyMsgEl.textContent) emptyMsgEl.textContent = "Aucun produit pour l’instant.";
+  }else{
+    emptyMsgEl.style.display = "none";
+  }
 }
 
-function showEmpty (isEmpty, extra = '') {
-  if (!emptyMsg) return
-  emptyMsg.style.display = isEmpty ? 'block' : 'none'
-  if (extra) emptyMsg.textContent = `Aucun produit pour l’instant ${extra}`.trim()
+function firstImage(p){
+  if (Array.isArray(p.images) && p.images.length) return p.images[0];
+  return p.image || "";
 }
 
-// Carte produit
-function cardTpl (p) {
-  const price = typeof p.price === 'number' ? `${fmt(p.price)} ${p.currency || 'XAF'}` : ''
-  const img = safeFirstImage(p)
+function cardTpl(p, idx){
+  const img = firstImage(p);
+  const price = `${fmt(p.price)} ${p.currency || "XAF"}`;
   return `
-  <div class="card">
-    <img src="${escapeAttr(img)}" alt="${escapeAttr(p.title || '')}">
-    <div class="p">
-      <div class="title">${escapeHtml(p.title || '')}</div>
-      <div class="muted">${escapeHtml(p.category || '')}</div>
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px">
-        <div style="font-weight:700">${escapeHtml(price)}</div>
-        <button class="btn secondary" data-open="${escapeAttr(p.id)}">Voir</button>
+    <div class="card product-card" data-idx="${idx}" style="cursor:pointer">
+      <img src="${img}" alt="${escapeHtml(p.title || "")}">
+      <div class="p">
+        <div style="font-weight:700">${escapeHtml(p.title || "")}</div>
+        <div class="muted" style="margin-top:4px">${escapeHtml(p.category || "")}</div>
+        <div style="margin-top:6px;font-weight:800">${price}</div>
       </div>
     </div>
-  </div>
-  `
+  `;
 }
 
-function safeFirstImage (p) {
-  const img = p?.image
-  const extras = (p?.product_images || []).sort((a, b) => (a.sort ?? 0) - (b.sort ?? 0))
-  const firstExtra = extras[0]?.url
-  return img || firstExtra || '/assets/images/placeholder.png'
-}
+function escapeHtml(s){return (""+s).replace(/[&<>'"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 
-// =======================
-//  Modale fiche produit
-// =======================
-function openModalAt (idx) {
-  currentIndex = idx
-  const p = filtered[currentIndex]
-  if (!p) return
+/* ==============================
+   FICHE PRODUIT (GALERIE)
+   ============================== */
+function openModalAt(index){
+  if (index < 0 || index >= filtered.length) return;
+  currentIdx = index;
+  const p = filtered[currentIdx];
 
-  // titre / prix / badges
-  pmTitle.textContent = p.title || ''
-  pmPrice.textContent = typeof p.price === 'number' ? `${fmt(p.price)} ${p.currency || 'XAF'}` : ''
-  pmBadges.innerHTML = ''
-  if (p.category) pmBadges.innerHTML += `<span class="pm-badge">${escapeHtml(p.category)}</span>`
-  if (Array.isArray(p.cities) && p.cities.length) {
-    pmBadges.innerHTML += `<span class="pm-badge">${escapeHtml(p.cities.slice(0,3).join(', '))}${p.cities.length>3?'…':''}</span>`
+  // Titre / meta
+  if (mTitle) mTitle.textContent = p.title || "";
+  if (mPrice) mPrice.textContent = `${fmt(p.price)} ${p.currency || "XAF"}`;
+  if (mCat)   mCat.textContent   = p.category || "";
+  if (mDesc)  mDesc.textContent  = p.longDescription || p.shortDescription || "";
+  if (mCities)mCities.textContent= (p.cities||[]).length ? `Villes: ${p.cities.join(", ")}` : "";
+
+  // WhatsApp CTA
+  const msg = `Bonjour Samiah Cosmetics, je suis intéressé(e) par ${p.title} (${fmt(p.price)} ${p.currency||"XAF"}).`;
+  const wa  = `https://wa.me/23562752105?text=${encodeURIComponent(msg)}`;
+  if (mWA){ mWA.href = wa; }
+
+  // Galerie
+  const imgs = Array.isArray(p.images) && p.images.length ? p.images : (p.image ? [p.image] : []);
+  if (mMain) mMain.src = imgs[0] || "";
+
+  if (mThumbs){
+    mThumbs.innerHTML = imgs.map((u,k)=>(
+      `<img data-k="${k}" src="${u}" alt="" ${k===0?"style='outline:2px solid #111'":""}>`
+    )).join("");
+    // clic vignettes
+    mThumbs.onclick = (e)=>{
+      const k = e.target?.dataset?.k;
+      if (k==null) return;
+      const i = parseInt(k, 10);
+      if (mMain) mMain.src = imgs[i] || "";
+      // style sélection
+      $$(".gal-thumbs img", mThumbs).forEach((im,ix)=>{
+        im.style.outline = (ix===i) ? "2px solid #111" : "none";
+      });
+    };
   }
 
-  pmDesc.textContent = p.long_description || p.shortDescription || ''
-  pmCities.textContent = Array.isArray(p.cities) && p.cities.length
-    ? `Villes : ${p.cities.join(', ')}`
-    : ''
+  // Navigation
+  if (mPrev) mPrev.disabled = currentIdx<=0;
+  if (mNext) mNext.disabled = currentIdx>=filtered.length-1;
 
-  // lien WhatsApp
-  const msg = encodeURIComponent(`Bonjour Samiah Cosmetics, je suis intéressé(e) par ${p.title || ''} (${typeof p.price==='number' ? fmt(p.price)+' '+(p.currency||'XAF') : ''}).`)
-  pmWhatsApp.href = `https://wa.me/23562752105?text=${msg}`
-
-  // images = image principale + product_images triées
-  const images = []
-  if (p.image) images.push(p.image)
-  const extras = (p.product_images || []).slice().sort((a, b) => (a.sort ?? 0) - (b.sort ?? 0))
-  for (const e of extras) if (e?.url && !images.includes(e.url)) images.push(e.url)
-  if (!images.length) images.push('/assets/images/placeholder.png')
-
-  // slides + dots
-  pmSlides.innerHTML = images.map((url, i) => `<img src="${escapeAttr(url)}" alt="" class="${i===0?'active':''}">`).join('')
-  pmDots.innerHTML = images.map((_, i) => `<button data-i="${i}" class="${i===0?'active':''}" aria-label="Aller à l’image ${i+1}"></button>`).join('')
-
-  // interactions dots
-  $$('#pmDots button').forEach(btn => {
-    btn.onclick = () => setActiveSlide(parseInt(btn.dataset.i, 10))
-  })
-
-  // boutons nav
-  pmPrev.onclick = () => navigate(-1)
-  pmNext.onclick = () => navigate(+1)
-
-  // fermer
-  pmClose.onclick = closeModal
-  if (pmClose2) pmClose2.onclick = closeModal
-  document.addEventListener('keydown', onEscOnce, { once: true })
-
-  // afficher
-  modal.classList.add('show')
-  modal.setAttribute('aria-hidden', 'false')
+  // Affiche le modal
+  if (overlay) overlay.classList.add("open");
+  if (modal)   modal.classList.add("open");
+  modal?.setAttribute("aria-hidden","false");
 }
 
-function closeModal () {
-  modal.classList.remove('show')
-  modal.setAttribute('aria-hidden', 'true')
+function closeModal(){
+  if (overlay) overlay.classList.remove("open");
+  if (modal)   modal.classList.remove("open");
+  modal?.setAttribute("aria-hidden","true");
+  currentIdx = -1;
 }
 
-function onEscOnce (e) {
-  if (e.key === 'Escape') closeModal()
+/* ==============================
+   ÉVÉNEMENTS UI
+   ============================== */
+function bindUI(){
+  // Filtres
+  searchEl?.addEventListener("input", render);
+  categoryEl?.addEventListener("change", render);
+  cityEl?.addEventListener("change", render);
+
+  // Délégation clic sur carte
+  gridEl?.addEventListener("click", (e)=>{
+    const card = e.target.closest(".product-card");
+    if (!card) return;
+    const idx = parseInt(card.dataset.idx, 10);
+    openModalAt(idx);
+  });
+
+  // Modal
+  mClose?.addEventListener("click", closeModal);
+  overlay?.addEventListener("click", closeModal);
+  document.addEventListener("keydown", (e)=>{ if(e.key==="Escape") closeModal(); });
+
+  mPrev?.addEventListener("click", ()=>{
+    if (currentIdx>0) openModalAt(currentIdx-1);
+  });
+  mNext?.addEventListener("click", ()=>{
+    if (currentIdx<filtered.length-1) openModalAt(currentIdx+1);
+  });
 }
 
-function setActiveSlide (idx) {
-  const imgs = $$('#pmSlides img')
-  const dots = $$('#pmDots button')
-  if (!imgs.length) return
-  imgs.forEach((im, i) => im.classList.toggle('active', i === idx))
-  dots.forEach((d, i) => d.classList.toggle('active', i === idx))
-}
-
-function navigate (dir) {
-  // navigation d’images
-  const imgs = $$('#pmSlides img')
-  if (imgs.length) {
-    const cur = imgs.findIndex(im => im.classList.contains('active'))
-    const next = (cur + dir + imgs.length) % imgs.length
-    setActiveSlide(next)
-    return
-  }
-  // navigation de produit (si besoin)
-}
-
-// =======================
-//  Filtre & évènements
-// =======================
-searchEl?.addEventListener('input', applyFiltersAndRender)
-catEl?.addEventListener('change', applyFiltersAndRender)
-cityEl?.addEventListener('change', applyFiltersAndRender)
-
-// =======================
-//  Realtime (auto refresh)
-// =======================
-function setupRealtime () {
-  // produits
+/* ==============================
+   REALTIME (auto-refresh)
+   ============================== */
+function subscribeRealtime(){
   supabase
-    .channel('realtime:products')
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'products' }, () => fetchProducts())
-    .subscribe()
-
-  // images
-  supabase
-    .channel('realtime:product_images')
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'product_images' }, () => fetchProducts())
-    .subscribe()
+    .channel("products-rt")
+    .on("postgres_changes", { event: "*", schema: "public", table: "products" }, async () => {
+      await fetchProducts();  // plus simple et robuste
+    })
+    .subscribe();
 }
 
-// =======================
-//  Utils
-// =======================
-function escapeHtml (s) {
-  return (s || '').toString().replace(/[&<>"']/g, c => (
-    { '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]
-  ))
-}
-function escapeAttr (s) {
-  return escapeHtml(s).replace(/"/g, '&quot;')
-}
-
-// Démarrage
-fetchProducts()
-setupRealtime()
+/* ==============================
+   BOOT
+   ============================== */
+(async function init(){
+  bindUI();
+  await fetchProducts();
+  subscribeRealtime();
+})();
