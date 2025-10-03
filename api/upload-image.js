@@ -1,44 +1,61 @@
-// /api/upload-image.js
+function mimeFromExt(ext) {
+  const e = ext.toLowerCase();
+  if (e === 'jpg' || e === 'jpeg') return 'image/jpeg';
+  if (e === 'png') return 'image/png';
+  if (e === 'webp') return 'image/webp';
+  return 'application/octet-stream';
+}
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  const secret = req.headers['x-admin-secret'];
-  if (!secret || secret !== process.env.ADMIN_SECRET) return res.status(401).json({ error: 'Unauthorized' });
-
-  let payload; try { payload = await readJson(req); } catch { return res.status(400).json({ error: 'JSON invalide' }); }
-  let { filename, contentBase64 } = payload || {};
-  if (!filename || !contentBase64) return res.status(400).json({ error: 'filename et contentBase64 requis' });
-  if (contentBase64.includes(',')) contentBase64 = contentBase64.split(',')[1];
-
-  const owner  = process.env.REPO_OWNER  || process.env.VERCEL_GIT_REPO_OWNER;
-  const repo   = process.env.REPO_NAME   || process.env.VERCEL_GIT_REPO_SLUG;
-  const branch = process.env.TARGET_BRANCH || process.env.VERCEL_GIT_COMMIT_REF || 'main';
-  const token  = process.env.GITHUB_TOKEN;
-  const dir    = process.env.UPLOADS_DIR || 'assets/uploads';
-
-  const missing = [];
-  if (!owner) missing.push('REPO_OWNER');
-  if (!repo) missing.push('REPO_NAME');
-  if (!token) missing.push('GITHUB_TOKEN');
-  if (!process.env.ADMIN_SECRET) missing.push('ADMIN_SECRET');
-  if (missing.length) return res.status(500).json({ error: 'Config manquante', missing });
-
-  try {
-    const safe = String(filename).replace(/[^a-z0-9._-]+/gi, '_');
-    const path = `${dir}/${safe}`;
-
-    const putUrl = `https://api.github.com/repos/${owner}/${repo}/contents/${encodeURIComponent(path)}`;
-    const r = await fetch(putUrl, {
-      method: 'PUT',
-      headers: { Authorization: `token ${token}`, 'Content-Type': 'application/json', 'User-Agent': 'vercel-fn' },
-      body: JSON.stringify({ message: `chore(admin): upload ${safe}`, content: contentBase64, branch })
-    });
-    if (!r.ok) return res.status(r.status).json(await safeJson(r));
-
-    return res.status(200).json({ ok: true, siteUrl: `/${path}` });
-  } catch (e) {
-    return res.status(500).json({ error: 'Server error', details: String(e) });
+  const { SUPABASE_URL, SUPABASE_SERVICE_ROLE, ADMIN_SECRET, SUPABASE_BUCKET } = process.env;
+  if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE) {
+    return res.status(500).json({ error: 'Missing Supabase env vars' });
   }
+  if (req.headers['x-admin-secret'] !== (ADMIN_SECRET || '')) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+
+  let body = {};
+  try { body = JSON.parse(req.body || '{}'); } catch { body = req.body || {}; }
+  const { filename, contentBase64 } = body || {};
+  if (!filename || !contentBase64) {
+    return res.status(400).json({ error: 'Missing filename or contentBase64' });
+  }
+
+  // Limite soft 8 Mo -> base64 ≈ 1.33x ; si 413 en prod, réduire côté client.
+  const ext = (filename.split('.').pop() || 'jpg').replace(/[^a-z0-9]/gi,'').toLowerCase();
+  const contentType = mimeFromExt(ext);
+
+  const now = new Date();
+  const y = now.getUTCFullYear();
+  const m = String(now.getUTCMonth()+1).padStart(2,'0');
+  const d = String(now.getUTCDate()).padStart(2,'0');
+  const safeName = filename.replace(/[^a-z0-9._-]/gi, '_');
+  const path = `${y}/${m}/${d}/${Date.now()}-${safeName}`;
+
+  const binary = Buffer.from(contentBase64, 'base64');
+
+  const bucket = SUPABASE_BUCKET || 'product-images';
+  const url = `${SUPABASE_URL}/storage/v1/object/${bucket}/${encodeURIComponent(path)}`;
+
+  const h = {
+    'apikey': SUPABASE_SERVICE_ROLE,
+    'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE}`,
+    'Content-Type': contentType,
+    'x-upsert': 'true'
+  };
+
+  const r = await fetch(url, { method: 'PUT', headers: h, body: binary });
+  const data = await r.json().catch(() => ({}));
+
+  if (!r.ok) return res.status(r.status).json({ error: data?.message || 'upload failed' });
+
+  const publicUrl = `${SUPABASE_URL}/storage/v1/object/public/${bucket}/${path}`;
+  return res.status(200).json({
+    ok: true,
+    path,
+    siteUrl: publicUrl
+  });
 }
-function readJson(req){ return new Promise((resolve,reject)=>{ let d=''; req.on('data',c=>d+=c); req.on('end',()=>{ try{ resolve(JSON.parse(d||'{}')); }catch(e){ reject(e); } }); }); }
-async function safeJson(r){ try{ return await r.json(); }catch{ return { text: await r.text() }; } }
