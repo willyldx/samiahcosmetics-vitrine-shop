@@ -1,39 +1,36 @@
-// /assets/js/script.js (ES module)
+// /assets/js/script.js  — FINAL (ES module) avec fallback + diagnostics
 
-// 1) Dépendance Supabase (ESM CDN)
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+// 1) Import Supabase (fallback si le CDN principal est bloqué)
+let createClient;
+try {
+  ({ createClient } = await import('https://esm.sh/@supabase/supabase-js@2'));
+} catch (e) {
+  console.warn('esm.sh indisponible, fallback jsDelivr…', e);
+  ({ createClient } = await import('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm'));
+}
 
 // 2) Config Supabase (tes valeurs)
 const SB_URL  = 'https://dzzblqlteirtzyegplgu.supabase.co';
 const SB_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR6emJscWx0ZWlydHp5ZWdwbGd1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk0MjgyMDgsImV4cCI6MjA3NTAwNDIwOH0.WbjNAjF2qxly8QMu-3VJLPQE88UgzkeAn9XPj0lcb1Y';
-// ⚠️ Ne mets JAMAIS la Service Role ici (réservée au serveur)
 const supabase = createClient(SB_URL, SB_ANON);
 
-// 3) Sélecteurs & utilitaires
+// 3) Sélecteurs
 const $ = (s) => document.querySelector(s);
-const els = {
-  grid:     $('#products-grid'),
-  search:   $('#search'),
-  category: $('#category'),
-  city:     $('#city'),
-};
+const els = { grid: $('#products-grid'), search: $('#search'), category: $('#category'), city: $('#city') };
 const fmt = (n) => new Intl.NumberFormat('fr-FR').format(Number(n || 0));
-function escapeHtml(s){ return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+const escapeHtml = (s) => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
-// 4) Récupération & rendu
+// 4) Récupération + rendu
 async function fetchProducts() {
   try {
     let q = supabase.from('products').select('*').order('created_at', { ascending: false });
 
-    // Filtres
     const term = (els.search?.value || '').trim();
     const cat  = (els.category?.value || 'Toutes');
     const city = (els.city?.value || 'Toutes');
 
-    if (term) {
-      q = q.or(`title.ilike.%${term}%,category.ilike.%${term}%`);
-    }
-    if (cat && cat !== 'Toutes')  q = q.eq('category', cat);
+    if (term) q = q.or(`title.ilike.%${term}%,category.ilike.%${term}%`);
+    if (cat && cat !== 'Toutes')   q = q.eq('category', cat);
     if (city && city !== 'Toutes') q = q.contains('cities', [city]);
 
     const { data, error } = await q;
@@ -43,7 +40,7 @@ async function fetchProducts() {
     fillCategories(data || []);
   } catch (err) {
     console.error('fetchProducts error:', err);
-    els.grid.innerHTML = `<div class="card"><div class="p">Erreur de chargement des produits.</div></div>`;
+    els.grid.innerHTML = `<div class="card"><div class="p">Erreur de chargement des produits.<br><small class="muted">(${escapeHtml(err.message||'voir console')})</small></div></div>`;
   }
 }
 
@@ -61,7 +58,7 @@ function productCard(p) {
 
   return `
   <div class="card">
-    <img src="${img}" alt="${escapeHtml(p.title || '')}"
+    <img src="${img}" alt="${escapeHtml(p.title||'')}"
          onerror="this.onerror=null;this.src='/assets/images/placeholder.png'">
     <div class="p">
       <div style="font-weight:700">${escapeHtml(p.title || '')}</div>
@@ -91,43 +88,29 @@ function fillCategories(list) {
   els.category.innerHTML =
     `<option value="Toutes">Toutes les catégories</option>` +
     cats.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
-  if ([...els.category.options].some(o => o.value === current)) {
-    els.category.value = current;
-  }
+  if ([...els.category.options].some(o => o.value === current)) els.category.value = current;
 }
 
-// 5) Interactions UI
-[els.search, els.category, els.city].forEach(el => {
-  if (el) el.addEventListener('input', debounce(fetchProducts, 150));
-});
+// Écouteurs
+[els.search, els.category, els.city].forEach(el => { if (el) el.addEventListener('input', debounce(fetchProducts, 150)); });
 
-// 6) Realtime (auto-actualisation)
+// Realtime (auto-actualisation)
 function setupRealtime() {
   try {
     const channel = supabase
       .channel('public:products-changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'products' }, () => {
-        fetchProducts();
-      })
-      .subscribe((status) => {
-        if (status === 'SUBSCRIBED') {
-          fetchProducts();
-        }
-      });
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'products' }, () => fetchProducts())
+      .subscribe((status) => { if (status === 'SUBSCRIBED') fetchProducts(); });
 
-    window.addEventListener('beforeunload', () => {
-      supabase.removeChannel(channel);
-    });
+    window.addEventListener('beforeunload', () => { supabase.removeChannel(channel); });
   } catch (e) {
-    console.warn('Realtime disabled:', e);
+    console.warn('Realtime désactivé:', e);
     fetchProducts();
   }
 }
 
-// 7) debounce util
-function debounce(fn, delay=200){
-  let t; return (...args) => { clearTimeout(t); t=setTimeout(()=>fn(...args), delay); };
-}
+// utils
+function debounce(fn, delay=200){ let t; return (...a)=>{ clearTimeout(t); t=setTimeout(()=>fn(...a), delay); }; }
 
-// 8) Lancement
+// start
 setupRealtime();
