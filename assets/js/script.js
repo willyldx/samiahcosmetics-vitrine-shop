@@ -1,4 +1,4 @@
-// ===== Samiah Vitrine – script robuste (no alias) =====
+// ===== Samiah Vitrine — script stable (idx fixé, no alias) =====
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const SUPABASE_URL  = 'https://dzzblqlteirtzyegplgu.supabase.co'
@@ -17,7 +17,10 @@ const elSearch = $('#search')
 const elCat    = $('#category')
 const elCity   = $('#city')
 
-let all = [], view = [], idx = -1
+// --- état
+let all = []
+let view = []
+let idx = -1   // ❗️une seule déclaration
 
 // ---- crée la modale si absente
 function ensureModal(){
@@ -65,7 +68,7 @@ function ensureModal(){
 }
 ensureModal()
 
-// refs modale
+// refs modale (après ensureModal)
 const overlay   = $('#overlay')
 const modal     = $('#productModal')
 const mTitle    = $('#mTitle')
@@ -99,28 +102,27 @@ function showEmpty(msg){
 }
 function hideEmpty(){ if (emptyMsg) emptyMsg.style.display='none' }
 
-// ---- Load (sans alias)
+// ---- Chargement des produits (sans alias)
 async function load(){
-  console.log('[vitrine] load…')
-  // 1ère tentative : colonnes explicites (snake_case)
+  // tentative principale (colonnes snake_case)
   let { data, error } = await sb
     .from('products')
     .select('id,title,price,currency,category,short_description,image,images,cities,active,created_at')
     .eq('active', true)
-    .order('created_at', {ascending:false})
+    .order('created_at', { ascending:false })
+
   if (error && /created_at/i.test(error.message||'')) {
-    // retente sans order si created_at n’existe pas
+    // si created_at n’existe pas, on relance sans order
     ;({ data, error } = await sb
       .from('products')
-      .select('id,title,price,currency,category,short_description,image,images,cities,active,created_at')
+      .select('id,title,price,currency,category,short_description,image,images,cities,active')
       .eq('active', true))
   }
-  // Si ça échoue encore (quelque soit la raison), on prend * pour ne pas casser l’affichage
-  if (error){
-    console.warn('[vitrine] fallback select * cause:', error)
+  if (error) {
+    // dernier filet de sécurité : select('*')
     const r = await sb.from('products').select('*').eq('active', true)
-    data  = r.data||[]
-    error = r.error||null
+    data  = r.data || []
+    error = r.error || null
   }
   if (error){ showEmpty(error.message); return }
 
@@ -129,9 +131,10 @@ async function load(){
     shortDescription: p.short_description || p.shortDescription || '',
     cities: Array.isArray(p.cities) ? p.cities : []
   }))
-  console.log('[vitrine] produits:', all.length)
+
   const cats = Array.from(new Set(all.map(p=>p.category).filter(Boolean))).sort()
   if (elCat) elCat.innerHTML = `<option value="Toutes">Toutes les catégories</option>` + cats.map(c=>`<option>${escapeHtml(c)}</option>`).join('')
+
   filterAndRender()
 }
 
@@ -149,6 +152,7 @@ function filterAndRender(){
   hideEmpty()
   grid.innerHTML = view.map((p,i)=>cardTpl(p,i)).join('')
 }
+
 function cardTpl(p,i){
   const img = imagesOf(p)[0] || '/assets/images/placeholder.png'
   return `
@@ -162,8 +166,7 @@ function cardTpl(p,i){
     </div>`
 }
 
-// ---- Modal
-let idx=-1
+// ---- Modale
 function openAt(i){
   if (!modal || !overlay) { alert('Fiche produit indisponible (modale manquante).'); return }
   if (i<0 || i>=view.length) return
