@@ -149,27 +149,17 @@ async function load(){
       .in('product_id', ids)
       .order('sort', { ascending:true })
       .order('created_at', { ascending:true })
-    if (!im.error){
-      for (const row of im.data || []){
+
+    if (im.error) {
+      console.warn('product_images fetch error:', im.error.message || im.error)
+    } else {
+      for (const row of im.data || []) {
         if(!imagesMap[row.product_id]) imagesMap[row.product_id] = []
         if (row.url) imagesMap[row.product_id].push(row.url)
       }
     }
   }
-
-  all = (data||[]).map(p => ({
-    ...p,
-    shortDescription: p.short_description || p.shortDescription || '',
-    cities: Array.isArray(p.cities) ? p.cities : [],
-    _imagesExt: imagesMap[p.id] || []
-  }))
-
-  const cats = Array.from(new Set(all.map(p=>p.category).filter(Boolean))).sort()
-  if (elCat) elCat.innerHTML = `<option value="Toutes">Toutes les catégories</option>` + cats.map(c=>`<option>${escapeHtml(c)}</option>`).join('')
-
-  filterAndRender()
-}
-
+  
 // ---------- rendu ----------
 function filterAndRender(){
   const q    = (elSearch?.value||'').toLowerCase().trim()
