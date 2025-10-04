@@ -1,7 +1,8 @@
-/* /assets/js/script.js — Vitrine Supabase + fiche produit
+/* /assets/js/script.js — Vitrine Supabase + fiche produit (auto-modal)
    - Pas d'alias SQL (PostgREST)
    - Mapping snake_case -> camelCase
    - Filtres robustes (“Toutes”, “Toutes les catégories”, vide…)
+   - Injecte la modale + CSS si absents
    - Galerie + WhatsApp
    - Realtime (auto-refresh)
 */
@@ -24,7 +25,7 @@ const SELECT_COLS = `
 const $  = (s, r=document) => r.querySelector(s);
 const $$ = (s, r=document) => Array.from(r.querySelectorAll(s));
 const fmt = (n) => new Intl.NumberFormat("fr-FR").format(n || 0);
-function escapeHtml(s){return (""+s).replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function escapeHtml(s){return (""+s).replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39'}[c]));}
 
 /* === Mapping snake_case -> camelCase === */
 function mapRow(r){
@@ -61,20 +62,92 @@ const searchEl   = $("#search");
 const categoryEl = $("#category");
 const cityEl     = $("#city");
 
-/* === Modal fiche produit (IDs m*) === */
-const overlay  = $("#overlay");
-const modal    = $("#productModal");
-const mTitle   = $("#mTitle");
-const mPrice   = $("#mPrice");
-const mCat     = $("#mCat");
-const mDesc    = $("#mDesc");
-const mCities  = $("#mCities");
-const mMain    = $("#mMain");
-const mThumbs  = $("#mThumbs");
-const mWA      = $("#mWhatsApp");
-const mPrev    = $("#mPrev");
-const mNext    = $("#mNext");
-const mClose   = $("#mClose");
+/* === Modale: éléments (seront câblés après injection) === */
+let overlay, modal, mTitle, mPrice, mCat, mDesc, mCities, mMain, mThumbs, mWA, mPrev, mNext, mClose;
+
+/* === Injecte le CSS de la modale si absent === */
+function ensureModalStyles(){
+  if (document.getElementById("samiah-modal-style")) return;
+  const css = `
+    .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);display:none;z-index:1000}
+    .modal-overlay.open{display:block}
+    .modal{position:fixed;inset:0;display:none;align-items:center;justify-content:center;z-index:1001}
+    .modal.open{display:flex}
+    .modal-card{background:#fff;max-width:980px;width:94%;border-radius:16px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.25)}
+    .modal-head{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-bottom:1px solid #eee}
+    .modal-body{display:grid;grid-template-columns:1.1fr .9fr;gap:16px;padding:14px}
+    @media(max-width:900px){.modal-body{grid-template-columns:1fr}}
+    .gal-main{border:1px solid #eee;border-radius:12px;overflow:hidden;display:flex;align-items:center;justify-content:center;background:#fff;aspect-ratio:4/3}
+    .gal-main img{max-width:100%;max-height:100%;display:block}
+    .gal-thumbs{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+    .gal-thumbs img{width:72px;height:72px;object-fit:cover;border:1px solid #eee;border-radius:8px;cursor:pointer}
+    .modal .btn{appearance:none;border:0;border-radius:10px;background:#0A0A0A;color:#fff;padding:10px 14px;font-weight:700;cursor:pointer;text-decoration:none;display:inline-block}
+    .modal .btn.secondary{background:#1111110d;color:#111;border:1px solid #eaeaea}
+    .modal .muted{color:#6b7280}
+    .modal .price{font-weight:800;font-size:20px}
+  `;
+  const el = document.createElement("style");
+  el.id = "samiah-modal-style";
+  el.textContent = css;
+  document.head.appendChild(el);
+}
+
+/* === Injecte la modale si absente, puis câble les références === */
+function ensureModal(){
+  ensureModalStyles();
+
+  if (!document.getElementById("productModal")){
+    const wrap = document.createElement("div");
+    wrap.innerHTML = `
+      <div id="overlay" class="modal-overlay" aria-hidden="true"></div>
+      <div id="productModal" class="modal" aria-hidden="true" role="dialog" aria-label="Fiche produit">
+        <div class="modal-card" role="document">
+          <div class="modal-head">
+            <div id="mTitle" style="font-weight:800">Titre du produit</div>
+            <button id="mClose" class="btn secondary">Fermer</button>
+          </div>
+          <div class="modal-body">
+            <div>
+              <div class="gal-main"><img id="mMain" src="" alt=""></div>
+              <div id="mThumbs" class="gal-thumbs"></div>
+            </div>
+            <div class="meta">
+              <div id="mPrice" class="price">—</div>
+              <div id="mCat" class="muted" style="margin-top:4px">—</div>
+              <div id="mDesc" style="margin-top:8px"></div>
+              <div id="mCities" class="muted" style="margin-top:8px"></div>
+              <div class="modal-actions" style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
+                <a id="mWhatsApp" class="btn" target="_blank" rel="noopener">Commander via WhatsApp</a>
+                <button id="mPrev" class="btn secondary">⟨ Préc</button>
+                <button id="mNext" class="btn secondary">Suiv ⟩</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>`;
+    document.body.appendChild(wrap);
+  }
+
+  // Câblage des refs
+  overlay = $("#overlay");
+  modal   = $("#productModal");
+  mTitle  = $("#mTitle");
+  mPrice  = $("#mPrice");
+  mCat    = $("#mCat");
+  mDesc   = $("#mDesc");
+  mCities = $("#mCities");
+  mMain   = $("#mMain");
+  mThumbs = $("#mThumbs");
+  mWA     = $("#mWhatsApp");
+  mPrev   = $("#mPrev");
+  mNext   = $("#mNext");
+  mClose  = $("#mClose");
+
+  // Fermeture
+  mClose?.addEventListener("click", closeModal);
+  overlay?.addEventListener("click", closeModal);
+  document.addEventListener("keydown", (e)=>{ if(e.key==="Escape") closeModal(); });
+}
 
 /* === État === */
 let allProducts = [];
@@ -207,7 +280,6 @@ function render(){
 
   if (filtered.length === 0){
     emptyMsgEl.style.display = "block";
-    if (!emptyMsgEl.textContent) emptyMsgEl.textContent = "Aucun produit pour l’instant.";
   }else{
     emptyMsgEl.style.display = "none";
   }
@@ -219,10 +291,10 @@ function render(){
 function openModalAt(index){
   if (index < 0 || index >= filtered.length) return;
 
-  // Vérifie la présence des éléments requis
-  if (!overlay || !modal || !mTitle || !mMain || !mThumbs || !mWA || !mPrev || !mNext || !mClose) {
-    console.warn("Modal manquante ou IDs différents (#productModal, #overlay, #mTitle, #mMain, #mThumbs, #mWhatsApp, #mPrev, #mNext, #mClose).");
-    alert("Fiche produit indisponible (modale manquante).");
+  // S'assure que la modale existe et que les refs sont câblées
+  ensureModal();
+  if (!overlay || !modal || !mTitle || !mMain || !mThumbs || !mWA || !mPrev || !mNext || !mClose || !mPrice || !mCat || !mDesc || !mCities) {
+    console.warn("Modale introuvable après injection.");
     return;
   }
 
@@ -280,13 +352,6 @@ function bindUI(){
     const idx = parseInt(card.dataset.idx, 10);
     openModalAt(idx);
   });
-
-  mClose?.addEventListener("click", closeModal);
-  overlay?.addEventListener("click", closeModal);
-  document.addEventListener("keydown", (e)=>{ if(e.key==="Escape") closeModal(); });
-
-  mPrev?.addEventListener("click", ()=>{ if (currentIdx>0) openModalAt(currentIdx-1); });
-  mNext?.addEventListener("click", ()=>{ if (currentIdx<filtered.length-1) openModalAt(currentIdx+1); });
 }
 
 /* === Realtime === */
@@ -301,7 +366,6 @@ function subscribeRealtime(){
 
 /* === Boot === */
 (async function init(){
-  ensureDefaultOptions();
   bindUI();
   await fetchProducts();
   subscribeRealtime();
