@@ -97,8 +97,49 @@
       <path d="M19.11 17.31c-.28-.14-1.64-.81-1.89-.9-.25-.09-.43-.14-.62.14-.18.28-.71.9-.86 1.08-.16.18-.32.2-.6.07-.28-.14-1.18-.43-2.25-1.37-.83-.74-1.39-1.65-1.55-1.93-.16-.28-.02-.43.12-.57.12-.12.28-.32.41-.49.14-.16.18-.28.28-.46.09-.18.05-.35-.02-.49-.07-.14-.62-1.49-.85-2.04-.22-.53-.45-.46-.62-.46h-.53c-.18 0-.46.07-.7.35-.25.28-.96.94-.96 2.29s.98 2.66 1.12 2.85c.14.18 1.93 2.95 4.67 4.02.65.28 1.16.45 1.56.58.65.2 1.25.17 1.72.1.53-.08 1.64-.67 1.87-1.31.23-.64.23-1.19.16-1.31-.07-.12-.25-.2-.53-.34zM16 3C9.38 3 4 8.38 4 15c0 2.12.55 4.1 1.52 5.83L4 29l8.35-1.49A11.9 11.9 0 0 0 16 27c6.62 0 12-5.38 12-12S22.62 3 16 3z"/>
     </svg>
   </a>
-
+<!-- === FICHE PRODUIT (fallback si le script n'injecte pas) === -->
+<div id="overlay" class="modal-overlay" aria-hidden="true" style="position:fixed;inset:0;background:rgba(0,0,0,.5);display:none;z-index:1000"></div>
+<div id="productModal" class="modal" aria-hidden="true" role="dialog" aria-label="Fiche produit"
+     style="position:fixed;inset:0;display:none;align-items:center;justify-content:center;z-index:1001">
+  <div class="modal-card" role="document"
+       style="background:#fff;max-width:980px;width:94%;border-radius:16px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.25)">
+    <div class="modal-head" style="display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-bottom:1px solid #eee">
+      <div id="mTitle" style="font-weight:800">Titre du produit</div>
+      <button id="mClose" class="btn secondary" style="appearance:none;border:0;border-radius:10px;background:#1111110d;color:#111;border:1px solid #eaeaea;padding:10px 14px;cursor:pointer">Fermer</button>
+    </div>
+    <div class="modal-body" style="display:grid;grid-template-columns:1.1fr .9fr;gap:16px;padding:14px">
+      <div>
+        <div class="gal-main" style="border:1px solid #eee;border-radius:12px;overflow:hidden;display:flex;align-items:center;justify-content:center;background:#fff;aspect-ratio:4/3">
+          <img id="mMain" src="" alt="" style="max-width:100%;max-height:100%;display:block">
+        </div>
+        <div id="mThumbs" class="gal-thumbs" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px"></div>
+      </div>
+      <div class="meta">
+        <div id="mPrice" class="price" style="font-weight:800;font-size:20px">—</div>
+        <div id="mCat" class="muted" style="margin-top:4px;color:#6b7280">—</div>
+        <div id="mDesc" style="margin-top:8px"></div>
+        <div id="mCities" class="muted" style="margin-top:8px;color:#6b7280"></div>
+        <div class="modal-actions" style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
+          <a id="mWhatsApp" class="btn" target="_blank" rel="noopener"
+             style="appearance:none;border:0;border-radius:10px;background:#0A0A0A;color:#fff;padding:10px 14px;font-weight:700;cursor:pointer;text-decoration:none;display:inline-block">
+            Commander via WhatsApp
+          </a>
+          <button id="mPrev" class="btn secondary"
+                  style="appearance:none;border:0;border-radius:10px;background:#1111110d;color:#111;border:1px solid #eaeaea;padding:10px 14px;cursor:pointer">⟨ Préc</button>
+          <button id="mNext" class="btn secondary"
+                  style="appearance:none;border:0;border-radius:10px;background:#1111110d;color:#111;border:1px solid #eaeaea;padding:10px 14px;cursor:pointer">Suiv ⟩</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<!-- Styles mini pour les vignettes -->
+<style>
+  .gal-thumbs img{width:72px;height:72px;object-fit:cover;border:1px solid #eee;border-radius:8px;cursor:pointer}
+</style>
+  
   <!-- Script (module) -->
-  <script type="module" src="/assets/js/script.js"></script>
+  <!-- Script (module) — une seule fois -->
+<script type="module" src="/assets/js/script.js?v=modal-3"></script>
 </body>
 </html>
