@@ -1,58 +1,102 @@
-// Samiah Vitrine — vitrine + fiche produit (fix alias Supabase)
+// ===== Samiah Vitrine (drop-in, robuste) =====
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
+// ---- Supabase
 const SUPABASE_URL  = 'https://dzzblqlteirtzyegplgu.supabase.co'
 const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR6emJscWx0ZWlydHp5ZWdwbGd1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk0MjgyMDgsImV4cCI6MjA3NTAwNDIwOH0.WbjNAjF2qxly8QMu-3VJLPQE88UgzkeAn9XPj0lcb1Y'
 const sb = createClient(SUPABASE_URL, SUPABASE_ANON)
 
-// ---- DOM (IDs requis dans index.html)
-const grid     = document.getElementById('products-grid')
-const emptyMsg = document.getElementById('emptyMsg')
-
-const overlay   = document.getElementById('overlay')
-const modal     = document.getElementById('productModal')
-const mTitle    = document.getElementById('mTitle')
-const mMain     = document.getElementById('mMain')
-const mThumbs   = document.getElementById('mThumbs')
-const mPrice    = document.getElementById('mPrice')
-const mCat      = document.getElementById('mCat')
-const mDesc     = document.getElementById('mDesc')
-const mCities   = document.getElementById('mCities')
-const mWhatsApp = document.getElementById('mWhatsApp')
-const mPrev     = document.getElementById('mPrev')
-const mNext     = document.getElementById('mNext')
-const mClose    = document.getElementById('mClose')
-
-const elSearch = document.getElementById('search')
-const elCat    = document.getElementById('category')
-const elCity   = document.getElementById('city')
-
-let allProducts = []
-let viewList = []
-let currentIdx = -1
-
+// ---- Utils / DOM
+const $  = s => document.querySelector(s)
+const $$ = s => Array.from(document.querySelectorAll(s))
 const fmt = n => new Intl.NumberFormat('fr-FR').format(n)
-const priceLabel = p => (p?.price ? `${fmt(p.price)} ${p.currency || 'XAF'}` : '—')
-
+const priceLabel = p => (p?.price ? `${fmt(p.price)} ${p.currency||'XAF'}` : '—')
 const escapeHtml = s => (''+(s??'')).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))
 
-const asArray = (x)=>{
-  if (!x) return []
-  if (Array.isArray(x)) return x
-  if (typeof x === 'string') {
-    try { const v = JSON.parse(x); return Array.isArray(v) ? v : [] } catch { return [] }
-  }
+const grid     = $('#products-grid')
+const emptyMsg = $('#emptyMsg')
+const elSearch = $('#search')
+const elCat    = $('#category')
+const elCity   = $('#city')
+
+let all = [], view = [], idx = -1
+
+// ---- Crée la modale si absente (fin des soucis d'IDs)
+function ensureModal() {
+  if ($('#productModal') && $('#overlay')) return
+  const overlay = document.createElement('div')
+  overlay.id = 'overlay'
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);display:none;z-index:1000'
+  document.body.appendChild(overlay)
+
+  const modal = document.createElement('div')
+  modal.id = 'productModal'
+  modal.setAttribute('role','dialog')
+  modal.setAttribute('aria-hidden','true')
+  modal.style.cssText = 'position:fixed;inset:0;display:none;align-items:center;justify-content:center;z-index:1001'
+  modal.innerHTML = `
+    <div class="modal-card" style="background:#fff;max-width:980px;width:94%;border-radius:16px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.25)">
+      <div class="modal-head" style="display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-bottom:1px solid #eee">
+        <div id="mTitle" style="font-weight:800">Produit</div>
+        <button id="mClose" class="btn" style="appearance:none;border:0;border-radius:10px;background:#1111110d;color:#111;border:1px solid #eaeaea;padding:10px 14px;cursor:pointer">Fermer</button>
+      </div>
+      <div class="modal-body" style="display:grid;grid-template-columns:1.1fr .9fr;gap:16px;padding:14px">
+        <div>
+          <div class="gal-main" style="border:1px solid #eee;border-radius:12px;overflow:hidden;display:flex;align-items:center;justify-content:center;background:#fff;aspect-ratio:4/3">
+            <img id="mMain" src="" alt="" style="max-width:100%;max-height:100%;display:block">
+          </div>
+          <div id="mThumbs" class="gal-thumbs" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px"></div>
+        </div>
+        <div class="meta">
+          <div id="mPrice" style="font-weight:800;font-size:20px">—</div>
+          <div id="mCat" class="muted" style="margin-top:4px;color:#6b7280">—</div>
+          <div id="mDesc" style="margin-top:8px"></div>
+          <div id="mCities" class="muted" style="margin-top:8px;color:#6b7280"></div>
+          <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
+            <a id="mWhatsApp" class="btn" target="_blank" rel="noopener"
+               style="appearance:none;border:0;border-radius:10px;background:#0A0A0A;color:#fff;padding:10px 14px;font-weight:700;cursor:pointer;text-decoration:none;display:inline-block">
+               Commander via WhatsApp
+            </a>
+            <button id="mPrev" class="btn" style="appearance:none;border:0;border-radius:10px;background:#1111110d;color:#111;border:1px solid #eaeaea;padding:10px 14px;cursor:pointer">⟨ Préc</button>
+            <button id="mNext" class="btn" style="appearance:none;border:0;border-radius:10px;background:#1111110d;color:#111;border:1px solid #eaeaea;padding:10px 14px;cursor:pointer">Suiv ⟩</button>
+          </div>
+        </div>
+      </div>
+    </div>`
+  document.body.appendChild(modal)
+}
+ensureModal()
+
+// re-get after ensure
+const overlay   = $('#overlay')
+const modal     = $('#productModal')
+const mTitle    = $('#mTitle')
+const mMain     = $('#mMain')
+const mThumbs   = $('#mThumbs')
+const mPrice    = $('#mPrice')
+const mCat      = $('#mCat')
+const mDesc     = $('#mDesc')
+const mCities   = $('#mCities')
+const mWhatsApp = $('#mWhatsApp')
+const mPrev     = $('#mPrev')
+const mNext     = $('#mNext')
+const mClose    = $('#mClose')
+
+// ---- Helpers
+const arrayify = v => {
+  if (!v) return []
+  if (Array.isArray(v)) return v
+  if (typeof v === 'string') { try { const x=JSON.parse(v); return Array.isArray(x)?x:[] } catch { return [] } }
   return []
 }
-const buildImages = p => {
-  const arr = []
-  if (p.image) arr.push(p.image)
-  for (const u of asArray(p.images)) if (u && !arr.includes(u)) arr.push(u)
-  return arr
+const imagesOf = p => {
+  const out = []
+  if (p.image) out.push(p.image)
+  for (const u of arrayify(p.images)) if (u && !out.includes(u)) out.push(u)
+  return out
 }
 
-// ---- Affichage "vide"
-function showEmpty(msg) {
+function showEmpty(msg){
   grid.innerHTML = ''
   if (emptyMsg) {
     emptyMsg.style.display = ''
@@ -61,136 +105,118 @@ function showEmpty(msg) {
 }
 function hideEmpty(){ if (emptyMsg) emptyMsg.style.display='none' }
 
-// ---- Chargement robuste (alias + fallback)
-async function loadProducts(){
+// ---- Load products (alias & tri robustes)
+async function load() {
+  console.log('[vitrine] chargement…')
   const selects = [
-    // 1) alias correct PostgREST : colonne:alias
     'id,title,price,currency,category,short_description:shortDescription,image,images,cities,active,created_at',
-    // 2) si ta colonne s’appelle déjà shortDescription
     'id,title,price,currency,category,shortDescription,image,images,cities,active,created_at'
   ]
-
-  let data=null, lastErr=null
-  for (const cols of selects){
-    // tentative avec tri sur created_at
+  let data=null, err=null
+  for (const cols of selects) {
     let r = await sb.from('products').select(cols).eq('active', true).order('created_at', { ascending:false })
     if (r.error && /created_at/i.test(r.error.message||'')) {
-      // table sans created_at : on ré-essaie sans tri
       r = await sb.from('products').select(cols).eq('active', true)
     }
-    if (!r.error){ data = r.data||[]; break }
-    lastErr = r.error
+    if (!r.error) { data = r.data||[]; break }
+    err = r.error
   }
+  if (!data) { console.warn('[vitrine] erreur select', err); showEmpty(err?.message||'chargement'); return }
 
-  if (!data){
-    showEmpty(lastErr?.message || 'chargement')
-    return
-  }
-
-  allProducts = data.map(p=>({
+  all = data.map(p => ({
     ...p,
-    shortDescription: p.shortDescription || '',
+    shortDescription: p.shortDescription || p.short_description || '',
     cities: Array.isArray(p.cities) ? p.cities : []
   }))
+  console.log('[vitrine] nb produits:', all.length, all)
 
-  // Remplir catégories
-  const cats = Array.from(new Set(allProducts.map(p=>p.category).filter(Boolean))).sort()
-  elCat.innerHTML = `<option value="Toutes">Toutes les catégories</option>` + cats.map(c=>`<option>${escapeHtml(c)}</option>`).join('')
+  // catégories
+  const cats = Array.from(new Set(all.map(p=>p.category).filter(Boolean))).sort()
+  if (elCat) elCat.innerHTML = `<option value="Toutes">Toutes les catégories</option>` + cats.map(c=>`<option>${escapeHtml(c)}</option>`).join('')
 
-  applyFiltersAndRender()
+  filterAndRender()
 }
 
-// ---- Rendu Grille
-function applyFiltersAndRender(){
-  const q    = (elSearch?.value || '').toLowerCase().trim()
-  const cat  = elCat?.value || 'Toutes'
-  const city = elCity?.value || 'Toutes'
-
-  viewList = allProducts.filter(p=>{
+function filterAndRender(){
+  const q = (elSearch?.value||'').toLowerCase().trim()
+  const cat = elCat?.value || 'Toutes'
+  const city= elCity?.value || 'Toutes'
+  view = all.filter(p=>{
     const okQ = !q || (p.title + ' ' + (p.category||'') + ' ' + (p.shortDescription||'')).toLowerCase().includes(q)
     const okC = (cat==='Toutes') || p.category===cat
     const okV = (city==='Toutes') || (Array.isArray(p.cities) && p.cities.includes(city))
     return okQ && okC && okV
   })
 
-  if (!viewList.length) { showEmpty(); return }
+  if (!view.length) { showEmpty(); return }
   hideEmpty()
-  grid.innerHTML = viewList.map((p,i)=>cardTpl(p,i)).join('')
+  grid.innerHTML = view.map((p,i)=>cardTpl(p,i)).join('')
 }
 
 function cardTpl(p,i){
-  const img = buildImages(p)[0] || '/assets/images/placeholder.png'
+  const img = imagesOf(p)[0] || '/assets/images/placeholder.png'
   return `
-  <div class="card product-card" data-index="${i}" style="cursor:pointer">
-    <img src="${img}" alt="${escapeHtml(p.title)}">
-    <div class="p">
-      <div class="t">${escapeHtml(p.title)}</div>
-      <div class="muted">${escapeHtml(p.category||'')}</div>
-      <div class="muted" style="font-weight:700">${priceLabel(p)}</div>
-    </div>
-  </div>`
+    <div class="card product-card" data-i="${i}" style="cursor:pointer">
+      <img src="${img}" alt="${escapeHtml(p.title)}">
+      <div class="p">
+        <div class="t">${escapeHtml(p.title)}</div>
+        <div class="muted">${escapeHtml(p.category||'')}</div>
+        <div class="muted" style="font-weight:700">${priceLabel(p)}</div>
+      </div>
+    </div>`
 }
 
-// ---- Modale
-function openModalAt(i){
+// ---- Modal
+function openAt(i){
   if (!modal || !overlay) { alert('Fiche produit indisponible (modale manquante).'); return }
-  if (i<0 || i>=viewList.length) return
-  currentIdx = i
-  const p = viewList[i]
-  const imgs = buildImages(p)
-  mTitle && (mTitle.textContent = p.title || 'Produit')
-  mMain  && (mMain.src = imgs[0] || '/assets/images/placeholder.png')
-  mPrice && (mPrice.textContent = priceLabel(p))
-  mCat   && (mCat.textContent = p.category || '')
-  mDesc  && (mDesc.textContent = p.shortDescription || '')
-  mCities&& (mCities.textContent = (Array.isArray(p.cities)&&p.cities.length) ? `Villes: ${p.cities.join(', ')}` : '')
-
-  const waMsg = encodeURIComponent(`Bonjour Samiah Cosmetics, je suis intéressé(e) par ${p.title} (${priceLabel(p)}).`)
-  if (mWhatsApp) mWhatsApp.href = `https://wa.me/23562752105?text=${waMsg}`
-
+  if (i<0 || i>=view.length) return
+  idx = i
+  const p = view[i]
+  const imgs = imagesOf(p)
+  if (mTitle) mTitle.textContent = p.title || 'Produit'
+  if (mMain)  mMain.src = imgs[0] || '/assets/images/placeholder.png'
+  if (mPrice) mPrice.textContent = priceLabel(p)
+  if (mCat)   mCat.textContent   = p.category || ''
+  if (mDesc)  mDesc.textContent  = p.shortDescription || ''
+  if (mCities)mCities.textContent= (Array.isArray(p.cities)&&p.cities.length) ? `Villes: ${p.cities.join(', ')}` : ''
+  if (mWhatsApp) {
+    const wa = encodeURIComponent(`Bonjour Samiah Cosmetics, je suis intéressé(e) par ${p.title} (${priceLabel(p)}).`)
+    mWhatsApp.href = `https://wa.me/23562752105?text=${wa}`
+  }
   if (mThumbs) {
     mThumbs.innerHTML = imgs.map((u,k)=>`<img data-k="${k}" src="${u}" alt="" style="width:72px;height:72px;object-fit:cover;border:1px solid #eee;border-radius:8px;cursor:pointer">`).join('')
   }
-
   overlay.style.display='block'
   modal.style.display='flex'
 }
-function closeModal(){ if(!modal||!overlay) return; modal.style.display='none'; overlay.style.display='none'; currentIdx=-1 }
-function nextModal(dir=+1){ if(currentIdx<0) return; const n=currentIdx+dir; if(n>=0 && n<viewList.length) openModalAt(n) }
+function closeModal(){ if(!modal||!overlay) return; modal.style.display='none'; overlay.style.display='none'; idx=-1 }
+function nextAt(d=+1){ if(idx<0) return; const n=idx+d; if(n>=0 && n<view.length) openAt(n) }
 
 // ---- Events
-function bind(){
-  elSearch?.addEventListener('input', applyFiltersAndRender)
-  elCat?.addEventListener('change', applyFiltersAndRender)
-  elCity?.addEventListener('change', applyFiltersAndRender)
+grid?.addEventListener('click', e=>{
+  const card = e.target.closest('.product-card')
+  if (!card) return
+  const i = parseInt(card.dataset.i,10)
+  if (Number.isFinite(i)) openAt(i)
+})
+mThumbs?.addEventListener('click', e=>{
+  const t = e.target.closest('img[data-k]'); if(!t) return
+  const k = parseInt(t.dataset.k,10)
+  const p = view[idx]; const imgs = imagesOf(p)
+  if (imgs[k] && mMain) mMain.src = imgs[k]
+})
+mPrev?.addEventListener('click', ()=>nextAt(-1))
+mNext?.addEventListener('click', ()=>nextAt(+1))
+mClose?.addEventListener('click', closeModal)
+overlay?.addEventListener('click', closeModal)
+document.addEventListener('keydown', e=>{
+  if (e.key==='Escape') closeModal()
+  if (e.key==='ArrowLeft')  nextAt(-1)
+  if (e.key==='ArrowRight') nextAt(+1)
+})
 
-  grid?.addEventListener('click', e=>{
-    const card = e.target.closest('.product-card')
-    if (!card) return
-    const i = parseInt(card.dataset.index,10)
-    if (Number.isFinite(i)) openModalAt(i)
-  })
+elSearch?.addEventListener('input', filterAndRender)
+elCat?.addEventListener('change', filterAndRender)
+elCity?.addEventListener('change', filterAndRender)
 
-  mThumbs?.addEventListener('click', e=>{
-    const t = e.target.closest('img[data-k]')
-    if (!t) return
-    const k = parseInt(t.dataset.k,10)
-    const p = viewList[currentIdx]
-    const imgs = buildImages(p)
-    if (imgs[k] && mMain) mMain.src = imgs[k]
-  })
-
-  mPrev?.addEventListener('click', ()=>nextModal(-1))
-  mNext?.addEventListener('click', ()=>nextModal(+1))
-  mClose?.addEventListener('click', closeModal)
-  overlay?.addEventListener('click', closeModal)
-
-  document.addEventListener('keydown', e=>{
-    if (e.key==='Escape') closeModal()
-    if (e.key==='ArrowLeft')  nextModal(-1)
-    if (e.key==='ArrowRight') nextModal(+1)
-  })
-}
-
-bind()
-loadProducts()
+load()
