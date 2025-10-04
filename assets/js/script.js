@@ -1,13 +1,11 @@
 // =======================
-// Samiah — Vitrine (Supabase + Galerie)
+// Samiah — Vitrine (Supabase + Galerie multi-sources)
 // =======================
-
 import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
 
 // --- Config Supabase (clé ANON publique = OK côté client)
 const SB_URL = "https://dzzblqlteirtzyegplgu.supabase.co";
 const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR6emJscWx0ZWlydHp5ZWdwbGd1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk0MjgyMDgsImV4cCI6MjA3NTAwNDIwOH0.WbjNAjF2qxly8QMu-3VJLPQE88UgzkeAn9XPj0lcb1Y";
-
 const sb = createClient(SB_URL, SB_KEY);
 
 // --- DOM
@@ -40,16 +38,25 @@ let currentIndex = 0;         // index image en cours du modal
 
 // --- Utils
 const fmtXAF = n => new Intl.NumberFormat("fr-FR").format(n) + " XAF";
-const todayISO = () => new Date().toISOString();
+const escapeHtml = s => (s ?? "").toString().replace(/[&<>"']/g, c => ({
+  '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+})[c]);
+const escapeAttr = s => escapeHtml(s).replace(/"/g, "&quot;");
+const arrayify = v => {
+  if (!v) return [];
+  if (Array.isArray(v)) return v;
+  if (typeof v === "string") { try { const x = JSON.parse(v); return Array.isArray(x) ? x : []; } catch { return []; } }
+  return [];
+};
 
 // =======================
 // Chargement des données
 // =======================
 async function loadProducts() {
-  // 1) charger produits actifs (on gère l’expiration côté client)
-  const { data, error } = await sb
+  // 1) produits actifs (on récupère aussi `images`)
+  let { data, error } = await sb
     .from("products")
-    .select("id,title,price,currency,category,cities,image,short_description,active,created_at,expires_after_days")
+    .select("id,title,price,currency,category,cities,image,images,short_description,active,created_at,expires_after_days")
     .eq("active", true)
     .order("created_at", { ascending: false });
 
@@ -59,24 +66,21 @@ async function loadProducts() {
     return;
   }
 
-  // 2) transformer le snake_case → camelCase attendu par l’UI
+  // 2) mapping + expiration
+  const now = Date.now();
   const base = (data || []).map(p => ({
     ...p,
-    shortDescription: p.short_description ?? "", // mapping sûr
-  }));
-
-  // 3) Expiration côté client
-  const now = Date.now();
-  const filtered = base.filter(p => {
+    shortDescription: p.short_description ?? "",
+  })).filter(p => {
     const days = Number.isFinite(p.expires_after_days) ? p.expires_after_days : null;
     if (!days || days <= 0) return true;
     const created = p.created_at ? Date.parse(p.created_at) : now;
     return (created + days * 86400000) > now; // non expiré
   });
 
-  PRODUCTS = filtered;
+  PRODUCTS = base;
 
-  // 4) charger images supplémentaires (une seule requête IN)
+  // 3) images supplémentaires (product_images)
   IMAGES_MAP = {};
   const ids = PRODUCTS.map(p => p.id).filter(Boolean);
   if (ids.length) {
@@ -97,10 +101,10 @@ async function loadProducts() {
     }
   }
 
-  // 5) catégories (liste distincte)
+  // 4) catégories
   fillCategories(PRODUCTS);
 
-  // 6) rendu initial
+  // 5) rendu initial
   render(PRODUCTS);
 }
 
@@ -155,7 +159,9 @@ function render(list, errorText = "") {
 }
 
 function cardTpl(p) {
-  const img = escapeHtml(p.image || "/assets/images/placeholder.png");
+  // Prépare la toute 1ère image pour la grille
+  const gallery = buildGallery(p);
+  const img = escapeHtml(gallery[0] || "/assets/images/placeholder.png");
   const title = escapeHtml(p.title || "");
   const price = fmtXAF(p.price || 0);
   const cat = escapeHtml(p.category || "");
@@ -173,12 +179,17 @@ function cardTpl(p) {
   `;
 }
 
-function escapeHtml(s) {
-  return (s ?? "").toString().replace(/[&<>"']/g, c => ({
-    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
-  })[c]);
+// Construit la galerie : image principale + products.images + product_images, avec déduplication
+function buildGallery(p) {
+  const a = [];
+  if (p.image) a.push(p.image);
+  for (const u of arrayify(p.images)) if (u) a.push(u);
+  for (const u of (IMAGES_MAP[p.id] || [])) if (u) a.push(u);
+  // dédup
+  const seen = new Set(); const out = [];
+  for (const u of a) { if (!seen.has(u)) { seen.add(u); out.push(u); } }
+  return out;
 }
-function escapeAttr(s) { return escapeHtml(s).replace(/"/g, "&quot;"); }
 
 // =======================
 // Modal / Galerie
@@ -189,22 +200,22 @@ function openModal(p) {
     return;
   }
 
-  // Construire la galerie : image principale + images supplémentaires
-  currentGallery = [p.image, ...(IMAGES_MAP[p.id] || [])].filter(Boolean);
+  // Galerie fusionnée
+  currentGallery = buildGallery(p);
   currentIndex = 0;
 
-  // Remplir méta
+  // Méta
   mTitle.textContent = p.title || "";
   mPrice.textContent = fmtXAF(p.price || 0);
   mCat.textContent   = p.category || "";
   mDesc.textContent  = p.shortDescription || "";
   mCities.textContent = (p.cities && p.cities.length) ? `Villes : ${p.cities.join(", ")}` : "";
 
-  // Lien WhatsApp
+  // WhatsApp
   const msg = encodeURIComponent(`Bonjour Samiah Cosmetics, je suis intéressé(e) par ${p.title} (${fmtXAF(p.price||0)}).`);
   mWhats.href = `https://wa.me/23562752105?text=${msg}`;
 
-  // Vignettes
+  // Vignettes + image principale
   renderGallery();
 
   // Ouvrir
@@ -238,10 +249,10 @@ function renderGallery() {
     mPrev.disabled = true; mNext.disabled = true;
     return;
   }
-  // Image principale
+  // principale
   mMain.src = currentGallery[currentIndex];
 
-  // Vignettes
+  // vignettes
   mThumbs.innerHTML = currentGallery.map((url, i) =>
     `<img src="${escapeAttr(url)}" data-i="${i}" style="border:${i===currentIndex?'2px solid #111':'1px solid #eee'};border-radius:8px;width:72px;height:72px;object-fit:cover;cursor:pointer">`
   ).join("");
@@ -254,7 +265,7 @@ function renderGallery() {
     });
   });
 
-  // Navigation
+  // nav
   mPrev.disabled = currentGallery.length <= 1;
   mNext.disabled = currentGallery.length <= 1;
 }
