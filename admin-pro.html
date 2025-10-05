@@ -138,7 +138,7 @@
               <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
                 <input type="file" id="main_uploader" accept="image/*">
                 <button type="button" class="btn secondary" id="main_send">Téléverser</button>
-                <small class="muted">JPG/PNG ≤ 8 Mo.</small>
+                <small class="muted">JPG/PNG — <strong>compression auto</strong> (envoi ~4&nbsp;Mo max).</small>
               </div>
               <div id="mainPreview" class="thumbs"></div>
             </label>
@@ -150,7 +150,7 @@
               <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
                 <input type="file" id="extra_uploader" accept="image/*" multiple>
                 <button type="button" class="btn secondary" id="extra_send">Téléverser</button>
-                <small class="muted">Plusieurs images (≤ 8 Mo chacune).</small>
+                <small class="muted">Plusieurs images — <strong>compression auto</strong>.</small>
               </div>
               <div id="extraPreview" class="thumbs"></div>
             </label>
@@ -334,7 +334,7 @@
       const p = items[i];
       items.splice(i,1);
       editing=null; render(); show('Produit supprimé');
-      // tentative de suppression en base si id + admin-secret
+      // suppression en base si id + secret
       try{
         const secret=getAdminSecret();
         if(p?.id && secret){
@@ -381,23 +381,54 @@
       $('#waPreview').textContent = `Bonjour Samiah Cosmetics, je suis intéressé(e) par ${title} (${price}).`;
     }
 
-    // ====== upload helpers (-> /api/upload-image) ======
-    function fileToBase64(file){
+    // ====== Compression adaptative + upload (-> /api/upload-image) ======
+    const MAX_PAYLOAD_BYTES = 4_000_000; // sécurité sous ~4.5 Mo
+    const START_SIDE = 2200, MIN_SIDE = 900;
+    const START_QUALITY = 0.9, MIN_QUALITY = 0.6;
+
+    function loadImageFromFile(file){
       return new Promise((resolve,reject)=>{
         const r=new FileReader();
-        r.onload=()=>{ const s=(r.result||'').toString(); resolve(s.includes(',')?s.split(',')[1]:s); };
+        r.onload=()=>{ const img=new Image(); img.onload=()=>resolve(img); img.onerror=reject; img.src=r.result; };
         r.onerror=reject; r.readAsDataURL(file);
       });
+    }
+    function drawToCanvas(img, maxSide){
+      const c=document.createElement('canvas');
+      let w=img.width, h=img.height;
+      const scale = Math.min(1, maxSide/Math.max(w,h));
+      w=Math.max(1,Math.round(w*scale)); h=Math.max(1,Math.round(h*scale));
+      c.width=w; c.height=h; c.getContext('2d').drawImage(img,0,0,w,h);
+      return c;
+    }
+    function dataUrlToB64(u){ return (u||'').split(',')[1]||''; }
+    function base64Size(b64){ return Math.ceil((b64.length)*0.75); } // bytes ≈ 3/4
+
+    async function compressToTargetBase64(file){
+      const img = await loadImageFromFile(file);
+      let side = START_SIDE, quality = START_QUALITY;
+      let attempt = 0, b64='', bytes=Infinity;
+
+      while(attempt++ < 10){
+        const canvas = drawToCanvas(img, side);
+        const dataUrl = canvas.toDataURL('image/jpeg', quality);
+        b64   = dataUrlToB64(dataUrl);
+        bytes = base64Size(b64);
+        if(bytes <= MAX_PAYLOAD_BYTES) break; // gagné
+        if (side > MIN_SIDE) side = Math.round(side * 0.86);
+        if (quality > MIN_QUALITY) quality = Math.max(MIN_QUALITY, quality - 0.08);
+      }
+      return { base64:b64, approxBytes:bytes };
     }
 
     async function uploadOne(file, nameHint){
       if(!file){ throw new Error('Aucun fichier'); }
-      if(file.size > 8*1024*1024) throw new Error('Image trop lourde (> 8 Mo).');
-
       const secret=getAdminSecret(); if(!secret){ changeAdminSecret(); throw new Error('Code admin requis.'); }
 
-      const base64 = await fileToBase64(file);
-      const ext = (file.name.split('.').pop()||'jpg').toLowerCase().replace(/[^a-z0-9]/g,'')||'jpg';
+      // compression adaptative (peu importe la taille d’origine)
+      const { base64, approxBytes } = await compressToTargetBase64(file);
+
+      const ext = 'jpg';
       const base = (nameHint || file.name.replace(/\.[^.]+$/,'') || 'image').toLowerCase();
       const filename = `${Date.now()}-${slugify(base)}.${ext}`;
 
@@ -409,18 +440,18 @@
       const out = await readResp(resp);
       if(!resp.ok) throw new Error(out?.error || out?.details || out?.__text || resp.statusText);
       if(!out?.siteUrl) throw new Error('Upload OK mais URL manquante');
-      return out.siteUrl; // URL publique (Supabase Storage)
+      return { url: out.siteUrl, size: approxBytes };
     }
 
     async function uploadMain(){
       try{
         const f = els.mainUploader.files[0];
         setBtnLoading(els.mainSend, els.mainSend, 'Téléversement…');
-        const url = await uploadOne(f, els.f_title.value||'image');
+        const { url, size } = await uploadOne(f, els.f_title.value||'image');
         els.f_image.value = url;
         els.mainPreview.innerHTML = `<img src="${escapeHtml(url)}" alt="">`;
         setBtnDone(els.mainSend, els.mainSend, 'Téléversé ✅');
-        show('Image principale envoyée ✅');
+        show(`Image principale envoyée ✅ (${(size/1024).toFixed(0)} Ko)`);
       }catch(e){
         setBtnIdle(els.mainSend, els.mainSend);
         alert('Erreur upload: ' + e.message);
@@ -442,8 +473,8 @@
         if(!files.length){ alert('Choisis au moins une image'); return; }
         els.extraSend.disabled = true; els.extraSend.textContent='Téléversement…';
         for(const f of files){
-          const u = await uploadOne(f, (els.f_title.value||'image-sup'));
-          extraUrls.push(u);
+          const { url } = await uploadOne(f, (els.f_title.value||'image-sup'));
+          extraUrls.push(url);
         }
         renderExtraThumbs();
         els.extraSend.textContent='Téléversé ✅';
