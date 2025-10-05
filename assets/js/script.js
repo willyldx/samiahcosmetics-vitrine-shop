@@ -3,7 +3,7 @@
 // =======================
 import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
 
-// --- Config Supabase (clé ANON publique côté client)
+// --- Config Supabase
 const SB_URL = "https://dzzblqlteirtzyegplgu.supabase.co";
 const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR6emJscWx0ZWlydHp5ZWdwbGd1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk0MjgyMDgsImV4cCI6MjA3NTAwNDIwOH0.WbjNAjF2qxly8QMu-3VJLPQE88UgzkeAn9XPj0lcb1Y";
 const sb = createClient(SB_URL, SB_KEY);
@@ -15,7 +15,7 @@ const qEl      = document.getElementById("search");
 const catEl    = document.getElementById("category");
 const cityEl   = document.getElementById("city");
 
-// Modal (doit exister dans index.html)
+// Modal
 const overlay  = document.getElementById("overlay");
 const modal    = document.getElementById("productModal");
 const mTitle   = document.getElementById("mTitle");
@@ -31,33 +31,40 @@ const mNext    = document.getElementById("mNext");
 const mClose   = document.getElementById("mClose");
 
 // --- Etat
-let PRODUCTS = [];            // produits pour l’UI
-let IMAGES_MAP = {};          // { product_id: [urls...] } (cache)
-let currentGallery = [];      // images affichées dans la modale
-let currentIndex = 0;         // index courant dans la galerie
+let PRODUCTS = [];
+let IMAGES_MAP = {};    // { product_id: [urls] }
+let currentGallery = [];
+let currentIndex = 0;
 
 // --- Utils
 const fmtXAF = n => new Intl.NumberFormat("fr-FR").format(n) + " XAF";
 const escapeHtml = s => (s ?? "").toString().replace(/[&<>"']/g, c => ({
-  '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+  '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
 })[c]);
-const escapeAttr = s => escapeHtml(s).replace(/"/g, "&quot;");
-const arrayify = v => {
+const escapeAttr = s => escapeHtml(s).replace(/"/g,"&quot;");
+const uniq = arr => {
+  const seen = new Set(); const out = [];
+  for (const u of arr) if (u && !seen.has(u)) { seen.add(u); out.push(u); }
+  return out;
+};
+// tolère JSON, tableau natif, ou CSV "url1,url2"
+const toArray = v => {
   if (!v) return [];
-  if (Array.isArray(v)) return v;
+  if (Array.isArray(v)) return v.filter(Boolean);
   if (typeof v === "string") {
-    try { const x = JSON.parse(v); return Array.isArray(x) ? x : []; }
-    catch { return []; }
+    // d’abord tentative JSON
+    try { const j = JSON.parse(v); if (Array.isArray(j)) return j.filter(Boolean); } catch {}
+    // sinon CSV
+    return v.split(",").map(s => s.trim()).filter(Boolean);
   }
   return [];
 };
 
 // =======================
-// Chargement des données
+// Chargement des produits
 // =======================
 async function loadProducts() {
-  // 1) produits actifs
-  let { data, error } = await sb
+  const { data, error } = await sb
     .from("products")
     .select("id,title,price,currency,category,cities,image,images,short_description,active,created_at,expires_after_days")
     .eq("active", true)
@@ -69,22 +76,18 @@ async function loadProducts() {
     return;
   }
 
-  // 2) mapping + expiration
   const now = Date.now();
-  const base = (data || []).map(p => ({
+  PRODUCTS = (data || []).map(p => ({
     ...p,
-    // on normalise pour l’UI (le champ DB est short_description)
-    shortDescription: p.short_description ?? "",
+    shortDescription: p.short_description ?? ""
   })).filter(p => {
-    const days = Number.isFinite(p.expires_after_days) ? p.expires_after_days : null;
-    if (!days || days <= 0) return true;
+    const d = Number.isFinite(p.expires_after_days) ? p.expires_after_days : null;
+    if (!d || d <= 0) return true;
     const created = p.created_at ? Date.parse(p.created_at) : now;
-    return (created + days * 86400000) > now; // non expiré
+    return (created + d * 86400000) > now;
   });
 
-  PRODUCTS = base;
-
-  // 3) pré-charge images supplémentaires (product_images)
+  // pré-charger images supplémentaires
   IMAGES_MAP = {};
   const ids = PRODUCTS.map(p => p.id).filter(Boolean);
   if (ids.length) {
@@ -95,39 +98,34 @@ async function loadProducts() {
       .order("sort", { ascending: true })
       .order("created_at", { ascending: true });
 
-    if (im.error) {
-      console.warn("product_images fetch error:", im.error.message || im.error);
-    } else {
+    if (!im.error) {
       for (const r of (im.data || [])) {
-        if (!IMAGES_MAP[r.product_id]) IMAGES_MAP[r.product_id] = [];
-        if (r.url) IMAGES_MAP[r.product_id].push(r.url);
+        (IMAGES_MAP[r.product_id] ||= []).push(r.url);
       }
+    } else {
+      console.warn("product_images fetch error:", im.error);
     }
   }
 
-  // 4) catégories
   fillCategories(PRODUCTS);
-
-  // 5) rendu initial
   render(PRODUCTS);
 }
 
 // =======================
-// Rendu + Filtres
+// Rendu + filtres
 // =======================
-function fillCategories(list) {
+function fillCategories(list){
   if (!catEl) return;
   const set = new Set();
   for (const p of list) if (p.category) set.add(p.category);
-  const opts = ['<option value="Toutes">Toutes les catégories</option>']
-    .concat([...set].sort().map(c => `<option>${escapeHtml(c)}</option>`));
-  catEl.innerHTML = opts.join("");
+  catEl.innerHTML = ['<option value="Toutes">Toutes les catégories</option>']
+    .concat([...set].sort().map(c => `<option>${escapeHtml(c)}</option>`))
+    .join("");
 }
 
-function render(list, errorText = "") {
+function render(list, errorText=""){
   if (!gridEl) return;
 
-  // Filtrage
   const q = (qEl?.value || "").toLowerCase().trim();
   const cat = (catEl?.value || "Toutes");
   const city = (cityEl?.value || "Toutes");
@@ -139,12 +137,10 @@ function render(list, errorText = "") {
     return okQ && okC && okCity;
   });
 
-  // Cartes
   gridEl.innerHTML = filtered.map(cardTpl).join("");
 
-  // Etat vide / erreur
   if (filtered.length === 0) {
-    if (emptyEl) {
+    if (emptyEl){
       emptyEl.style.display = "block";
       emptyEl.textContent = "Aucun produit pour l’instant" + (errorText ? ` (${errorText})` : ".");
     }
@@ -152,19 +148,17 @@ function render(list, errorText = "") {
     if (emptyEl) emptyEl.style.display = "none";
   }
 
-  // Bind click -> modal
   gridEl.querySelectorAll(".card").forEach(card => {
     card.addEventListener("click", () => {
       const id = card.getAttribute("data-id");
-      const p = PRODUCTS.find(x => x.id === id);
+      const p = PRODUCTS.find(x => (""+x.id) === (""+id));
       if (p) openModal(p);
     });
   });
 }
 
-function cardTpl(p) {
-  // 1ère image pour la grille (image principale ou fallback)
-  const gallery = buildGallery(p);
+function cardTpl(p){
+  const gallery = buildGalleryLocal(p);
   const img = escapeHtml(gallery[0] || "/assets/images/placeholder.png");
   const title = escapeHtml(p.title || "");
   const price = fmtXAF(p.price || 0);
@@ -183,86 +177,83 @@ function cardTpl(p) {
   `;
 }
 
-// Construit la galerie : image principale + products.images + product_images, avec dédup
-function buildGallery(p) {
-  const a = [];
-  if (p.image) a.push(p.image);
-  for (const u of arrayify(p.images)) if (u) a.push(u);
-  for (const u of (IMAGES_MAP[p.id] || [])) if (u) a.push(u);
-  // dédup
-  const seen = new Set(); const out = [];
-  for (const u of a) { if (!seen.has(u)) { seen.add(u); out.push(u); } }
-  return out;
+// images disponibles sans aller au réseau
+function buildGalleryLocal(p){
+  const arr = [];
+  if (p.image) arr.push(p.image);
+  toArray(p.images).forEach(u => arr.push(u));
+  (IMAGES_MAP[p.id] || []).forEach(u => arr.push(u));
+  return uniq(arr);
 }
 
 // =======================
-// Modal / Galerie
+// Modale / Galerie
 // =======================
-async function fetchExtraImages(productId) {
-  try {
+async function fetchExtraImages(productId){
+  try{
     const { data, error } = await sb
-      .from('product_images')
-      .select('url, sort, created_at')
-      .eq('product_id', productId)
-      .order('sort', { ascending: true })
-      .order('created_at', { ascending: true });
+      .from("product_images")
+      .select("url,sort,created_at")
+      .eq("product_id", productId)
+      .order("sort", { ascending: true })
+      .order("created_at", { ascending: true });
 
     if (error) throw error;
     return (data || []).map(r => r.url).filter(Boolean);
-  } catch (e) {
-    console.warn('[product_images]', e);
+  }catch(e){
+    console.warn("[product_images]", e);
     return [];
   }
 }
 
-function renderGallery() {
+function renderGallery(){
   if (!mMain || !mThumbs) return;
 
-  if (!currentGallery.length) {
+  if (!currentGallery.length){
     mMain.src = "/assets/images/placeholder.png";
     mThumbs.innerHTML = "";
     if (mPrev) mPrev.disabled = true;
     if (mNext) mNext.disabled = true;
     return;
   }
-  // principale
+
   mMain.src = currentGallery[currentIndex];
 
-  // vignettes
   mThumbs.innerHTML = currentGallery.map((url, i) =>
-    `<img src="${escapeAttr(url)}" data-i="${i}" style="border:${i===currentIndex?'2px solid #111':'1px solid #eee'};border-radius:8px;width:72px;height:72px;object-fit:cover;cursor:pointer">`
+    `<img src="${escapeAttr(url)}" data-i="${i}"
+      style="border:${i===currentIndex?'2px solid #111':'1px solid #eee'};border-radius:8px;width:72px;height:72px;object-fit:cover;cursor:pointer">`
   ).join("");
 
   mThumbs.querySelectorAll("img").forEach(img => {
     img.addEventListener("click", () => {
-      const i = parseInt(img.getAttribute("data-i") || "0", 10);
-      currentIndex = i;
+      currentIndex = parseInt(img.getAttribute("data-i") || "0", 10);
       renderGallery();
     });
   });
 
-  if (mPrev) mPrev.disabled = currentGallery.length <= 1;
-  if (mNext) mNext.disabled = currentGallery.length <= 1;
+  const multi = currentGallery.length > 1;
+  if (mPrev) mPrev.disabled = !multi;
+  if (mNext) mNext.disabled = !multi;
 }
 
-function prevImg() {
+function prevImg(){
   if (!currentGallery.length) return;
   currentIndex = (currentIndex - 1 + currentGallery.length) % currentGallery.length;
   renderGallery();
 }
-function nextImg() {
+function nextImg(){
   if (!currentGallery.length) return;
   currentIndex = (currentIndex + 1) % currentGallery.length;
   renderGallery();
 }
 
-async function openModal(p) {
-  if (!modal || !overlay || !mMain || !mThumbs) {
+async function openModal(p){
+  if (!modal || !overlay || !mMain || !mThumbs){
     alert("Fiche produit indisponible (modale manquante).");
     return;
   }
 
-  // Titre / prix / etc.
+  // Texte
   mTitle.textContent = p.title || "";
   mPrice.textContent = fmtXAF(p.price || 0);
   mCat.textContent   = p.category || "";
@@ -273,16 +264,16 @@ async function openModal(p) {
   const msg = encodeURIComponent(`Bonjour Samiah Cosmetics, je suis intéressé(e) par ${p.title} (${fmtXAF(p.price||0)}).`);
   if (mWhats) mWhats.href = `https://wa.me/23562752105?text=${msg}`;
 
-  // Galerie locale (image principale + cache)
-  currentGallery = buildGallery(p);
-  currentIndex = 0;
+  // 1) galerie locale
+  currentGallery = buildGalleryLocal(p);
 
-  // Sécurité : si on n’a qu’une image (ou aucune), on tente de charger à la volée
-  if (currentGallery.length <= 1) {
+  // 2) on complète TOUJOURS par la DB pour être sûr
+  try{
     const extras = await fetchExtraImages(p.id);
-    for (const u of extras) if (!currentGallery.includes(u)) currentGallery.push(u);
-  }
+    currentGallery = uniq(currentGallery.concat(extras));
+  }catch{}
 
+  currentIndex = 0;
   renderGallery();
 
   // Ouvrir
@@ -290,7 +281,7 @@ async function openModal(p) {
   modal.style.display = "flex";
   modal.classList.add("open");
 
-  // Bind (sans doublons)
+  // Bind
   if (mClose) mClose.onclick = closeModal;
   overlay.onclick = (e) => { if (e.target === overlay) closeModal(); };
   const keyHandler = (e) => { if (e.key === "Escape") closeModal(); };
@@ -299,7 +290,7 @@ async function openModal(p) {
   if (mNext) mNext.onclick = nextImg;
 }
 
-function closeModal() {
+function closeModal(){
   modal?.classList.remove("open");
   modal.style.display = "none";
   overlay.style.display = "none";
@@ -315,29 +306,22 @@ function closeModal() {
 });
 
 // =======================
-// Realtime : refresh auto
+// Realtime
 // =======================
-function subscribeRealtime() {
-  const ch = sb.channel("realtime:products");
-  ch.on(
-    "postgres_changes",
-    { event: "*", schema: "public", table: "products" },
-    () => { loadProducts().catch(console.error); }
-  ).subscribe();
+function subscribeRealtime(){
+  sb.channel("realtime:products")
+    .on("postgres_changes", { event:"*", schema:"public", table:"products" }, () => loadProducts().catch(console.error))
+    .subscribe();
 
-  // si tu veux le temps réel aussi pour les images :
-  const ch2 = sb.channel("realtime:product_images");
-  ch2.on(
-    "postgres_changes",
-    { event: "*", schema: "public", table: "product_images" },
-    () => { loadProducts().catch(console.error); }
-  ).subscribe();
+  sb.channel("realtime:product_images")
+    .on("postgres_changes", { event:"*", schema:"public", table:"product_images" }, () => loadProducts().catch(console.error))
+    .subscribe();
 }
 
 // =======================
 // Init
 // =======================
-async function init() {
+async function init(){
   await loadProducts();
   subscribeRealtime();
 }
