@@ -1,11 +1,1 @@
 { "version": 2 }
-{
-  "headers": [
-    {
-      "source": "/assets/js/(.*)",
-      "headers": [
-        { "key": "Cache-Control", "value": "no-store" }
-      ]
-    }
-  ]
-}
