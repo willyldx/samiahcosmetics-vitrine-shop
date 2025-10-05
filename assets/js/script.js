@@ -1,9 +1,9 @@
 // =======================
-// Samiah — Vitrine (Supabase + Galerie multi-sources)
+// Samiah — Vitrine (Supabase + Galerie multi-images)
 // =======================
 import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
 
-// --- Config Supabase (clé ANON publique = OK côté client)
+// --- Config Supabase (clé ANON publique côté client)
 const SB_URL = "https://dzzblqlteirtzyegplgu.supabase.co";
 const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR6emJscWx0ZWlydHp5ZWdwbGd1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk0MjgyMDgsImV4cCI6MjA3NTAwNDIwOH0.WbjNAjF2qxly8QMu-3VJLPQE88UgzkeAn9XPj0lcb1Y";
 const sb = createClient(SB_URL, SB_KEY);
@@ -31,10 +31,10 @@ const mNext    = document.getElementById("mNext");
 const mClose   = document.getElementById("mClose");
 
 // --- Etat
-let PRODUCTS = [];            // liste de produits côté UI
-let IMAGES_MAP = {};          // { product_id: [urls...] }
-let currentGallery = [];      // galerie en cours dans le modal
-let currentIndex = 0;         // index image en cours du modal
+let PRODUCTS = [];            // produits pour l’UI
+let IMAGES_MAP = {};          // { product_id: [urls...] } (cache)
+let currentGallery = [];      // images affichées dans la modale
+let currentIndex = 0;         // index courant dans la galerie
 
 // --- Utils
 const fmtXAF = n => new Intl.NumberFormat("fr-FR").format(n) + " XAF";
@@ -45,7 +45,10 @@ const escapeAttr = s => escapeHtml(s).replace(/"/g, "&quot;");
 const arrayify = v => {
   if (!v) return [];
   if (Array.isArray(v)) return v;
-  if (typeof v === "string") { try { const x = JSON.parse(v); return Array.isArray(x) ? x : []; } catch { return []; } }
+  if (typeof v === "string") {
+    try { const x = JSON.parse(v); return Array.isArray(x) ? x : []; }
+    catch { return []; }
+  }
   return [];
 };
 
@@ -53,7 +56,7 @@ const arrayify = v => {
 // Chargement des données
 // =======================
 async function loadProducts() {
-  // 1) produits actifs (on récupère aussi `images`)
+  // 1) produits actifs
   let { data, error } = await sb
     .from("products")
     .select("id,title,price,currency,category,cities,image,images,short_description,active,created_at,expires_after_days")
@@ -70,6 +73,7 @@ async function loadProducts() {
   const now = Date.now();
   const base = (data || []).map(p => ({
     ...p,
+    // on normalise pour l’UI (le champ DB est short_description)
     shortDescription: p.short_description ?? "",
   })).filter(p => {
     const days = Number.isFinite(p.expires_after_days) ? p.expires_after_days : null;
@@ -80,7 +84,7 @@ async function loadProducts() {
 
   PRODUCTS = base;
 
-  // 3) images supplémentaires (product_images)
+  // 3) pré-charge images supplémentaires (product_images)
   IMAGES_MAP = {};
   const ids = PRODUCTS.map(p => p.id).filter(Boolean);
   if (ids.length) {
@@ -159,7 +163,7 @@ function render(list, errorText = "") {
 }
 
 function cardTpl(p) {
-  // Prépare la toute 1ère image pour la grille
+  // 1ère image pour la grille (image principale ou fallback)
   const gallery = buildGallery(p);
   const img = escapeHtml(gallery[0] || "/assets/images/placeholder.png");
   const title = escapeHtml(p.title || "");
@@ -179,7 +183,7 @@ function cardTpl(p) {
   `;
 }
 
-// Construit la galerie : image principale + products.images + product_images, avec déduplication
+// Construit la galerie : image principale + products.images + product_images, avec dédup
 function buildGallery(p) {
   const a = [];
   if (p.image) a.push(p.image);
@@ -194,59 +198,31 @@ function buildGallery(p) {
 // =======================
 // Modal / Galerie
 // =======================
-function openModal(p) {
-  if (!modal || !overlay || !mMain || !mThumbs) {
-    alert("Fiche produit indisponible (modale manquante).");
-    return;
+async function fetchExtraImages(productId) {
+  try {
+    const { data, error } = await sb
+      .from('product_images')
+      .select('url, sort, created_at')
+      .eq('product_id', productId)
+      .order('sort', { ascending: true })
+      .order('created_at', { ascending: true });
+
+    if (error) throw error;
+    return (data || []).map(r => r.url).filter(Boolean);
+  } catch (e) {
+    console.warn('[product_images]', e);
+    return [];
   }
-
-  // Galerie fusionnée
-  currentGallery = buildGallery(p);
-  currentIndex = 0;
-
-  // Méta
-  mTitle.textContent = p.title || "";
-  mPrice.textContent = fmtXAF(p.price || 0);
-  mCat.textContent   = p.category || "";
-  mDesc.textContent  = p.shortDescription || "";
-  mCities.textContent = (p.cities && p.cities.length) ? `Villes : ${p.cities.join(", ")}` : "";
-
-  // WhatsApp
-  const msg = encodeURIComponent(`Bonjour Samiah Cosmetics, je suis intéressé(e) par ${p.title} (${fmtXAF(p.price||0)}).`);
-  mWhats.href = `https://wa.me/23562752105?text=${msg}`;
-
-  // Vignettes + image principale
-  renderGallery();
-
-  // Ouvrir
-  overlay.style.display = "block";
-  modal.style.display = "flex";
-  modal.classList.add("open");
-
-  // Bind
-  mClose.onclick = closeModal;
-  overlay.onclick = (e) => { if (e.target === overlay) closeModal(); };
-  document.addEventListener("keydown", escCloseOnce);
-  mPrev.onclick = prevImg;
-  mNext.onclick = nextImg;
-}
-
-function closeModal() {
-  modal?.classList.remove("open");
-  modal.style.display = "none";
-  overlay.style.display = "none";
-  document.removeEventListener("keydown", escCloseOnce);
-}
-
-function escCloseOnce(e) {
-  if (e.key === "Escape") closeModal();
 }
 
 function renderGallery() {
+  if (!mMain || !mThumbs) return;
+
   if (!currentGallery.length) {
     mMain.src = "/assets/images/placeholder.png";
     mThumbs.innerHTML = "";
-    mPrev.disabled = true; mNext.disabled = true;
+    if (mPrev) mPrev.disabled = true;
+    if (mNext) mNext.disabled = true;
     return;
   }
   // principale
@@ -265,9 +241,8 @@ function renderGallery() {
     });
   });
 
-  // nav
-  mPrev.disabled = currentGallery.length <= 1;
-  mNext.disabled = currentGallery.length <= 1;
+  if (mPrev) mPrev.disabled = currentGallery.length <= 1;
+  if (mNext) mNext.disabled = currentGallery.length <= 1;
 }
 
 function prevImg() {
@@ -279,6 +254,55 @@ function nextImg() {
   if (!currentGallery.length) return;
   currentIndex = (currentIndex + 1) % currentGallery.length;
   renderGallery();
+}
+
+async function openModal(p) {
+  if (!modal || !overlay || !mMain || !mThumbs) {
+    alert("Fiche produit indisponible (modale manquante).");
+    return;
+  }
+
+  // Titre / prix / etc.
+  mTitle.textContent = p.title || "";
+  mPrice.textContent = fmtXAF(p.price || 0);
+  mCat.textContent   = p.category || "";
+  mDesc.textContent  = p.shortDescription || "";
+  mCities.textContent = (p.cities && p.cities.length) ? `Villes : ${p.cities.join(", ")}` : "";
+
+  // WhatsApp
+  const msg = encodeURIComponent(`Bonjour Samiah Cosmetics, je suis intéressé(e) par ${p.title} (${fmtXAF(p.price||0)}).`);
+  if (mWhats) mWhats.href = `https://wa.me/23562752105?text=${msg}`;
+
+  // Galerie locale (image principale + cache)
+  currentGallery = buildGallery(p);
+  currentIndex = 0;
+
+  // Sécurité : si on n’a qu’une image (ou aucune), on tente de charger à la volée
+  if (currentGallery.length <= 1) {
+    const extras = await fetchExtraImages(p.id);
+    for (const u of extras) if (!currentGallery.includes(u)) currentGallery.push(u);
+  }
+
+  renderGallery();
+
+  // Ouvrir
+  overlay.style.display = "block";
+  modal.style.display = "flex";
+  modal.classList.add("open");
+
+  // Bind (sans doublons)
+  if (mClose) mClose.onclick = closeModal;
+  overlay.onclick = (e) => { if (e.target === overlay) closeModal(); };
+  const keyHandler = (e) => { if (e.key === "Escape") closeModal(); };
+  document.addEventListener("keydown", keyHandler, { once: true });
+  if (mPrev) mPrev.onclick = prevImg;
+  if (mNext) mNext.onclick = nextImg;
+}
+
+function closeModal() {
+  modal?.classList.remove("open");
+  modal.style.display = "none";
+  overlay.style.display = "none";
 }
 
 // =======================
@@ -298,6 +322,14 @@ function subscribeRealtime() {
   ch.on(
     "postgres_changes",
     { event: "*", schema: "public", table: "products" },
+    () => { loadProducts().catch(console.error); }
+  ).subscribe();
+
+  // si tu veux le temps réel aussi pour les images :
+  const ch2 = sb.channel("realtime:product_images");
+  ch2.on(
+    "postgres_changes",
+    { event: "*", schema: "public", table: "product_images" },
     () => { loadProducts().catch(console.error); }
   ).subscribe();
 }
