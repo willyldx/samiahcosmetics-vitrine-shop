@@ -1,46 +1,62 @@
-export default async function handler(req, res) {
-  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+// /api/admin/save-products.js
+import { createClient } from '@supabase/supabase-js';
 
-  const { SUPABASE_URL, SUPABASE_SERVICE_ROLE, ADMIN_SECRET } = process.env;
-  if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE) {
-    return res.status(500).json({ error: 'Missing Supabase env vars' });
+export default async function handler(req, res) {
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method Not Allowed' });
   }
-  if (req.headers['x-admin-secret'] !== (ADMIN_SECRET || '')) {
+
+  // petit verrou idiot mais utile : secret admin côté client
+  const adminSecret = req.headers['x-admin-secret'];
+  if (!adminSecret || adminSecret !== process.env.ADMIN_SECRET) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
 
-  let body = {};
-  try { body = JSON.parse(req.body || '{}'); } catch { body = req.body || {}; }
-  const products = Array.isArray(body.products) ? body.products : [];
+  try {
+    const { products } = req.body || {};
+    if (!Array.isArray(products)) {
+      return res.status(400).json({ error: 'Bad payload: products[] attendu' });
+    }
 
-  const rows = products.map(p => ({
-    id: p.id,
-    title: p.title,
-    price: p.price,
-    currency: p.currency || 'XAF',
-    category: p.category || null,
-    short_description: p.shortDescription || null,
-    image: p.image || null,
-    cities: Array.isArray(p.cities) ? p.cities : [],
-    active: p.active !== false,
-    expires_after_days: (p.expiresAfterDays ?? null),
-    published_at: p.publishedAt || new Date().toISOString(),
-    // created_at: laissé au défaut côté DB si la colonne existe
-  }));
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL,
+      process.env.SUPABASE_SERVICE_ROLE // service role côté serveur
+    );
 
-  const h = {
-    'apikey': SUPABASE_SERVICE_ROLE,
-    'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE}`,
-    'Content-Type': 'application/json',
-    // upsert sur la pk id
-    'Prefer': 'resolution=merge-duplicates'
-  };
+    // Normalisation -> colonnes de la table products
+    const rows = products.map((p) => ({
+      id: String(p.id || '').trim(),
+      title: p.title ?? null,
+      price: Number.isFinite(p.price) ? p.price : 0,
+      currency: p.currency ?? 'XAF',
+      category: p.category ?? null,
+      image: p.image ?? null,
+      // ⬇️ le point clé : on écrit bien le JSON d’URLs
+      images: Array.isArray(p.images) ? p.images : [],
 
-  const url = `${SUPABASE_URL}/rest/v1/products?on_conflict=id`;
-  const r = await fetch(url, { method: 'POST', headers: h, body: JSON.stringify(rows) });
-  const data = await r.json().catch(() => ({}));
+      // selon ton schéma (snake_case)
+      short_description: p.shortDescription ?? null,
+      cities: Array.isArray(p.cities) ? p.cities : [],
+      active: p.active !== false,
+      expires_after_days: Number.isFinite(p.expiresAfterDays) ? p.expiresAfterDays : null,
+      published_at: p.publishedAt ?? new Date().toISOString(),
+      // created_at: laissé au DEFAULT côté DB
+    })).filter(r => r.id); // on ignore les items sans id
 
-  if (!r.ok) return res.status(r.status).json({ error: data?.message || 'save failed' });
+    if (!rows.length) {
+      return res.status(200).json({ items: 0 });
+    }
 
-  res.status(200).json({ ok: true, count: Array.isArray(data) ? data.length : rows.length });
+    const { data, error } = await supabase
+      .from('products')
+      .upsert(rows, { onConflict: 'id' });
+
+    if (error) {
+      return res.status(500).json({ error: error.message, details: error });
+    }
+
+    return res.status(200).json({ ok: true, count: data?.length ?? 0 });
+  } catch (e) {
+    return res.status(500).json({ error: e.message || 'Server error' });
+  }
 }
