@@ -30,7 +30,7 @@ const mPrev    = document.getElementById("mPrev");
 const mNext    = document.getElementById("mNext");
 const mClose   = document.getElementById("mClose");
 
-// --- Etat
+// --- État
 let PRODUCTS = [];
 let IMAGES_MAP = {};    // { product_id: [urls] }
 let currentGallery = [];
@@ -42,21 +42,38 @@ const escapeHtml = s => (s ?? "").toString().replace(/[&<>"']/g, c => ({
   '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
 })[c]);
 const escapeAttr = s => escapeHtml(s).replace(/"/g,"&quot;");
-const uniq = arr => {
-  const seen = new Set(); const out = [];
+
+// Déduplication simple
+const uniq = (arr) => {
+  const seen = new Set(), out = [];
   for (const u of arr) if (u && !seen.has(u)) { seen.add(u); out.push(u); }
   return out;
 };
-// tolère JSON, tableau natif, ou CSV "url1,url2"
-const toArray = v => {
+
+// Tolère JSON, tableau, objet, CSV (virgule / point-virgule / pipe)
+const toArray = (v) => {
   if (!v) return [];
   if (Array.isArray(v)) return v.filter(Boolean);
+
   if (typeof v === "string") {
-    // d’abord tentative JSON
-    try { const j = JSON.parse(v); if (Array.isArray(j)) return j.filter(Boolean); } catch {}
-    // sinon CSV
-    return v.split(",").map(s => s.trim()).filter(Boolean);
+    // 1) JSON si possible
+    try {
+      const j = JSON.parse(v);
+      if (Array.isArray(j)) return j.filter(Boolean);
+      if (j && typeof j === "object") {
+        if (Array.isArray(j.urls)) return j.urls.filter(Boolean);
+        return Object.values(j).flat().filter(x => typeof x === "string" && x);
+      }
+    } catch {}
+    // 2) CSV (comma / semicolon / pipe)
+    return v.split(/[;,|]/g).map(s => s.trim()).filter(Boolean);
   }
+
+  if (typeof v === "object") {
+    if (Array.isArray(v.urls)) return v.urls.filter(Boolean);
+    return Object.values(v).flat().filter(x => typeof x === "string" && x);
+  }
+
   return [];
 };
 
@@ -87,7 +104,7 @@ async function loadProducts() {
     return (created + d * 86400000) > now;
   });
 
-  // pré-charger images supplémentaires
+  // Charger les images supplémentaires (table product_images)
   IMAGES_MAP = {};
   const ids = PRODUCTS.map(p => p.id).filter(Boolean);
   if (ids.length) {
@@ -106,6 +123,9 @@ async function loadProducts() {
       console.warn("product_images fetch error:", im.error);
     }
   }
+
+  console.log("LOAD OK — items:", PRODUCTS.length, PRODUCTS);
+  console.log("IMAGES_MAP:", IMAGES_MAP);
 
   fillCategories(PRODUCTS);
   render(PRODUCTS);
@@ -148,6 +168,7 @@ function render(list, errorText=""){
     if (emptyEl) emptyEl.style.display = "none";
   }
 
+  // clic carte → modale
   gridEl.querySelectorAll(".card").forEach(card => {
     card.addEventListener("click", () => {
       const id = card.getAttribute("data-id");
@@ -177,7 +198,7 @@ function cardTpl(p){
   `;
 }
 
-// images disponibles sans aller au réseau
+// images disponibles sans requête réseau
 function buildGalleryLocal(p){
   const arr = [];
   if (p.image) arr.push(p.image);
@@ -253,6 +274,15 @@ async function openModal(p){
     return;
   }
 
+  // DEBUG utile si jamais ça coince
+  console.log("[OPEN]", {
+    id: p.id,
+    image: p.image,
+    images_raw: p.images,
+    images_parsed: toArray(p.images),
+    extra_from_map: IMAGES_MAP[p.id] || []
+  });
+
   // Texte
   mTitle.textContent = p.title || "";
   mPrice.textContent = fmtXAF(p.price || 0);
@@ -267,7 +297,7 @@ async function openModal(p){
   // 1) galerie locale
   currentGallery = buildGalleryLocal(p);
 
-  // 2) on complète TOUJOURS par la DB pour être sûr
+  // 2) on complète par la DB (au cas où)
   try{
     const extras = await fetchExtraImages(p.id);
     currentGallery = uniq(currentGallery.concat(extras));
