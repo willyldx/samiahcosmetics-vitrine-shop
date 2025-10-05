@@ -80,3 +80,46 @@ small.muted{opacity:.7}
 .pm-badges{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
 .pm-badge{background:#111;color:#fff;border-radius:999px;padding:4px 10px;font-size:12px}
 
+/* ====== Responsive polish vitrine ====== */
+
+/* Grille de produits fluide */
+#products-grid.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 16px;
+}
+
+/* Cartes */
+#products-grid .card img {
+  width: 100%;
+  height: 180px;
+  object-fit: cover;
+  border-radius: 12px;
+  display: block;
+}
+
+/* Section hero: pile sur mobile */
+.hero .wrap {
+  display: grid;
+  grid-template-columns: 1.1fr .9fr;
+  gap: 18px;
+  align-items: center;
+}
+@media (max-width: 900px){
+  .hero .wrap { grid-template-columns: 1fr; }
+}
+
+/* Modale produit: colonne unique sur mobile */
+.modal-body { display: grid; grid-template-columns: 1.1fr .9fr; gap: 16px; }
+@media (max-width: 900px){
+  .modal-card { width: 96vw; }
+  .modal-body { grid-template-columns: 1fr !important; }
+  .gal-main { aspect-ratio: 1 / 1; }
+  .modal-actions .btn { width: 100%; }
+}
+
+/* Bouton WhatsApp flottant: safe area + ombre douce */
+.wa-float { bottom: max(18px, env(safe-area-inset-bottom)); }
+
+/* Petites améliorations d’accessibilité/tactiles */
+button, .btn { touch-action: manipulation; }
