@@ -1,5 +1,5 @@
 // =======================
-// Samiah — Vitrine (Supabase + Galerie multi-images)
+// Samiah — Vitrine (Supabase + Galerie multi-images + Plein écran)
 // =======================
 import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
 
@@ -15,7 +15,7 @@ const qEl      = document.getElementById("search");
 const catEl    = document.getElementById("category");
 const cityEl   = document.getElementById("city");
 
-// Modal
+// Modale produit
 const overlay  = document.getElementById("overlay");
 const modal    = document.getElementById("productModal");
 const mTitle   = document.getElementById("mTitle");
@@ -30,10 +30,17 @@ const mPrev    = document.getElementById("mPrev");
 const mNext    = document.getElementById("mNext");
 const mClose   = document.getElementById("mClose");
 
-// --- État
+// Plein écran (lightbox)
+const fsOverlay = document.getElementById("fsOverlay");
+const fsImg     = document.getElementById("fsImg");
+const fsPrev    = document.getElementById("fsPrev");
+const fsNext    = document.getElementById("fsNext");
+const fsClose   = document.getElementById("fsClose");
+
+// --- Etat
 let PRODUCTS = [];
-let IMAGES_MAP = {};    // { product_id: [urls] }
-let currentGallery = [];
+let IMAGES_MAP = {};       // { product_id: [urls] }
+let currentGallery = [];   // galerie courante (modale & plein écran)
 let currentIndex = 0;
 
 // --- Utils
@@ -42,38 +49,15 @@ const escapeHtml = s => (s ?? "").toString().replace(/[&<>"']/g, c => ({
   '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
 })[c]);
 const escapeAttr = s => escapeHtml(s).replace(/"/g,"&quot;");
-
-// Déduplication simple
-const uniq = (arr) => {
-  const seen = new Set(), out = [];
-  for (const u of arr) if (u && !seen.has(u)) { seen.add(u); out.push(u); }
-  return out;
-};
-
-// Tolère JSON, tableau, objet, CSV (virgule / point-virgule / pipe)
-const toArray = (v) => {
+const uniq = arr => { const seen=new Set(), out=[]; for (const u of arr) if (u && !seen.has(u)) { seen.add(u); out.push(u); } return out; };
+// tolère JSON, tableau natif, ou CSV
+const toArray = v => {
   if (!v) return [];
   if (Array.isArray(v)) return v.filter(Boolean);
-
   if (typeof v === "string") {
-    // 1) JSON si possible
-    try {
-      const j = JSON.parse(v);
-      if (Array.isArray(j)) return j.filter(Boolean);
-      if (j && typeof j === "object") {
-        if (Array.isArray(j.urls)) return j.urls.filter(Boolean);
-        return Object.values(j).flat().filter(x => typeof x === "string" && x);
-      }
-    } catch {}
-    // 2) CSV (comma / semicolon / pipe)
-    return v.split(/[;,|]/g).map(s => s.trim()).filter(Boolean);
+    try { const j = JSON.parse(v); if (Array.isArray(j)) return j.filter(Boolean); } catch {}
+    return v.split(",").map(s => s.trim()).filter(Boolean);
   }
-
-  if (typeof v === "object") {
-    if (Array.isArray(v.urls)) return v.urls.filter(Boolean);
-    return Object.values(v).flat().filter(x => typeof x === "string" && x);
-  }
-
   return [];
 };
 
@@ -104,7 +88,7 @@ async function loadProducts() {
     return (created + d * 86400000) > now;
   });
 
-  // Charger les images supplémentaires (table product_images)
+  // Charger les images supplémentaires (une fois)
   IMAGES_MAP = {};
   const ids = PRODUCTS.map(p => p.id).filter(Boolean);
   if (ids.length) {
@@ -116,16 +100,11 @@ async function loadProducts() {
       .order("created_at", { ascending: true });
 
     if (!im.error) {
-      for (const r of (im.data || [])) {
-        (IMAGES_MAP[r.product_id] ||= []).push(r.url);
-      }
+      for (const r of (im.data || [])) (IMAGES_MAP[r.product_id] ||= []).push(r.url);
     } else {
       console.warn("product_images fetch error:", im.error);
     }
   }
-
-  console.log("LOAD OK — items:", PRODUCTS.length, PRODUCTS);
-  console.log("IMAGES_MAP:", IMAGES_MAP);
 
   fillCategories(PRODUCTS);
   render(PRODUCTS);
@@ -151,10 +130,10 @@ function render(list, errorText=""){
   const city = (cityEl?.value || "Toutes");
 
   const filtered = list.filter(p => {
-    const okQ = !q || (p.title + " " + (p.category || "") + " " + (p.shortDescription || "")).toLowerCase().includes(q);
-    const okC = (cat === "Toutes") || (p.category === cat);
-    const okCity = (city === "Toutes") || ((p.cities || []).includes(city));
-    return okQ && okC && okCity;
+    const okQ   = !q || (p.title + " " + (p.category || "") + " " + (p.shortDescription || "")).toLowerCase().includes(q);
+    const okC   = (cat === "Toutes") || (p.category === cat);
+    const okCit = (city === "Toutes") || ((p.cities || []).includes(city));
+    return okQ && okC && okCit;
   });
 
   gridEl.innerHTML = filtered.map(cardTpl).join("");
@@ -168,7 +147,6 @@ function render(list, errorText=""){
     if (emptyEl) emptyEl.style.display = "none";
   }
 
-  // clic carte → modale
   gridEl.querySelectorAll(".card").forEach(card => {
     card.addEventListener("click", () => {
       const id = card.getAttribute("data-id");
@@ -180,11 +158,11 @@ function render(list, errorText=""){
 
 function cardTpl(p){
   const gallery = buildGalleryLocal(p);
-  const img = escapeHtml(gallery[0] || "/assets/images/placeholder.png");
+  const img   = escapeHtml(gallery[0] || "/assets/images/placeholder.png");
   const title = escapeHtml(p.title || "");
   const price = fmtXAF(p.price || 0);
-  const cat = escapeHtml(p.category || "");
-  const desc = escapeHtml(p.shortDescription || "");
+  const cat   = escapeHtml(p.category || "");
+  const desc  = escapeHtml(p.shortDescription || "");
   return `
     <div class="card" data-id="${escapeAttr(p.id)}" style="cursor:pointer">
       <img src="${img}" alt="${title}" loading="lazy">
@@ -198,7 +176,7 @@ function cardTpl(p){
   `;
 }
 
-// images disponibles sans requête réseau
+// images disponibles sans aller au réseau
 function buildGalleryLocal(p){
   const arr = [];
   if (p.image) arr.push(p.image);
@@ -218,7 +196,6 @@ async function fetchExtraImages(productId){
       .eq("product_id", productId)
       .order("sort", { ascending: true })
       .order("created_at", { ascending: true });
-
     if (error) throw error;
     return (data || []).map(r => r.url).filter(Boolean);
   }catch(e){
@@ -274,15 +251,6 @@ async function openModal(p){
     return;
   }
 
-  // DEBUG utile si jamais ça coince
-  console.log("[OPEN]", {
-    id: p.id,
-    image: p.image,
-    images_raw: p.images,
-    images_parsed: toArray(p.images),
-    extra_from_map: IMAGES_MAP[p.id] || []
-  });
-
   // Texte
   mTitle.textContent = p.title || "";
   mPrice.textContent = fmtXAF(p.price || 0);
@@ -297,7 +265,7 @@ async function openModal(p){
   // 1) galerie locale
   currentGallery = buildGalleryLocal(p);
 
-  // 2) on complète par la DB (au cas où)
+  // 2) compléter via DB
   try{
     const extras = await fetchExtraImages(p.id);
     currentGallery = uniq(currentGallery.concat(extras));
@@ -306,16 +274,20 @@ async function openModal(p){
   currentIndex = 0;
   renderGallery();
 
+  // clic sur l’image principale -> plein écran
+  if (mMain) mMain.onclick = () => openFs();
+
   // Ouvrir
   overlay.style.display = "block";
   modal.style.display = "flex";
   modal.classList.add("open");
 
-  // Bind
+  // Bind fermeture modale
   if (mClose) mClose.onclick = closeModal;
   overlay.onclick = (e) => { if (e.target === overlay) closeModal(); };
-  const keyHandler = (e) => { if (e.key === "Escape") closeModal(); };
-  document.addEventListener("keydown", keyHandler, { once: true });
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeModal(); }, { once:true });
+
+  // Nav mini
   if (mPrev) mPrev.onclick = prevImg;
   if (mNext) mNext.onclick = nextImg;
 }
@@ -324,6 +296,59 @@ function closeModal(){
   modal?.classList.remove("open");
   modal.style.display = "none";
   overlay.style.display = "none";
+}
+
+// =======================
+// Plein écran (lightbox)
+// =======================
+function openFs(){
+  if (!fsOverlay || !fsImg || !currentGallery.length) return;
+  fsImg.src = currentGallery[currentIndex] || "/assets/images/placeholder.png";
+  fsOverlay.classList.add("show");
+  document.body.style.overflow = "hidden";
+}
+function closeFs(){
+  if (!fsOverlay) return;
+  fsOverlay.classList.remove("show");
+  document.body.style.overflow = "";
+}
+function fsPrevFn(){
+  if (!currentGallery.length) return;
+  currentIndex = (currentIndex - 1 + currentGallery.length) % currentGallery.length;
+  fsImg.src = currentGallery[currentIndex];
+}
+function fsNextFn(){
+  if (!currentGallery.length) return;
+  currentIndex = (currentIndex + 1) % currentGallery.length;
+  fsImg.src = currentGallery[currentIndex];
+}
+
+// Bind permanents overlay
+if (fsClose)   fsClose.addEventListener("click", closeFs);
+if (fsOverlay) fsOverlay.addEventListener("click", (e) => { if (e.target === fsOverlay) closeFs(); });
+if (fsPrev)    fsPrev.addEventListener("click", fsPrevFn);
+if (fsNext)    fsNext.addEventListener("click", fsNextFn);
+
+// clavier pendant plein écran
+document.addEventListener("keydown", (e) => {
+  if (!fsOverlay || !fsOverlay.classList.contains("show")) return;
+  if (e.key === "Escape")      return closeFs();
+  if (e.key === "ArrowLeft")   return fsPrevFn();
+  if (e.key === "ArrowRight")  return fsNextFn();
+});
+
+// swipe mobile
+let touchX = null;
+if (fsOverlay){
+  fsOverlay.addEventListener("touchstart", (e) => {
+    touchX = e.changedTouches?.[0]?.clientX ?? null;
+  }, { passive:true });
+  fsOverlay.addEventListener("touchend", (e) => {
+    if (touchX == null) return;
+    const dx = (e.changedTouches?.[0]?.clientX ?? touchX) - touchX;
+    if (Math.abs(dx) > 40){ if (dx > 0) fsPrevFn(); else fsNextFn(); }
+    touchX = null;
+  }, { passive:true });
 }
 
 // =======================
