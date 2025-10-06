@@ -1,5 +1,5 @@
 // =======================
-// Samiah — Vitrine (Supabase + Galerie multi-images + Liens partageables)
+// Samiah — Vitrine (Supabase + Galerie multi-images + Plein écran robuste + Lien partageable)
 // =======================
 import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
 
@@ -30,12 +30,18 @@ const mPrev    = document.getElementById("mPrev");
 const mNext    = document.getElementById("mNext");
 const mClose   = document.getElementById("mClose");
 
+// Plein écran (lightbox) – éléments optionnels dans index.html
+const fsOverlay = document.getElementById("fsOverlay");
+const fsImg     = document.getElementById("fsImg");
+const fsPrev    = document.getElementById("fsPrev");
+const fsNext    = document.getElementById("fsNext");
+const fsClose   = document.getElementById("fsClose");
+
 // --- État
 let PRODUCTS = [];
-let IMAGES_MAP = {};    // { product_id: [urls] }
-let currentGallery = [];
+let IMAGES_MAP = {};       // { product_id: [urls] }
+let currentGallery = [];   // galerie courante (modale & plein écran)
 let currentIndex = 0;
-let openedProductId = null; // pour deep-link
 
 // --- Utils
 const fmtXAF = n => new Intl.NumberFormat("fr-FR").format(n) + " XAF";
@@ -44,37 +50,57 @@ const escapeHtml = s => (s ?? "").toString().replace(/[&<>"']/g, c => ({
 })[c]);
 const escapeAttr = s => escapeHtml(s).replace(/"/g,"&quot;");
 const uniq = arr => { const seen=new Set(), out=[]; for (const u of arr) if (u && !seen.has(u)) { seen.add(u); out.push(u); } return out; };
-// tolère JSON, tableau natif, ou CSV
-const toArray = v => {
+
+// toArray robuste : Array natif, JSON string, objet {urls:[]}, {0:"url",1:"url"}, CSV (virgule/; / | / retour-ligne)
+const toArray = (v) => {
   if (!v) return [];
   if (Array.isArray(v)) return v.filter(Boolean);
+  if (typeof v === "object") {
+    if (Array.isArray(v.urls)) return v.urls.filter(Boolean);
+    try { return Object.values(v).flat().map(x => (typeof x === "string" ? x : null)).filter(Boolean); } catch {}
+    return [];
+  }
   if (typeof v === "string") {
-    try { const j = JSON.parse(v); if (Array.isArray(j)) return j.filter(Boolean); } catch {}
-    return v.split(",").map(s => s.trim()).filter(Boolean);
+    const s = v.trim();
+    if (s.startsWith("[") || s.startsWith("{")) {
+      try { return toArray(JSON.parse(s)); } catch {}
+    }
+    return s.split(/[,\n;|]+/g).map(x => x.trim()).filter(Boolean);
   }
   return [];
 };
 
-// --- Deep-link helpers (?p=id)
-function getProductIdFromUrl(){
-  try{
-    const url = new URL(window.location.href);
-    return url.searchParams.get("p");
-  }catch{ return null; }
+// =======================
+// PARTAGE / LIEN DIRECT
+// =======================
+const mActions = modal ? modal.querySelector(".modal-actions") : null;
+
+function getPidFromURL(){
+  try { return new URL(location.href).searchParams.get("p"); } catch { return null; }
 }
-function pushProductIdInUrl(id){
-  try{
-    const url = new URL(window.location.href);
-    if (id) url.searchParams.set("p", id); else url.searchParams.delete("p");
-    history.pushState({ p:id }, "", url);
-  }catch{}
+function buildShareUrl(id){
+  const u = new URL(location.href);
+  u.searchParams.set("p", id);
+  return u.toString();
 }
-function replaceProductIdInUrl(id){
-  try{
-    const url = new URL(window.location.href);
-    if (id) url.searchParams.set("p", id); else url.searchParams.delete("p");
-    history.replaceState({ p:id }, "", url);
-  }catch{}
+async function copyToClipboard(text){
+  try { await navigator.clipboard.writeText(text); alert("Lien copié ✅"); }
+  catch { prompt("Copiez le lien :", text); }
+}
+function ensureShareButton(){
+  // crée le bouton une seule fois dans la modale
+  let btn = document.getElementById("mShare");
+  if (!btn && mActions){
+    btn = document.createElement("button");
+    btn.id = "mShare";
+    btn.className = "btn secondary";
+    btn.type = "button";
+    btn.textContent = "Partager le lien";
+    // l’insérer avant les boutons Préc/Suiv si possibles
+    if (mPrev) mActions.insertBefore(btn, mPrev);
+    else mActions.appendChild(btn);
+  }
+  return btn;
 }
 
 // =======================
@@ -104,7 +130,7 @@ async function loadProducts() {
     return (created + d * 86400000) > now;
   });
 
-  // Charger les images supplémentaires (une fois)
+  // Charger les images supplémentaires depuis product_images
   IMAGES_MAP = {};
   const ids = PRODUCTS.map(p => p.id).filter(Boolean);
   if (ids.length) {
@@ -124,6 +150,9 @@ async function loadProducts() {
 
   fillCategories(PRODUCTS);
   render(PRODUCTS);
+
+  // Ouvre automatiquement si lien direct ?p=...
+  maybeOpenFromURL();
 }
 
 // =======================
@@ -163,12 +192,11 @@ function render(list, errorText=""){
     if (emptyEl) emptyEl.style.display = "none";
   }
 
-  // clic carte → modale (+ pushState)
   gridEl.querySelectorAll(".card").forEach(card => {
     card.addEventListener("click", () => {
       const id = card.getAttribute("data-id");
       const p = PRODUCTS.find(x => (""+x.id) === (""+id));
-      if (p) openModal(p, /*push*/true);
+      if (p) openModal(p);
     });
   });
 }
@@ -193,7 +221,7 @@ function cardTpl(p){
   `;
 }
 
-// images disponibles sans aller au réseau
+// Construit la galerie : image principale + products.images + product_images
 function buildGalleryLocal(p){
   const arr = [];
   if (p.image) arr.push(p.image);
@@ -224,16 +252,10 @@ async function fetchExtraImages(productId){
 function renderGallery(){
   if (!mMain || !mThumbs) return;
 
-  if (!currentGallery.length){
-    mMain.src = "/assets/images/placeholder.png";
-    mThumbs.innerHTML = "";
-    if (mPrev) mPrev.disabled = true;
-    if (mNext) mNext.disabled = true;
-    return;
-  }
+  // image principale
+  mMain.src = currentGallery.length ? currentGallery[currentIndex] : "/assets/images/placeholder.png";
 
-  mMain.src = currentGallery[currentIndex];
-
+  // vignettes
   mThumbs.innerHTML = currentGallery.map((url, i) =>
     `<img src="${escapeAttr(url)}" data-i="${i}"
       style="border:${i===currentIndex?'2px solid #111':'1px solid #eee'};border-radius:8px;width:72px;height:72px;object-fit:cover;cursor:pointer">`
@@ -251,24 +273,23 @@ function renderGallery(){
   if (mNext) mNext.disabled = !multi;
 }
 
-function prevImg(){
-  if (!currentGallery.length) return;
-  currentIndex = (currentIndex - 1 + currentGallery.length) % currentGallery.length;
-  renderGallery();
-}
-function nextImg(){
-  if (!currentGallery.length) return;
-  currentIndex = (currentIndex + 1) % currentGallery.length;
-  renderGallery();
-}
+function prevImg(){ if (!currentGallery.length) return; currentIndex = (currentIndex - 1 + currentGallery.length) % currentGallery.length; renderGallery(); }
+function nextImg(){ if (!currentGallery.length) return; currentIndex = (currentIndex + 1) % currentGallery.length; renderGallery(); }
 
-async function openModal(p, push = false){
+async function openModal(p){
   if (!modal || !overlay || !mMain || !mThumbs){
     alert("Fiche produit indisponible (modale manquante).");
     return;
   }
 
-  openedProductId = p.id;
+  // DIAGNOSTIC
+  console.log("[OPEN PRODUCT]", {
+    id: p.id,
+    image: p.image,
+    images_raw: p.images,
+    images_parsed: toArray(p.images),
+    extra_from_table: IMAGES_MAP[p.id] || []
+  });
 
   // Texte
   mTitle.textContent = p.title || "";
@@ -281,10 +302,8 @@ async function openModal(p, push = false){
   const msg = encodeURIComponent(`Bonjour Samiah Cosmetics, je suis intéressé(e) par ${p.title} (${fmtXAF(p.price||0)}).`);
   if (mWhats) mWhats.href = `https://wa.me/23562752105?text=${msg}`;
 
-  // 1) galerie locale
+  // Galerie locale + compléments DB
   currentGallery = buildGalleryLocal(p);
-
-  // 2) compléter via DB
   try{
     const extras = await fetchExtraImages(p.id);
     currentGallery = uniq(currentGallery.concat(extras));
@@ -293,56 +312,104 @@ async function openModal(p, push = false){
   currentIndex = 0;
   renderGallery();
 
+  // --- PARTAGE : bouton + URL ---
+  const shareBtn = ensureShareButton();
+  if (shareBtn){
+    const shareUrl = buildShareUrl(p.id);
+    shareBtn.onclick = async () => {
+      if (navigator.share) {
+        try { await navigator.share({ title: p.title, text: p.title, url: shareUrl }); }
+        catch {/* annulation utilisateur */}
+      } else {
+        await copyToClipboard(shareUrl);
+      }
+    };
+  }
+
+  // clic image principale → plein écran (si markup présent)
+  if (mMain) mMain.onclick = () => openFs();
+
   // Ouvrir
   overlay.style.display = "block";
   modal.style.display = "flex";
   modal.classList.add("open");
 
-  // Gestion clavier (fermeture)
-  const keyHandler = (e) => { if (e.key === "Escape") closeModal(true); };
-  document.addEventListener("keydown", keyHandler, { once:true });
+  // Pousse l'état dans l'historique pour lien direct
+  try { history.pushState({ pid: p.id }, "", buildShareUrl(p.id)); } catch {}
 
-  // Nav mini
+  // Bind fermeture / nav
+  if (mClose) mClose.onclick = closeModal;
+  overlay.onclick = (e) => { if (e.target === overlay) closeModal(); };
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeModal(); }, { once:true });
   if (mPrev) mPrev.onclick = prevImg;
   if (mNext) mNext.onclick = nextImg;
-
-  // Fermer via bouton ou clic overlay
-  if (mClose) mClose.onclick = () => closeModal(true);
-  overlay.onclick = (e) => { if (e.target === overlay) closeModal(true); };
-
-  // Push URL si demandé
-  if (push) pushProductIdInUrl(p.id);
 }
 
-function closeModal(updateUrl){
+function closeModal(){
   modal?.classList.remove("open");
   modal.style.display = "none";
   overlay.style.display = "none";
-  if (updateUrl) replaceProductIdInUrl(null);
-  openedProductId = null;
+
+  // retire ?p de l’URL sans recharger
+  try {
+    const u = new URL(location.href);
+    u.searchParams.delete("p");
+    const clean = u.pathname + (u.searchParams.toString() ? "?" + u.searchParams.toString() : "") + u.hash;
+    history.replaceState({}, "", clean);
+  } catch {}
 }
 
 // =======================
-// Deep-link: back/forward & ouverture initiale
+// Plein écran (lightbox) — optionnel si les éléments existent
 // =======================
-window.addEventListener("popstate", () => {
-  const pid = getProductIdFromUrl();
-  if (pid) {
-    // ouvrir (sans pousser l'historique)
-    const p = PRODUCTS.find(x => (""+x.id) === (""+pid));
-    if (p) openModal(p, /*push*/false);
-  } else {
-    // fermer si ouvert
-    if (modal && modal.classList.contains("open")) closeModal(false);
-  }
+function openFs(){
+  if (!fsOverlay || !fsImg || !currentGallery.length) return;
+  fsImg.src = currentGallery[currentIndex] || "/assets/images/placeholder.png";
+  fsOverlay.classList.add("show");
+  document.body.style.overflow = "hidden";
+}
+function closeFs(){ if (!fsOverlay) return; fsOverlay.classList.remove("show"); document.body.style.overflow = ""; }
+function fsPrevFn(){ if (!currentGallery.length) return; currentIndex = (currentIndex - 1 + currentGallery.length) % currentGallery.length; if(fsImg) fsImg.src = currentGallery[currentIndex]; }
+function fsNextFn(){ if (!currentGallery.length) return; currentIndex = (currentIndex + 1) % currentGallery.length; if(fsImg) fsImg.src = currentGallery[currentIndex]; }
+if (fsClose)   fsClose.addEventListener("click", closeFs);
+if (fsOverlay) fsOverlay.addEventListener("click", (e) => { if (e.target === fsOverlay) closeFs(); });
+if (fsPrev)    fsPrev.addEventListener("click", fsPrevFn);
+if (fsNext)    fsNext.addEventListener("click", fsNextFn);
+document.addEventListener("keydown", (e) => {
+  if (!fsOverlay || !fsOverlay.classList.contains("show")) return;
+  if (e.key === "Escape")      return closeFs();
+  if (e.key === "ArrowLeft")   return fsPrevFn();
+  if (e.key === "ArrowRight")  return fsNextFn();
 });
+let touchX = null;
+if (fsOverlay){
+  fsOverlay.addEventListener("touchstart", (e) => { touchX = e.changedTouches?.[0]?.clientX ?? null; }, { passive:true });
+  fsOverlay.addEventListener("touchend", (e) => {
+    if (touchX == null) return;
+    const dx = (e.changedTouches?.[0]?.clientX ?? touchX) - touchX;
+    if (Math.abs(dx) > 40){ if (dx > 0) fsPrevFn(); else fsNextFn(); }
+    touchX = null;
+  }, { passive:true });
+}
 
-function maybeOpenFromUrl(){
-  const pid = getProductIdFromUrl();
+// =======================
+// Deep-link : ouvrir/fermer selon l’URL
+// =======================
+function maybeOpenFromURL(){
+  const pid = getPidFromURL();
   if (!pid) return;
   const p = PRODUCTS.find(x => (""+x.id) === (""+pid));
-  if (p) openModal(p, /*push*/false);
+  if (p) openModal(p);
 }
+window.addEventListener("popstate", () => {
+  const pid = getPidFromURL();
+  if (pid) {
+    const p = PRODUCTS.find(x => (""+x.id) === (""+pid));
+    if (p) openModal(p);
+  } else {
+    if (modal?.classList.contains("open")) closeModal();
+  }
+});
 
 // =======================
 // Filtres UI
@@ -371,8 +438,6 @@ function subscribeRealtime(){
 // =======================
 async function init(){
   await loadProducts();
-  // ouvre automatiquement si ?p=...
-  maybeOpenFromUrl();
   subscribeRealtime();
 }
 init().catch(console.error);
