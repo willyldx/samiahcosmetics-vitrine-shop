@@ -1,5 +1,5 @@
 // =======================
-// Samiah — Vitrine (Supabase + Galerie multi-images)
+// Samiah — Vitrine (Supabase + Galerie multi-images + Fullscreen)
 // =======================
 import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
 
@@ -15,7 +15,7 @@ const qEl      = document.getElementById("search");
 const catEl    = document.getElementById("category");
 const cityEl   = document.getElementById("city");
 
-// Modal
+// Modal (doit exister dans index.html)
 const overlay  = document.getElementById("overlay");
 const modal    = document.getElementById("productModal");
 const mTitle   = document.getElementById("mTitle");
@@ -32,31 +32,29 @@ const mClose   = document.getElementById("mClose");
 
 // --- État
 let PRODUCTS = [];
-let IMAGES_MAP = {};    // { product_id: [urls] }
-let currentGallery = [];
+let IMAGES_MAP = {};      // { product_id: [urls...] }
+let currentGallery = [];  // liste d’URLs dans la modale
 let currentIndex = 0;
 
 // --- Utils
 const fmtXAF = n => new Intl.NumberFormat("fr-FR").format(n) + " XAF";
 const escapeHtml = s => (s ?? "").toString().replace(/[&<>"']/g, c => ({
-  '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+  '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
 })[c]);
-const escapeAttr = s => escapeHtml(s).replace(/"/g,"&quot;");
+const escapeAttr = s => escapeHtml(s).replace(/"/g, "&quot;");
 
-// Déduplication simple
-const uniq = (arr) => {
-  const seen = new Set(), out = [];
+// dé-duplication
+const uniq = arr => {
+  const seen = new Set(); const out = [];
   for (const u of arr) if (u && !seen.has(u)) { seen.add(u); out.push(u); }
   return out;
 };
 
-// Tolère JSON, tableau, objet, CSV (virgule / point-virgule / pipe)
-const toArray = (v) => {
+// Tolère JSON / tableau / objet / CSV
+const toArray = v => {
   if (!v) return [];
   if (Array.isArray(v)) return v.filter(Boolean);
-
   if (typeof v === "string") {
-    // 1) JSON si possible
     try {
       const j = JSON.parse(v);
       if (Array.isArray(j)) return j.filter(Boolean);
@@ -65,15 +63,12 @@ const toArray = (v) => {
         return Object.values(j).flat().filter(x => typeof x === "string" && x);
       }
     } catch {}
-    // 2) CSV (comma / semicolon / pipe)
     return v.split(/[;,|]/g).map(s => s.trim()).filter(Boolean);
   }
-
   if (typeof v === "object") {
     if (Array.isArray(v.urls)) return v.urls.filter(Boolean);
     return Object.values(v).flat().filter(x => typeof x === "string" && x);
   }
-
   return [];
 };
 
@@ -104,7 +99,7 @@ async function loadProducts() {
     return (created + d * 86400000) > now;
   });
 
-  // Charger les images supplémentaires (table product_images)
+  // Charger images supplémentaires
   IMAGES_MAP = {};
   const ids = PRODUCTS.map(p => p.id).filter(Boolean);
   if (ids.length) {
@@ -124,15 +119,12 @@ async function loadProducts() {
     }
   }
 
-  console.log("LOAD OK — items:", PRODUCTS.length, PRODUCTS);
-  console.log("IMAGES_MAP:", IMAGES_MAP);
-
   fillCategories(PRODUCTS);
   render(PRODUCTS);
 }
 
 // =======================
-// Rendu + filtres
+// Rendu + Filtres
 // =======================
 function fillCategories(list){
   if (!catEl) return;
@@ -198,50 +190,13 @@ function cardTpl(p){
   `;
 }
 
-// images disponibles sans requête réseau
+// construit la galerie complète
 function buildGalleryLocal(p){
   const arr = [];
-  if (p.image) arr.push(p.image);
-  toArray(p.images).forEach(u => arr.push(u));
-  (IMAGES_MAP[p.id] || []).forEach(u => arr.push(u));
+  if (p.image) arr.push(p.image);              // image principale
+  toArray(p.images).forEach(u => arr.push(u)); // images JSON/CSV du produit
+  (IMAGES_MAP[p.id] || []).forEach(u => arr.push(u)); // table product_images
   return uniq(arr);
-}
-
-// =======================
-// FULLSCREEN + NAV clavier (helpers)
-// =======================
-function bindModalKeyboard(){
-  const keyHandler = (e) => {
-    if (e.key === 'Escape') closeModal();
-    if (e.key === 'ArrowRight') nextImg();
-    if (e.key === 'ArrowLeft')  prevImg();
-  };
-  document.addEventListener('keydown', keyHandler);
-  modal._keyHandler = keyHandler; // stock pour cleanup
-}
-
-function unbindModalKeyboard(){
-  if (modal && modal._keyHandler){
-    document.removeEventListener('keydown', modal._keyHandler);
-    modal._keyHandler = null;
-  }
-}
-
-// Clique sur l’image principale → plein écran (toggle)
-function enableFullscreenOnMain(){
-  if (!mMain) return;
-  mMain.style.cursor = 'zoom-in';
-  mMain.addEventListener('click', async () => {
-    try {
-      if (document.fullscreenElement) {
-        await document.exitFullscreen();
-      } else {
-        const wrap = mMain.closest('.gal-main');
-        if (mMain.requestFullscreen) await mMain.requestFullscreen();
-        else if (wrap?.requestFullscreen) await wrap.requestFullscreen();
-      }
-    } catch (_) {/* silencieux */}
-  }, { once: true }); // on attache une fois (l’élément reste le même)
 }
 
 // =======================
@@ -267,31 +222,63 @@ async function fetchExtraImages(productId){
 function renderGallery(){
   if (!mMain || !mThumbs) return;
 
+  // 1) image principale
   if (!currentGallery.length){
     mMain.src = "/assets/images/placeholder.png";
-    mThumbs.innerHTML = "";
-    if (mPrev) mPrev.disabled = true;
-    if (mNext) mNext.disabled = true;
-    return;
+  } else {
+    mMain.src = currentGallery[currentIndex];
   }
 
-  mMain.src = currentGallery[currentIndex];
-
+  // 2) vignettes (toujours visibles si >=1 image)
   mThumbs.innerHTML = currentGallery.map((url, i) =>
     `<img src="${escapeAttr(url)}" data-i="${i}"
       style="border:${i===currentIndex?'2px solid #111':'1px solid #eee'};border-radius:8px;width:72px;height:72px;object-fit:cover;cursor:pointer">`
   ).join("");
 
-  mThumbs.querySelectorAll("img").forEach(img => {
-    img.addEventListener("click", () => {
-      currentIndex = parseInt(img.getAttribute("data-i") || "0", 10);
-      renderGallery();
+  if (currentGallery.length) {
+    mThumbs.querySelectorAll("img").forEach(img => {
+      img.addEventListener("click", () => {
+        currentIndex = parseInt(img.getAttribute("data-i") || "0", 10);
+        renderGallery();
+      });
     });
-  });
+  }
 
+  // 3) nav
   const multi = currentGallery.length > 1;
   if (mPrev) mPrev.disabled = !multi;
   if (mNext) mNext.disabled = !multi;
+}
+
+// clavier pour la modale
+function bindModalKeyboard(){
+  const keyHandler = (e) => {
+    if (e.key === 'Escape') closeModal();
+    if (e.key === 'ArrowRight') nextImg();
+    if (e.key === 'ArrowLeft')  prevImg();
+  };
+  document.addEventListener('keydown', keyHandler);
+  modal._keyHandler = keyHandler;
+}
+function unbindModalKeyboard(){
+  if (modal && modal._keyHandler){
+    document.removeEventListener('keydown', modal._keyHandler);
+    modal._keyHandler = null;
+  }
+}
+
+// clic image principale → plein écran (optionnel, ne gêne pas les vignettes)
+function enableFullscreenOnMain(){
+  if (!mMain) return;
+  mMain.style.cursor = 'zoom-in';
+  mMain.onclick = async () => {
+    try {
+      if (document.fullscreenElement) { await document.exitFullscreen(); return; }
+      const wrap = mMain.closest('.gal-main');
+      if (mMain.requestFullscreen) await mMain.requestFullscreen();
+      else if (wrap?.requestFullscreen) await wrap.requestFullscreen();
+    } catch {}
+  };
 }
 
 function prevImg(){
@@ -311,15 +298,6 @@ async function openModal(p){
     return;
   }
 
-  // DEBUG utile si jamais ça coince
-  console.log("[OPEN]", {
-    id: p.id,
-    image: p.image,
-    images_raw: p.images,
-    images_parsed: toArray(p.images),
-    extra_from_map: IMAGES_MAP[p.id] || []
-  });
-
   // Texte
   mTitle.textContent = p.title || "";
   mPrice.textContent = fmtXAF(p.price || 0);
@@ -331,10 +309,8 @@ async function openModal(p){
   const msg = encodeURIComponent(`Bonjour Samiah Cosmetics, je suis intéressé(e) par ${p.title} (${fmtXAF(p.price||0)}).`);
   if (mWhats) mWhats.href = `https://wa.me/23562752105?text=${msg}`;
 
-  // 1) galerie locale
+  // Galerie locale + complémentaires DB
   currentGallery = buildGalleryLocal(p);
-
-  // 2) on complète par la DB (au cas où)
   try{
     const extras = await fetchExtraImages(p.id);
     currentGallery = uniq(currentGallery.concat(extras));
@@ -354,7 +330,6 @@ async function openModal(p){
   if (mPrev) mPrev.onclick = prevImg;
   if (mNext) mNext.onclick = nextImg;
 
-  // ++ Ajouts : clavier + plein écran
   bindModalKeyboard();
   enableFullscreenOnMain();
 }
@@ -363,7 +338,6 @@ function closeModal(){
   modal?.classList.remove("open");
   modal.style.display = "none";
   overlay.style.display = "none";
-  // cleanup clavier
   unbindModalKeyboard();
 }
 
