@@ -1,141 +1,133 @@
+/* ===========================
+   Samiah Cosmetics — styles
+   (nettoyé + responsive pack)
+   =========================== */
 
 :root{
   --charcoal:#0A0A0A;
   --ivory:#F5F2EA;
   --gold:#D9B56C;
   --blush:#F6D6E1;
+
+  --container:1160px;
+  --radius:16px;
+  --border:#eaeaea;
+  --muted:#6b7280;
 }
-*{box-sizing:border-box} html,body{margin:0;padding:0;font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Inter,Arial,sans-serif;color:#222}
+
+/* Base */
+*{box-sizing:border-box}
+html,body{margin:0;padding:0;font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Inter,Arial,sans-serif;color:#222;background:#fff}
 a{color:inherit;text-decoration:none}
-.container{max-width:1100px;margin:0 auto;padding:20px}
+img{max-width:100%;display:block}
+.muted{color:var(--muted)}
+small.muted{opacity:.75}
+
+/* Boutons */
+.btn{display:inline-block;background:var(--charcoal);color:#fff;padding:12px 18px;border-radius:10px;font-weight:600;cursor:pointer}
+.btn.gold{background:var(--gold);color:#222}
+.btn.secondary{background:#1111110d;color:#111;border:1px solid var(--border)}
+
+/* Layout généraux */
+.container{max-width:var(--container);margin:0 auto;padding:0 16px}
 .header{display:flex;align-items:center;gap:18px;padding:16px 0}
 .logo img{height:64px;width:auto}
 .brand{font-family:ui-serif,Georgia,'Times New Roman',serif;font-weight:700;letter-spacing:.08em}
-.hero{background:linear-gradient(135deg, #fff, #ffeef4);border-bottom:1px solid #eee;padding:36px 0}
-.hero .wrap{display:grid;grid-template-columns:1.3fr 1fr;gap:24px}
+
+/* Hero */
+.hero{background:linear-gradient(135deg,#fff,#ffeef4);border-bottom:1px solid #eee;padding:36px 0}
+.hero .wrap{display:grid;grid-template-columns:1.1fr .9fr;gap:24px;align-items:center}
 .hero h1{margin:0 0 8px;font-size:38px;letter-spacing:.02em}
 .hero p{margin:0 0 16px;font-size:18px;opacity:.85}
-.btn{display:inline-block;background:var(--charcoal);color:#fff;padding:12px 18px;border-radius:10px;font-weight:600}
-.btn.gold{background:var(--gold);color:#222}
+
+/* Image Hero “propre” (option) */
+.hero-photo{
+  border:1px solid #eee;border-radius:var(--radius);
+  box-shadow:0 10px 30px rgba(0,0,0,.08);background:#fff;
+  background-image:url('/assets/images/consultation-hero.jpg?v=5');
+  background-position:center;background-repeat:no-repeat;background-size:contain;
+  aspect-ratio:3 / 4;min-height:320px;
+}
+@media (min-width:900px){ .hero-photo{min-height:540px} }
+
+/* Titres de section */
 .section-title{font-family:ui-serif,Georgia,'Times New Roman',serif;font-size:28px;margin:24px 0 10px}
-.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
-.card{border:1px solid #eee;border-radius:16px;overflow:hidden;background:#fff;box-shadow:0 8px 20px rgba(0,0,0,.05)}
-.card img{width:100%;height:220px;object-fit:cover}
-.card .p{padding:14px}
-.badge{display:inline-block;background:#111;color:#fff;border-radius:999px;font-size:12px;padding:6px 10px;margin-right:6px;opacity:.9}
-.footer{margin-top:40px;padding:24px 0;border-top:1px solid #eee;font-size:14px;color:#666}
-.topbar{background:#111;color:#fff;font-size:13px;padding:6px 0;text-align:center}
+
+/* Filtres catalogue */
 .filters{display:flex;gap:10px;flex-wrap:wrap;margin:12px 0 18px}
 select,.search{padding:10px;border-radius:10px;border:1px solid #ddd;min-width:160px}
-small.muted{opacity:.7}
-@media(max-width:900px){
+
+/* Grilles (catalogue & autres cartes) */
+.grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(220px,1fr));
+  gap:16px;
+}
+
+/* Carte produit */
+.card{
+  background:#fff;border:1px solid #eee;border-radius:14px;overflow:hidden;
+  box-shadow:0 6px 20px rgba(0,0,0,.05);
+  transition:transform .12s ease, box-shadow .12s ease;
+}
+.card:hover{transform:translateY(-2px);box-shadow:0 10px 30px rgba(0,0,0,.08)}
+.card>img{width:100%;height:180px;object-fit:cover}
+.card .p{padding:10px 12px}
+
+/* Badge générique (si besoin) */
+.badge{display:inline-block;background:#111;color:#fff;border-radius:999px;font-size:12px;padding:6px 10px;margin-right:6px;opacity:.9}
+
+/* Message vide */
+.empty{padding:20px;text-align:center;color:var(--muted)}
+
+/* Footer */
+.footer{margin-top:40px;padding:24px 0;border-top:1px solid #eee;font-size:14px;color:#666}
+
+/* WhatsApp flottant */
+.wa-float{
+  position:fixed;right:18px;bottom:18px;z-index:999;
+  display:inline-flex;align-items:center;justify-content:center;
+  width:56px;height:56px;border-radius:999px;background:#25D366;color:#fff;
+  box-shadow:0 10px 30px rgba(0,0,0,.2);text-decoration:none;
+  touch-action:manipulation;
+}
+
+/* =========================
+   Modale fiche produit (index)
+   ========================= */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);display:none;z-index:1000}
+.modal{position:fixed;inset:0;display:none;align-items:center;justify-content:center;z-index:1001}
+.modal-card{
+  background:#fff;border:1px solid var(--border);border-radius:var(--radius);
+  box-shadow:0 20px 60px rgba(0,0,0,.25);
+  width:min(980px,96vw);overflow:hidden;
+}
+.modal-head{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-bottom:1px solid var(--border)}
+.modal-body{display:grid;grid-template-columns:1.1fr .9fr;gap:16px;padding:14px}
+@media (max-width:900px){ .modal-body{grid-template-columns:1fr} }
+
+/* Galerie dans la modale */
+.gal-main{border:1px solid #eee;border-radius:12px;overflow:hidden;display:flex;align-items:center;justify-content:center;background:#fff;aspect-ratio:4/3}
+.gal-main img{max-width:100%;max-height:100%}
+.gal-thumbs{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.gal-thumbs img{width:72px;height:72px;object-fit:cover;border:1px solid #eee;border-radius:8px;cursor:pointer}
+
+/* =========================
+   Responsive tweaks
+   ========================= */
+@media (max-width:1100px){
+  .hero h1{font-size:34px}
+  .card>img{height:200px}
+}
+@media (max-width:900px){
   .hero .wrap{grid-template-columns:1fr}
-  .grid{grid-template-columns:1fr 1fr}
 }
-@media(max-width:600px){
-  .grid{grid-template-columns:1fr}
-  .hero h1{font-size:30px}
-}
-/* --- HERO image, rendu propre sans déformation --- */
-.hero-photo{
-  border: 1px solid #eee;
-  border-radius: 16px;
-  box-shadow: 0 10px 30px rgba(0,0,0,.08);
-  background-color: #fff;
-
-  /* ta photo en fond, centrée, sans étirement */
-  background-image: url('/assets/images/consultation-hero.jpg?v=5');
-  background-position: center;
-  background-repeat: no-repeat;
-  background-size: contain; /* montre l'image entière, pas de recadrage */
-
-  /* format responsive type affiche */
-  aspect-ratio: 3 / 4;      /* ajuste si besoin (ex: 4/5, 9/16, …) */
-  min-height: 320px;
-}
-@media (min-width: 900px){
-  .hero-photo{ min-height: 540px; }
-}
-/* === Product modal === */
-#productModal{position:fixed;inset:0;background:rgba(0,0,0,.5);display:none;align-items:center;justify-content:center;padding:18px;z-index:80}
-#productModal.show{display:flex}
-.pm-card{background:#fff;border:1px solid #eaeaea;border-radius:16px;box-shadow:0 20px 60px rgba(0,0,0,.15);max-width:980px;width:100%;overflow:hidden}
-.pm-head{display:flex;justify-content:flex-end;padding:8px}
-.pm-close{appearance:none;border:0;background:transparent;font-size:26px;line-height:26px;padding:6px 10px;cursor:pointer}
-.pm-wrap{display:grid;grid-template-columns:1.1fr .9fr;gap:18px;padding:12px 18px}
-@media(max-width:900px){.pm-wrap{grid-template-columns:1fr}}
-.pm-view{position:relative}
-.pm-slides{position:relative;overflow:hidden;border:1px solid #eee;border-radius:12px;background:#fafafa}
-.pm-slides img{width:100%;height:420px;object-fit:cover;display:none}
-.pm-slides img.active{display:block}
-.pm-nav{position:absolute;top:50%;left:0;right:0;display:flex;justify-content:space-between;transform:translateY(-50%);pointer-events:none}
-.pm-nav button{pointer-events:auto;appearance:none;border:0;background:#00000088;color:#fff;width:38px;height:38px;border-radius:999px;cursor:pointer}
-.pm-dots{display:flex;gap:6px;justify-content:center;margin-top:8px}
-.pm-dots button{width:8px;height:8px;border-radius:999px;border:0;background:#ddd;cursor:pointer}
-.pm-dots button.active{background:#111}
-.pm-title{margin:0 0 6px;font-size:22px}
-.pm-price{font-weight:700;margin-bottom:4px}
-.pm-desc{color:#444;margin-top:10px}
-.pm-meta{color:#6b7280;margin-top:10px;font-size:14px}
-.pm-badges{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
-.pm-badge{background:#111;color:#fff;border-radius:999px;padding:4px 10px;font-size:12px}
-
-/* === Responsive polish Samiah — patch léger === */
-
-/* Conteneur fluide */
-.container {
-  max-width: 1160px;
-  margin: 0 auto;
-  padding: 0 16px;
+@media (max-width:620px){
+  .card>img{height:180px}
+  .grid{gap:14px}
 }
 
-/* Grilles génériques (catalogue & sections) */
-.grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: 16px;
+/* Accessibilité: réduit les animations si demandé */
+@media (prefers-reduced-motion: reduce){
+  *{transition:none !important; animation:none !important}
 }
-
-/* Cartes produits */
-.card {
-  background: #fff;
-  border: 1px solid #eee;
-  border-radius: 14px;
-  overflow: hidden;
-  box-shadow: 0 6px 20px rgba(0,0,0,.05);
-  transition: transform .12s ease, box-shadow .12s ease;
-}
-.card:hover { transform: translateY(-2px); box-shadow: 0 10px 30px rgba(0,0,0,.08); }
-.card img { width: 100%; height: 180px; object-fit: cover; display: block; }
-.card .p { padding: 10px 12px; }
-.muted { color:#6b7280; }
-
-/* Hero layout */
-.hero .wrap {
-  display: grid;
-  grid-template-columns: 1.1fr .9fr;
-  gap: 18px;
-  align-items: center;
-}
-@media (max-width: 900px) {
-  .hero .wrap { grid-template-columns: 1fr; }
-}
-
-/* Modale fiche produit */
-.modal { padding: 18px; }
-.modal-card { width: 94vw; max-width: 980px; border-radius: 16px; }
-.modal-body {
-  display: grid;
-  grid-template-columns: 1.1fr .9fr;
-  gap: 16px;
-}
-@media (max-width: 900px) {
-  .modal-body { grid-template-columns: 1fr; }
-}
-.gal-main { aspect-ratio: 4 / 3; background: #fff; border: 1px solid #eee; border-radius: 12px; }
-.gal-main img { width: 100%; height: 100%; object-fit: cover; }
-.gal-thumbs { display:flex; gap:8px; flex-wrap:wrap; margin-top:8px; }
-.gal-thumbs img { width:72px; height:72px; object-fit:cover; border:1px solid #eee; border-radius:8px; cursor:pointer; }
-
-/* Bouton WhatsApp flottant (click zone + poignée mobile) */
-.wa-float { touch-action: manipulation; }
