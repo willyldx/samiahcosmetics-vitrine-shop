@@ -1,5 +1,5 @@
 // =======================
-// Samiah — Vitrine (Supabase + Galerie multi-images + Plein écran robuste)
+// Samiah — Vitrine (Supabase + Galerie multi-images + Liens partageables)
 // =======================
 import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
 
@@ -30,18 +30,12 @@ const mPrev    = document.getElementById("mPrev");
 const mNext    = document.getElementById("mNext");
 const mClose   = document.getElementById("mClose");
 
-// Plein écran (lightbox) – éléments optionnels dans index.html
-const fsOverlay = document.getElementById("fsOverlay");
-const fsImg     = document.getElementById("fsImg");
-const fsPrev    = document.getElementById("fsPrev");
-const fsNext    = document.getElementById("fsNext");
-const fsClose   = document.getElementById("fsClose");
-
 // --- État
 let PRODUCTS = [];
-let IMAGES_MAP = {};       // { product_id: [urls] }
-let currentGallery = [];   // galerie courante (modale & plein écran)
+let IMAGES_MAP = {};    // { product_id: [urls] }
+let currentGallery = [];
 let currentIndex = 0;
+let openedProductId = null; // pour deep-link
 
 // --- Utils
 const fmtXAF = n => new Intl.NumberFormat("fr-FR").format(n) + " XAF";
@@ -50,36 +44,38 @@ const escapeHtml = s => (s ?? "").toString().replace(/[&<>"']/g, c => ({
 })[c]);
 const escapeAttr = s => escapeHtml(s).replace(/"/g,"&quot;");
 const uniq = arr => { const seen=new Set(), out=[]; for (const u of arr) if (u && !seen.has(u)) { seen.add(u); out.push(u); } return out; };
-
-// toArray robuste : Array natif, JSON string, objet {urls:[]}, {0:"url",1:"url"}, CSV (virgule/; / | / retour-ligne)
-const toArray = (v) => {
+// tolère JSON, tableau natif, ou CSV
+const toArray = v => {
   if (!v) return [];
-  // 1) déjà tableau JS ?
   if (Array.isArray(v)) return v.filter(Boolean);
-  // 2) objet (jsonb) non-array
-  if (typeof v === "object") {
-    if (Array.isArray(v.urls)) return v.urls.filter(Boolean);
-    // objets numérotés {0:"...",1:"..."} ou mixtes
-    try {
-      return Object.values(v).flat().map(x => (typeof x === "string" ? x : null)).filter(Boolean);
-    } catch { /* ignore */ }
-    return [];
-  }
-  // 3) chaîne : JSON parsable OU CSV
   if (typeof v === "string") {
-    const s = v.trim();
-    // JSON ?
-    if (s.startsWith("[") || s.startsWith("{")) {
-      try {
-        const j = JSON.parse(s);
-        return toArray(j); // repasse dans la moulinette (gère array/objet)
-      } catch { /* tombe en CSV */ }
-    }
-    // CSV (accepte , ; | ou retours ligne)
-    return s.split(/[,\n;|]+/g).map(x => x.trim()).filter(Boolean);
+    try { const j = JSON.parse(v); if (Array.isArray(j)) return j.filter(Boolean); } catch {}
+    return v.split(",").map(s => s.trim()).filter(Boolean);
   }
   return [];
 };
+
+// --- Deep-link helpers (?p=id)
+function getProductIdFromUrl(){
+  try{
+    const url = new URL(window.location.href);
+    return url.searchParams.get("p");
+  }catch{ return null; }
+}
+function pushProductIdInUrl(id){
+  try{
+    const url = new URL(window.location.href);
+    if (id) url.searchParams.set("p", id); else url.searchParams.delete("p");
+    history.pushState({ p:id }, "", url);
+  }catch{}
+}
+function replaceProductIdInUrl(id){
+  try{
+    const url = new URL(window.location.href);
+    if (id) url.searchParams.set("p", id); else url.searchParams.delete("p");
+    history.replaceState({ p:id }, "", url);
+  }catch{}
+}
 
 // =======================
 // Chargement des produits
@@ -108,7 +104,7 @@ async function loadProducts() {
     return (created + d * 86400000) > now;
   });
 
-  // Charger les images supplémentaires depuis product_images
+  // Charger les images supplémentaires (une fois)
   IMAGES_MAP = {};
   const ids = PRODUCTS.map(p => p.id).filter(Boolean);
   if (ids.length) {
@@ -167,11 +163,12 @@ function render(list, errorText=""){
     if (emptyEl) emptyEl.style.display = "none";
   }
 
+  // clic carte → modale (+ pushState)
   gridEl.querySelectorAll(".card").forEach(card => {
     card.addEventListener("click", () => {
       const id = card.getAttribute("data-id");
       const p = PRODUCTS.find(x => (""+x.id) === (""+id));
-      if (p) openModal(p);
+      if (p) openModal(p, /*push*/true);
     });
   });
 }
@@ -196,7 +193,7 @@ function cardTpl(p){
   `;
 }
 
-// Construit la galerie : image principale + products.images + product_images
+// images disponibles sans aller au réseau
 function buildGalleryLocal(p){
   const arr = [];
   if (p.image) arr.push(p.image);
@@ -227,10 +224,16 @@ async function fetchExtraImages(productId){
 function renderGallery(){
   if (!mMain || !mThumbs) return;
 
-  // image principale
-  mMain.src = currentGallery.length ? currentGallery[currentIndex] : "/assets/images/placeholder.png";
+  if (!currentGallery.length){
+    mMain.src = "/assets/images/placeholder.png";
+    mThumbs.innerHTML = "";
+    if (mPrev) mPrev.disabled = true;
+    if (mNext) mNext.disabled = true;
+    return;
+  }
 
-  // vignettes (affichées même s'il n'y en a qu'une)
+  mMain.src = currentGallery[currentIndex];
+
   mThumbs.innerHTML = currentGallery.map((url, i) =>
     `<img src="${escapeAttr(url)}" data-i="${i}"
       style="border:${i===currentIndex?'2px solid #111':'1px solid #eee'};border-radius:8px;width:72px;height:72px;object-fit:cover;cursor:pointer">`
@@ -248,23 +251,24 @@ function renderGallery(){
   if (mNext) mNext.disabled = !multi;
 }
 
-function prevImg(){ if (!currentGallery.length) return; currentIndex = (currentIndex - 1 + currentGallery.length) % currentGallery.length; renderGallery(); }
-function nextImg(){ if (!currentGallery.length) return; currentIndex = (currentIndex + 1) % currentGallery.length; renderGallery(); }
+function prevImg(){
+  if (!currentGallery.length) return;
+  currentIndex = (currentIndex - 1 + currentGallery.length) % currentGallery.length;
+  renderGallery();
+}
+function nextImg(){
+  if (!currentGallery.length) return;
+  currentIndex = (currentIndex + 1) % currentGallery.length;
+  renderGallery();
+}
 
-async function openModal(p){
+async function openModal(p, push = false){
   if (!modal || !overlay || !mMain || !mThumbs){
     alert("Fiche produit indisponible (modale manquante).");
     return;
   }
 
-  // DIAGNOSTIC utile : on voit ce que la DB renvoie pour ce produit
-  console.log("[OPEN PRODUCT]", {
-    id: p.id,
-    image: p.image,
-    images_raw: p.images,
-    images_parsed: toArray(p.images),
-    extra_from_table: IMAGES_MAP[p.id] || []
-  });
+  openedProductId = p.id;
 
   // Texte
   mTitle.textContent = p.title || "";
@@ -277,8 +281,10 @@ async function openModal(p){
   const msg = encodeURIComponent(`Bonjour Samiah Cosmetics, je suis intéressé(e) par ${p.title} (${fmtXAF(p.price||0)}).`);
   if (mWhats) mWhats.href = `https://wa.me/23562752105?text=${msg}`;
 
-  // Galerie locale + compléments DB
+  // 1) galerie locale
   currentGallery = buildGalleryLocal(p);
+
+  // 2) compléter via DB
   try{
     const extras = await fetchExtraImages(p.id);
     currentGallery = uniq(currentGallery.concat(extras));
@@ -287,59 +293,55 @@ async function openModal(p){
   currentIndex = 0;
   renderGallery();
 
-  // clic image principale → plein écran (si markup présent)
-  if (mMain) mMain.onclick = () => openFs();
-
   // Ouvrir
   overlay.style.display = "block";
   modal.style.display = "flex";
   modal.classList.add("open");
 
-  // Bind fermeture / nav
-  if (mClose) mClose.onclick = closeModal;
-  overlay.onclick = (e) => { if (e.target === overlay) closeModal(); };
-  document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeModal(); }, { once:true });
+  // Gestion clavier (fermeture)
+  const keyHandler = (e) => { if (e.key === "Escape") closeModal(true); };
+  document.addEventListener("keydown", keyHandler, { once:true });
+
+  // Nav mini
   if (mPrev) mPrev.onclick = prevImg;
   if (mNext) mNext.onclick = nextImg;
+
+  // Fermer via bouton ou clic overlay
+  if (mClose) mClose.onclick = () => closeModal(true);
+  overlay.onclick = (e) => { if (e.target === overlay) closeModal(true); };
+
+  // Push URL si demandé
+  if (push) pushProductIdInUrl(p.id);
 }
 
-function closeModal(){
+function closeModal(updateUrl){
   modal?.classList.remove("open");
   modal.style.display = "none";
   overlay.style.display = "none";
+  if (updateUrl) replaceProductIdInUrl(null);
+  openedProductId = null;
 }
 
 // =======================
-// Plein écran (lightbox) — optionnel si les éléments existent
+// Deep-link: back/forward & ouverture initiale
 // =======================
-function openFs(){
-  if (!fsOverlay || !fsImg || !currentGallery.length) return;
-  fsImg.src = currentGallery[currentIndex] || "/assets/images/placeholder.png";
-  fsOverlay.classList.add("show");
-  document.body.style.overflow = "hidden";
-}
-function closeFs(){ if (!fsOverlay) return; fsOverlay.classList.remove("show"); document.body.style.overflow = ""; }
-function fsPrevFn(){ if (!currentGallery.length) return; currentIndex = (currentIndex - 1 + currentGallery.length) % currentGallery.length; if(fsImg) fsImg.src = currentGallery[currentIndex]; }
-function fsNextFn(){ if (!currentGallery.length) return; currentIndex = (currentIndex + 1) % currentGallery.length; if(fsImg) fsImg.src = currentGallery[currentIndex]; }
-if (fsClose)   fsClose.addEventListener("click", closeFs);
-if (fsOverlay) fsOverlay.addEventListener("click", (e) => { if (e.target === fsOverlay) closeFs(); });
-if (fsPrev)    fsPrev.addEventListener("click", fsPrevFn);
-if (fsNext)    fsNext.addEventListener("click", fsNextFn);
-document.addEventListener("keydown", (e) => {
-  if (!fsOverlay || !fsOverlay.classList.contains("show")) return;
-  if (e.key === "Escape")      return closeFs();
-  if (e.key === "ArrowLeft")   return fsPrevFn();
-  if (e.key === "ArrowRight")  return fsNextFn();
+window.addEventListener("popstate", () => {
+  const pid = getProductIdFromUrl();
+  if (pid) {
+    // ouvrir (sans pousser l'historique)
+    const p = PRODUCTS.find(x => (""+x.id) === (""+pid));
+    if (p) openModal(p, /*push*/false);
+  } else {
+    // fermer si ouvert
+    if (modal && modal.classList.contains("open")) closeModal(false);
+  }
 });
-let touchX = null;
-if (fsOverlay){
-  fsOverlay.addEventListener("touchstart", (e) => { touchX = e.changedTouches?.[0]?.clientX ?? null; }, { passive:true });
-  fsOverlay.addEventListener("touchend", (e) => {
-    if (touchX == null) return;
-    const dx = (e.changedTouches?.[0]?.clientX ?? touchX) - touchX;
-    if (Math.abs(dx) > 40){ if (dx > 0) fsPrevFn(); else fsNextFn(); }
-    touchX = null;
-  }, { passive:true });
+
+function maybeOpenFromUrl(){
+  const pid = getProductIdFromUrl();
+  if (!pid) return;
+  const p = PRODUCTS.find(x => (""+x.id) === (""+pid));
+  if (p) openModal(p, /*push*/false);
 }
 
 // =======================
@@ -369,6 +371,8 @@ function subscribeRealtime(){
 // =======================
 async function init(){
   await loadProducts();
+  // ouvre automatiquement si ?p=...
+  maybeOpenFromUrl();
   subscribeRealtime();
 }
 init().catch(console.error);
