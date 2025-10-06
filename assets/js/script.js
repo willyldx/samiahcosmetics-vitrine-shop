@@ -439,5 +439,20 @@ function subscribeRealtime(){
 async function init(){
   await loadProducts();
   subscribeRealtime();
+
+  // (NOUVEAU) — si un bouton #frontRefresh existe côté vitrine, on l’active :
+  const frontRefreshBtn = document.getElementById("frontRefresh");
+  if (frontRefreshBtn) {
+    frontRefreshBtn.addEventListener("click", async () => {
+      const prev = frontRefreshBtn.textContent;
+      frontRefreshBtn.disabled = true;
+      frontRefreshBtn.textContent = "Chargement…";
+      await loadProducts(); // re-fetch propre
+      frontRefreshBtn.textContent = prev || "Rafraîchir";
+      frontRefreshBtn.disabled = false;
+      // optionnel: petite vibration haptique si supportée
+      if (navigator.vibrate) navigator.vibrate(15);
+    });
+  }
 }
 init().catch(console.error);
