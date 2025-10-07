@@ -561,3 +561,55 @@ async function init(){
   subscribeRealtime();
 }
 init().catch(console.error);
+
+/* ===========================================================
+   BADGE "Nouveau" (append-only)
+   - Ajoute un badge sur les cartes produits récents (≤ NEW_DAYS)
+   - Sans modifier render() / cardTpl() : post-traitement du DOM
+   =========================================================== */
+
+const NEW_DAYS = 14; // ajuste si besoin
+function __isNewProduct(p){
+  if (!p || !p.created_at) return false;
+  const created = Date.parse(p.created_at);
+  if (!Number.isFinite(created)) return false;
+  const ageMs = Date.now() - created;
+  return ageMs <= NEW_DAYS * 24 * 60 * 60 * 1000;
+}
+
+function __injectNewBadgeIntoCard(cardEl, p){
+  if (!cardEl || !p) return;
+  // éviter les doublons
+  if (cardEl.querySelector('.badge.badge-new')) return;
+
+  const slot = cardEl.querySelector('.p') || cardEl;
+  const span = document.createElement('span');
+  span.className = 'badge badge-new';
+  span.textContent = 'Nouveau';
+  // insertion en tête du bloc texte
+  slot.insertBefore(span, slot.firstChild);
+}
+
+function markNewCards(){
+  if (!Array.isArray(PRODUCTS) || !gridEl) return;
+  const byId = new Map(PRODUCTS.map(p => [String(p.id), p]));
+  gridEl.querySelectorAll('.card[data-id]').forEach(card => {
+    const id = card.getAttribute('data-id') || '';
+    const p = byId.get(String(id));
+    if (__isNewProduct(p)) __injectNewBadgeIntoCard(card, p);
+  });
+}
+
+// 1) Marque immédiatement si déjà rendu
+markNewCards();
+
+// 2) Observe la grille : à chaque changement (render), on remet les badges
+const __newBadgeObserver = new MutationObserver(() => markNewCards());
+if (gridEl) {
+  __newBadgeObserver.observe(gridEl, { childList: true, subtree: false });
+}
+
+// 3) Sécurité : recalcule aussi après chargement des produits
+document.addEventListener('readystatechange', () => {
+  if (document.readyState === 'complete') markNewCards();
+});
