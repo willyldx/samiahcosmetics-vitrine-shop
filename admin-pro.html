@@ -241,25 +241,6 @@
     function setBtnIdle(btn,labelEl){ labelEl.textContent = btn.dataset.prev || labelEl.textContent; btn.disabled=false; }
     function slugify(s){return (s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'');}
 
-    // === helpers lien partageable ===
-    function makeShareUrl(id){
-      const url = new URL(window.location.origin + '/');
-      url.searchParams.set('p', id);
-      return url.toString();
-    }
-    async function copyToClipboard(text){
-      try{
-        await navigator.clipboard.writeText(text);
-        show('Lien copié ✅');
-      }catch{
-        const ta=document.createElement('textarea');
-        ta.value=text; document.body.appendChild(ta);
-        ta.select(); document.execCommand('copy');
-        document.body.removeChild(ta);
-        show('Lien copié ✅');
-      }
-    }
-
     // ====== admin secret ======
     const SECRET_KEY='samiah_admin_secret';
     const getAdminSecret=()=>localStorage.getItem(SECRET_KEY)||'';
@@ -311,7 +292,6 @@
         <td>${img}</td>
         <td class="actions">
           <button class="btn secondary" data-act="edit" data-idx="${i}">Éditer</button>
-          <button class="btn secondary" data-act="link" data-idx="${i}">Lien</button>
           <button class="btn" style="background:#b42318" data-act="del" data-idx="${i}">Supprimer</button>
         </td>
       </tr>`;
@@ -403,8 +383,8 @@
       $('#waPreview').textContent = `Bonjour Samiah Cosmetics, je suis intéressé(e) par ${title} (${price}).`;
     }
 
-    // ====== Compression adaptative + upload (-> /api/upload-image) ======
-    const MAX_PAYLOAD_BYTES = 4_000_000; // sécurité sous ~4.5 Mo
+    // ====== Étape 4 — Compression auto côté Admin (JPEG adaptatif) ======
+    const MAX_PAYLOAD_BYTES = 4_000_000; // cible ~ <4 Mo
     const START_SIDE = 2200, MIN_SIDE = 900;
     const START_QUALITY = 0.9, MIN_QUALITY = 0.6;
 
@@ -436,7 +416,7 @@
         const dataUrl = canvas.toDataURL('image/jpeg', quality);
         b64   = dataUrlToB64(dataUrl);
         bytes = base64Size(b64);
-        if(bytes <= MAX_PAYLOAD_BYTES) break; // gagné
+        if(bytes <= MAX_PAYLOAD_BYTES) break;
         if (side > MIN_SIDE) side = Math.round(side * 0.86);
         if (quality > MIN_QUALITY) quality = Math.max(MIN_QUALITY, quality - 0.08);
       }
@@ -447,7 +427,6 @@
       if(!file){ throw new Error('Aucun fichier'); }
       const secret=getAdminSecret(); if(!secret){ changeAdminSecret(); throw new Error('Code admin requis.'); }
 
-      // compression adaptative (peu importe la taille d’origine)
       const { base64, approxBytes } = await compressToTargetBase64(file);
 
       const ext = 'jpg';
@@ -468,6 +447,7 @@
     async function uploadMain(){
       try{
         const f = els.mainUploader.files[0];
+        if(!f){ alert('Choisis une image principale'); return; }
         setBtnLoading(els.mainSend, els.mainSend, 'Téléversement…');
         const { url, size } = await uploadOne(f, els.f_title.value||'image');
         els.f_image.value = url;
@@ -539,15 +519,8 @@
       $('#tbl').addEventListener('click', (e)=>{
         const b=e.target.closest('button'); if(!b) return;
         const idx = parseInt(b.dataset.idx,10);
-
         if(b.dataset.act==='edit') edit(idx);
-        if(b.dataset.act==='del')  removeItem(idx);
-        if(b.dataset.act==='link'){
-          const p = items[idx];
-          if(!p?.id){ alert('ID manquant'); return; }
-          const url = makeShareUrl(p.id);
-          copyToClipboard(url);
-        }
+        if(b.dataset.act==='del') removeItem(idx);
       });
 
       els.q.oninput = els.cat.onchange = render;
@@ -572,7 +545,7 @@
       });
 
       // top buttons
-      els.refreshBtn.onclick = refreshList;
+      els.refreshBtn.onclick = () => { refreshList().then(()=>show('Liste mise à jour')); };
       els.publishBtn.onclick = publishToBackend;
 
       // menu ⋯
