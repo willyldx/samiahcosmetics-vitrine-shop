@@ -146,3 +146,7 @@ select,.search{padding:10px;border-radius:10px;border:1px solid #ddd;min-width:1
 .thumb-btn.drag{left:-6px;top:-6px;background:#6b7280}
 
 .thumb.dragging{opacity:.6;outline:2px dashed #bbb}
+
+#listControls{display:flex;align-items:center;flex-wrap:wrap;gap:10px;justify-content:space-between;margin:10px 0 12px}
+#listControls select{padding:10px;border:1px solid var(--border);border-radius:10px}
+#pageInfo{color:var(--muted)}
