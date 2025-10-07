@@ -488,6 +488,47 @@
       }
     }
 
+    /* ====== Aperçu local AVANT envoi (nouveau) ====== */
+    function previewMainLocal(){
+      if(!els.mainPreview) return;
+      els.mainPreview.innerHTML = '';
+      const f = els.mainUploader?.files?.[0];
+      if(!f) return;
+      const url = URL.createObjectURL(f);
+      const img = document.createElement('img');
+      img.style.width = '56px';
+      img.style.height = '56px';
+      img.style.objectFit = 'cover';
+      img.style.border = '1px solid #eee';
+      img.style.borderRadius = '8px';
+      img.onload = () => URL.revokeObjectURL(url);
+      img.src = url;
+      els.mainPreview.appendChild(img);
+    }
+
+    function previewExtraLocal(){
+      if(!els.extraPreview) return;
+      els.extraPreview.innerHTML = '';
+      const files = Array.from(els.extraUploader?.files || []);
+      files.forEach(f=>{
+        const wrap = document.createElement('span');
+        wrap.style.position = 'relative';
+        wrap.style.display = 'inline-block';
+        const img = document.createElement('img');
+        img.style.width = '56px';
+        img.style.height = '56px';
+        img.style.objectFit = 'cover';
+        img.style.border = '1px solid #eee';
+        img.style.borderRadius = '8px';
+        const url = URL.createObjectURL(f);
+        img.onload = () => URL.revokeObjectURL(url);
+        img.src = url;
+        wrap.appendChild(img);
+        els.extraPreview.appendChild(wrap);
+      });
+    }
+    /* ====== /Aperçu local ====== */
+
     // ====== publish to backend ======
     function showModal(m){ m.classList.add('show'); m.setAttribute('aria-hidden','false'); }
     function hideModal(m){ m.classList.remove('show'); m.setAttribute('aria-hidden','true'); }
@@ -543,6 +584,10 @@
         extraUrls.splice(i,1);
         renderExtraThumbs();
       });
+
+      // **Nouveaux bindings d'aperçu local**
+      if (els.mainUploader) els.mainUploader.addEventListener('change', previewMainLocal);
+      if (els.extraUploader) els.extraUploader.addEventListener('change', previewExtraLocal);
 
       // top buttons
       els.refreshBtn.onclick = () => { refreshList().then(()=>show('Liste mise à jour')); };
