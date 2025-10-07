@@ -460,14 +460,50 @@
       }
     }
 
+    /* ====== NOUVELLE VERSION: vignettes + star + drag ====== */
     function renderExtraThumbs(){
+      const main = (els.f_image.value||'').trim();
       els.extraPreview.innerHTML = extraUrls.map((u,i)=>
-        `<span style="position:relative;display:inline-block">
+        `<div class="thumb" draggable="true" data-i="${i}">
            <img src="${escapeHtml(u)}" alt="">
-           <button title="Supprimer" style="position:absolute;top:-6px;right:-6px;border:0;background:#b42318;color:#fff;border-radius:999px;width:20px;height:20px;cursor:pointer;font-size:12px;line-height:20px" data-x="${i}">×</button>
-         </span>`
+           <button class="thumb-btn drag" title="Déplacer" data-drag="${i}">☰</button>
+           <button class="thumb-btn star ${u===main?'on':''}" title="Définir comme couverture" data-star="${i}">★</button>
+           <button class="thumb-btn del" title="Supprimer" data-x="${i}">×</button>
+         </div>`
       ).join('');
+      bindDnDThumbs();
     }
+
+    // Drag & Drop réordonnable
+    let dragIndex = null;
+    let hoverIndex = null;
+    function bindDnDThumbs(){
+      els.extraPreview.querySelectorAll('.thumb').forEach(el=>{
+        el.addEventListener('dragstart', (e)=>{
+          dragIndex = parseInt(el.dataset.i,10);
+          el.classList.add('dragging');
+          e.dataTransfer.effectAllowed = 'move';
+        });
+        el.addEventListener('dragend', ()=>{
+          dragIndex = null;
+          hoverIndex = null;
+          el.classList.remove('dragging');
+          els.extraPreview.querySelectorAll('.thumb').forEach((t,k)=>t.dataset.i = k);
+        });
+        el.addEventListener('dragenter', ()=>{
+          hoverIndex = parseInt(el.dataset.i,10);
+        });
+        el.addEventListener('dragover', (e)=>{ e.preventDefault(); });
+        el.addEventListener('drop', (e)=>{
+          e.preventDefault();
+          if(dragIndex==null || hoverIndex==null || dragIndex===hoverIndex) return;
+          const moved = extraUrls.splice(dragIndex,1)[0];
+          extraUrls.splice(hoverIndex,0,moved);
+          renderExtraThumbs();
+        });
+      });
+    }
+    /* ====== /vignettes + star + drag ====== */
 
     async function uploadExtra(){
       try{
@@ -577,6 +613,7 @@
       els.mainSend.onclick = uploadMain;
       els.extraSend.onclick = uploadExtra;
 
+      // delete (déjà existant : on garde)
       els.extraPreview.addEventListener('click', (e)=>{
         const btn = e.target.closest('button[data-x]');
         if(!btn) return;
@@ -585,7 +622,19 @@
         renderExtraThumbs();
       });
 
-      // **Nouveaux bindings d'aperçu local**
+      // ★ définir image principale (ajouté)
+      els.extraPreview.addEventListener('click', (e)=>{
+        const starBtn = e.target.closest('button[data-star]');
+        if(!starBtn) return;
+        const i = parseInt(starBtn.dataset.star,10);
+        const url = extraUrls[i];
+        els.f_image.value = url;
+        els.mainPreview.innerHTML = `<img src="${escapeHtml(url)}" alt="">`;
+        renderExtraThumbs();
+        show('Image principale définie ✅');
+      });
+
+      // **Aperçu local (sans upload)**
       if (els.mainUploader) els.mainUploader.addEventListener('change', previewMainLocal);
       if (els.extraUploader) els.extraUploader.addEventListener('change', previewExtraLocal);
 
