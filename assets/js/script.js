@@ -1,5 +1,5 @@
 // =======================
-// Samiah — Vitrine (Supabase + Galerie multi-images + Plein écran robuste + Lien partageable)
+// Samiah — Vitrine (Supabase + Galerie multi-images + Plein écran robuste + Lien partageable + TRI & PAGINATION)
 // =======================
 import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
 
@@ -42,6 +42,11 @@ let PRODUCTS = [];
 let IMAGES_MAP = {};       // { product_id: [urls] }
 let currentGallery = [];   // galerie courante (modale & plein écran)
 let currentIndex = 0;
+
+/* ===== TRI & PAGINATION : état ===== */
+let PAGE      = parseInt(localStorage.getItem("v_page") || "1", 10);
+let PAGE_SIZE = parseInt(localStorage.getItem("v_pageSize") || "12", 10);
+let SORT      = localStorage.getItem("v_sort") || "newest"; // newest | price_asc | price_desc | title_az | title_za
 
 // --- Utils
 const fmtXAF = n => new Intl.NumberFormat("fr-FR").format(n) + " XAF";
@@ -149,6 +154,7 @@ async function loadProducts() {
   }
 
   fillCategories(PRODUCTS);
+  ensureControls();            // <— crée la barre de tri/pagination si besoin
   render(PRODUCTS);
 
   // Ouvre automatiquement si lien direct ?p=...
@@ -156,7 +162,7 @@ async function loadProducts() {
 }
 
 // =======================
-// Rendu + filtres
+// Rendu + filtres + (tri & pagination)
 // =======================
 function fillCategories(list){
   if (!catEl) return;
@@ -167,6 +173,112 @@ function fillCategories(list){
     .join("");
 }
 
+/* ===== Barre de contrôle (UI) : tri + pagination ===== */
+function ensureControls(){
+  if (!gridEl) return;
+  if (document.getElementById("listControls")) return;
+
+  const html = `
+    <div id="listControls" style="display:flex;align-items:center;flex-wrap:wrap;gap:10px;justify-content:space-between;margin:10px 0 12px">
+      <div style="display:flex;align-items:center;gap:8px">
+        <label class="muted" for="sortSel">Trier par</label>
+        <select id="sortSel" style="padding:8px;border:1px solid #eaeaea;border-radius:10px">
+          <option value="newest">Nouveautés</option>
+          <option value="price_asc">Prix ↑</option>
+          <option value="price_desc">Prix ↓</option>
+          <option value="title_az">Titre A→Z</option>
+          <option value="title_za">Titre Z→A</option>
+        </select>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <span id="pageInfo" class="muted">—</span>
+        <button id="prevPage" class="btn secondary" type="button">Précédent</button>
+        <button id="nextPage" class="btn secondary" type="button">Suivant</button>
+        <select id="pageSizeSel" title="Taille" style="padding:8px;border:1px solid #eaeaea;border-radius:10px">
+          <option value="8">8</option>
+          <option value="12">12</option>
+          <option value="16">16</option>
+          <option value="24">24</option>
+        </select>
+      </div>
+    </div>
+  `;
+  // Insérer AVANT la grille
+  gridEl.insertAdjacentHTML("beforebegin", html);
+
+  // valeurs initiales + bindings
+  const sortSel = document.getElementById("sortSel");
+  const sizeSel = document.getElementById("pageSizeSel");
+  const prevBtn = document.getElementById("prevPage");
+  const nextBtn = document.getElementById("nextPage");
+
+  sortSel.value = SORT;
+  sizeSel.value = String(PAGE_SIZE);
+
+  sortSel.addEventListener("change", () => {
+    SORT = sortSel.value;
+    localStorage.setItem("v_sort", SORT);
+    PAGE = 1;
+    render(PRODUCTS);
+  });
+  sizeSel.addEventListener("change", () => {
+    PAGE_SIZE = parseInt(sizeSel.value, 10) || 12;
+    localStorage.setItem("v_pageSize", String(PAGE_SIZE));
+    PAGE = 1;
+    render(PRODUCTS);
+  });
+  prevBtn.addEventListener("click", () => { PAGE = Math.max(1, PAGE - 1); localStorage.setItem("v_page", String(PAGE)); render(PRODUCTS); });
+  nextBtn.addEventListener("click", () => { PAGE = PAGE + 1; localStorage.setItem("v_page", String(PAGE)); render(PRODUCTS); });
+}
+
+function sortList(arr){
+  const out = arr.slice();
+  switch (SORT) {
+    case "price_asc":
+      out.sort((a,b) => (a.price||0) - (b.price||0)); break;
+    case "price_desc":
+      out.sort((a,b) => (b.price||0) - (a.price||0)); break;
+    case "title_az":
+      out.sort((a,b) => (a.title||"").localeCompare(b.title||"")); break;
+    case "title_za":
+      out.sort((a,b) => (b.title||"").localeCompare(a.title||"")); break;
+    case "newest":
+    default:
+      out.sort((a,b) => new Date(b.created_at||0) - new Date(a.created_at||0));
+  }
+  return out;
+}
+
+function paginate(arr){
+  const total = arr.length;
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  if (PAGE > totalPages) PAGE = totalPages;
+  if (PAGE < 1) PAGE = 1;
+  localStorage.setItem("v_page", String(PAGE));
+
+  const start = (PAGE - 1) * PAGE_SIZE;
+  const items = arr.slice(start, start + PAGE_SIZE);
+
+  // MAJ UI
+  const pageInfo = document.getElementById("pageInfo");
+  const prevBtn  = document.getElementById("prevPage");
+  const nextBtn  = document.getElementById("nextPage");
+  const sizeSel  = document.getElementById("pageSizeSel");
+  const sortSel  = document.getElementById("sortSel");
+
+  if (pageInfo) {
+    const from = total ? start + 1 : 0;
+    const to   = total ? Math.min(start + PAGE_SIZE, total) : 0;
+    pageInfo.textContent = `${from}–${to} sur ${total}`;
+  }
+  if (prevBtn) prevBtn.disabled = PAGE <= 1;
+  if (nextBtn) nextBtn.disabled = PAGE >= totalPages;
+  if (sizeSel) sizeSel.value = String(PAGE_SIZE);
+  if (sortSel) sortSel.value = SORT;
+
+  return items;
+}
+
 function render(list, errorText=""){
   if (!gridEl) return;
 
@@ -174,6 +286,7 @@ function render(list, errorText=""){
   const cat = (catEl?.value || "Toutes");
   const city = (cityEl?.value || "Toutes");
 
+  // filtre
   const filtered = list.filter(p => {
     const okQ   = !q || (p.title + " " + (p.category || "") + " " + (p.shortDescription || "")).toLowerCase().includes(q);
     const okC   = (cat === "Toutes") || (p.category === cat);
@@ -181,8 +294,14 @@ function render(list, errorText=""){
     return okQ && okC && okCit;
   });
 
-  gridEl.innerHTML = filtered.map(cardTpl).join("");
+  // tri + pagination
+  const sorted   = sortList(filtered);
+  const pageData = paginate(sorted);
 
+  // rendu
+  gridEl.innerHTML = pageData.map(cardTpl).join("");
+
+  // vide ?
   if (filtered.length === 0) {
     if (emptyEl){
       emptyEl.style.display = "block";
@@ -192,6 +311,7 @@ function render(list, errorText=""){
     if (emptyEl) emptyEl.style.display = "none";
   }
 
+  // click -> modale
   gridEl.querySelectorAll(".card").forEach(card => {
     card.addEventListener("click", () => {
       const id = card.getAttribute("data-id");
@@ -416,8 +536,8 @@ window.addEventListener("popstate", () => {
 // =======================
 [qEl, catEl, cityEl].forEach(el => {
   if (!el) return;
-  el.addEventListener("input", () => render(PRODUCTS));
-  el.addEventListener("change", () => render(PRODUCTS));
+  el.addEventListener("input", () => { PAGE = 1; render(PRODUCTS); });
+  el.addEventListener("change", () => { PAGE = 1; render(PRODUCTS); });
 });
 
 // =======================
