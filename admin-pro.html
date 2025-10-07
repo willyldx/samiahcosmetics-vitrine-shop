@@ -118,6 +118,20 @@
             <tbody></tbody>
           </table>
         </div>
+
+        <!-- Pagination -->
+        <div id="pager" style="display:flex;align-items:center;gap:8px;justify-content:flex-end;margin-top:8px">
+          <button class="iconbtn" id="prevPage" aria-label="Page précédente">◀</button>
+          <span id="pageInfo" class="muted">—</span>
+          <button class="iconbtn" id="nextPage" aria-label="Page suivante">▶</button>
+          <select id="pageSize" title="Par page">
+            <option value="10" selected>10</option>
+            <option value="25">25</option>
+            <option value="50">50</option>
+          </select>
+        </div>
+        <!-- /Pagination -->
+
         <div class="empty" id="empty" style="display:none">Aucun produit</div>
       </div>
 
@@ -220,6 +234,10 @@
     let editing = null;
     let extraUrls = []; // photos supplémentaires en cours (tableau d'URLs)
 
+    // Pagination state (ajout)
+    let page = 1;
+    let perPage = 10;
+
     const els = {
       q:$('#q'), cat:$('#catFilter'), tbody:$('#tbl tbody'), empty:$('#empty'),
       f_title:$('#f_title'), f_price:$('#f_price'), f_category:$('#f_category'),
@@ -229,7 +247,9 @@
       mainUploader:$('#main_uploader'), mainSend:$('#main_send'), mainPreview:$('#mainPreview'),
       extraUploader:$('#extra_uploader'), extraSend:$('#extra_send'), extraPreview:$('#extraPreview'),
       refreshBtn:$('#refreshBtn'), publishBtn:$('#publishBtn'), pubLabel:$('#pubLabel'), pubStatus:$('#pubStatus'),
-      menuBtn:$('#menuBtn'), menu:$('#menu'), pubModal:$('#pubModal'), pubClose:$('#pubClose')
+      menuBtn:$('#menuBtn'), menu:$('#menu'), pubModal:$('#pubModal'), pubClose:$('#pubClose'),
+      // pager (ajout)
+      prevPage:$('#prevPage'), nextPage:$('#nextPage'), pageInfo:$('#pageInfo'), pageSize:$('#pageSize')
     };
 
     function show(txt){ els.toast.textContent=txt; els.toast.classList.add('show'); setTimeout(()=>els.toast.classList.remove('show'),1700); }
@@ -261,6 +281,7 @@
         const j=await r.json();
         items = Array.isArray(j.items)? j.items : [];
       }catch(e){ items=[]; }
+      page = 1; // reset page sur refresh
       fillCats(); render(); updateWAPreview();
     }
 
@@ -269,16 +290,37 @@
       els.cat.innerHTML = '<option value="">Toutes</option>' + cats.map(c=>`<option>${escapeHtml(c)}</option>`).join('');
     }
 
+    // ====== pagination helpers (ajout) ======
+    function updatePager(total, start, shown){
+      const lastPage = Math.max(1, Math.ceil(total / perPage));
+      const from = total ? (start + 1) : 0;
+      const to   = start + shown;
+      if(els.pageInfo) els.pageInfo.textContent = `${from}-${to} / ${total}`;
+      if(els.prevPage) els.prevPage.disabled = (page <= 1);
+      if(els.nextPage) els.nextPage.disabled = (page >= lastPage);
+      if(els.pageSize){ const v = parseInt(els.pageSize.value||'10',10); if(v !== perPage) els.pageSize.value = String(perPage); }
+    }
+
     function render(){
       const q = (els.q.value||'').toLowerCase();
       const cat = (els.cat.value||'');
-      const data = items.filter(p=>{
+      const all = items.filter(p=>{
         const okQ = (p.title+' '+(p.category||'')).toLowerCase().includes(q);
         const okC = !cat || p.category===cat;
         return okQ && okC;
       });
-      els.tbody.innerHTML = data.map((p,i)=>rowTpl(p,i)).join('');
-      els.empty.style.display = data.length?'none':'block';
+
+      const total = all.length;
+      const lastPage = Math.max(1, Math.ceil(total / perPage));
+      if(page > lastPage) page = lastPage;
+
+      const start = (page - 1) * perPage;
+      const slice = all.slice(start, start + perPage);
+
+      els.tbody.innerHTML = slice.map((p,i)=>rowTpl(p, (start+i))).join('');
+      els.empty.style.display = total?'none':'block';
+
+      updatePager(total, start, slice.length);
     }
 
     function rowTpl(p,i){
@@ -383,7 +425,7 @@
       $('#waPreview').textContent = `Bonjour Samiah Cosmetics, je suis intéressé(e) par ${title} (${price}).`;
     }
 
-    // ====== Étape 4 — Compression auto côté Admin (JPEG adaptatif) ======
+    // ====== Compression adaptative ======
     const MAX_PAYLOAD_BYTES = 4_000_000; // cible ~ <4 Mo
     const START_SIDE = 2200, MIN_SIDE = 900;
     const START_QUALITY = 0.9, MIN_QUALITY = 0.6;
@@ -524,7 +566,7 @@
       }
     }
 
-    /* ====== Aperçu local AVANT envoi (nouveau) ====== */
+    /* ====== Aperçu local AVANT envoi ====== */
     function previewMainLocal(){
       if(!els.mainPreview) return;
       els.mainPreview.innerHTML = '';
@@ -600,7 +642,10 @@
         if(b.dataset.act==='del') removeItem(idx);
       });
 
-      els.q.oninput = els.cat.onchange = render;
+      // recherche / filtre -> reset page
+      els.q.oninput = ()=>{ page=1; render(); };
+      els.cat.onchange = ()=>{ page=1; render(); };
+
       ['input','change'].forEach(evt=>{
         els.f_title.addEventListener(evt,updateWAPreview);
         els.f_price.addEventListener(evt,updateWAPreview);
@@ -613,7 +658,7 @@
       els.mainSend.onclick = uploadMain;
       els.extraSend.onclick = uploadExtra;
 
-      // delete (déjà existant : on garde)
+      // delete (déjà existant)
       els.extraPreview.addEventListener('click', (e)=>{
         const btn = e.target.closest('button[data-x]');
         if(!btn) return;
@@ -622,7 +667,7 @@
         renderExtraThumbs();
       });
 
-      // ★ définir image principale (ajouté)
+      // ★ définir image principale
       els.extraPreview.addEventListener('click', (e)=>{
         const starBtn = e.target.closest('button[data-star]');
         if(!starBtn) return;
@@ -634,13 +679,22 @@
         show('Image principale définie ✅');
       });
 
-      // **Aperçu local (sans upload)**
+      // Aperçu local (sans upload)
       if (els.mainUploader) els.mainUploader.addEventListener('change', previewMainLocal);
       if (els.extraUploader) els.extraUploader.addEventListener('change', previewExtraLocal);
 
       // top buttons
       els.refreshBtn.onclick = () => { refreshList().then(()=>show('Liste mise à jour')); };
       els.publishBtn.onclick = publishToBackend;
+
+      // pager (ajout)
+      if(els.prevPage) els.prevPage.onclick = ()=>{ if(page>1){ page--; render(); } };
+      if(els.nextPage) els.nextPage.onclick = ()=>{ page++; render(); };
+      if(els.pageSize) els.pageSize.onchange = ()=>{
+        perPage = parseInt(els.pageSize.value||'10',10) || 10;
+        page = 1;
+        render();
+      };
 
       // menu ⋯
       const openMenu=()=>{ els.menu.classList.add('open'); els.menuBtn.setAttribute('aria-expanded','true'); els.menu.setAttribute('aria-hidden','false'); };
@@ -661,6 +715,7 @@
 
     // ====== start ======
     function start(){
+      if(els.pageSize) perPage = parseInt(els.pageSize.value||'10',10) || 10; // init perPage depuis le select
       bind();
       reset(true);
       refreshList();
