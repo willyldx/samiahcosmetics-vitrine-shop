@@ -70,9 +70,25 @@
         <option>N’Djamena</option><option>Moundou</option><option>Sarh</option><option>Abéché</option>
         <option>Bongor</option><option>Kélo</option><option>Pala</option><option>Koumra</option><option>Faya-Largeau</option>
       </select>
+      <!-- ▼ AJOUT: tri -->
+      <select id="sortBy" title="Trier par">
+        <option value="newest">Plus récents</option>
+        <option value="price-asc">Prix : croissant</option>
+        <option value="price-desc">Prix : décroissant</option>
+        <option value="title-asc">Nom : A → Z</option>
+      </select>
+      <!-- ▲ FIN AJOUT -->
     </div>
 
     <div id="products-grid" class="grid"></div>
+
+    <!-- ▼ AJOUT: sentinel pour scroll infini + bouton fallback -->
+    <div id="ioSentinel" aria-hidden="true" style="height:1px"></div>
+    <div style="text-align:center;margin:12px 0">
+      <button id="loadMore" class="btn secondary" style="display:none">Voir plus</button>
+    </div>
+    <!-- ▲ FIN AJOUT -->
+
     <div id="emptyMsg" class="empty" style="display:none">Aucun produit pour l’instant.</div>
 
     <!-- Témoignages -->
