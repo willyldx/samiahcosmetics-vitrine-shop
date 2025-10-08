@@ -1,0 +1,8 @@
+# Canonique : redirige le domaine apex vers www
+https://samiahcosmetics.shop/*  https://www.samiahcosmetics.shop/:splat  301!
+
+# Route lisible pour un produit → paramètre ?p=
+/p/:id   /?p=:id  301
+
+# SPA fallback (laisse le reste à index.html)
+/*       /index.html  200
