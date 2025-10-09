@@ -6,3 +6,6 @@ https://samiahcosmetics.shop/*  https://www.samiahcosmetics.shop/:splat  301!
 
 # SPA fallback (laisse le reste à index.html)
 /*       /index.html  200
+
+http://samiahcosmetics.shop/*  https://www.samiahcosmetics.shop/:splat  301!
+https://samiahcosmetics.shop/* https://www.samiahcosmetics.shop/:splat  301!
