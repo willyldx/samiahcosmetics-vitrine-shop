@@ -6,7 +6,7 @@ const SERVICE_KEY   = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const BUCKET        = process.env.SUPABASE_BUCKET || "site-images";
 const sb = createClient(SUPABASE_URL, SERVICE_KEY);
 
-export async function handler(event) {
+export async function handler(event, context) {
   if (event.httpMethod !== "POST") {
     return { statusCode: 405, headers: { Allow: "POST" }, body: "Method Not Allowed" };
   }
