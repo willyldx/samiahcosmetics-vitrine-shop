@@ -6,7 +6,7 @@ const cors = {
   "Access-Control-Allow-Methods": "GET, OPTIONS"
 };
 
-exports.handler = async (event) => {
+export async function handler(event, context) {
   if (event.httpMethod === "OPTIONS") return { statusCode: 204, headers: cors };
   if (event.httpMethod !== "GET")     return { statusCode: 405, headers: cors, body: "Method Not Allowed" };
 
