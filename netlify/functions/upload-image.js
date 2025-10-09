@@ -1,59 +1,33 @@
-const fetch = global.fetch;
-// Env vars to set in Netlify → Site settings → Environment variables
-// SUPABASE_URL, SUPABASE_SERVICE_KEY (service_role), SUPABASE_BUCKET (e.g. "public")
-const { SUPABASE_URL, SUPABASE_SERVICE_KEY, SUPABASE_BUCKET = "public" } = process.env;
+// netlify/functions/upload-image.js
+import { createClient } from "@supabase/supabase-js";
 
-exports.handler = async (event) => {
-  try {
-    if (event.httpMethod !== "POST") {
-      return { statusCode: 405, body: "Method Not Allowed" };
-    }
+const SUPABASE_URL  = process.env.SUPABASE_URL;
+const SERVICE_KEY   = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const BUCKET        = process.env.SUPABASE_BUCKET || "site-images";
+const sb = createClient(SUPABASE_URL, SERVICE_KEY);
 
-    if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
-      return { statusCode: 500, body: "Missing Supabase env vars" };
-    }
-
-    const hdrs = event.headers || {};
-    // (optionnel) sécuriser avec ton code admin côté client
-    const adminSecret = hdrs["x-admin-secret"] || hdrs["X-Admin-Secret"];
-    // if (!adminSecret || adminSecret !== process.env.ADMIN_SECRET) { return { statusCode: 401, body: "Unauthorized" }; }
-
-    let body;
-    try { body = JSON.parse(event.body || "{}"); } catch { body = {}; }
-    const { filename, contentBase64 } = body;
-
-    if (!filename || !contentBase64) {
-      return { statusCode: 400, body: "filename & contentBase64 required" };
-    }
-
-    const buffer = Buffer.from(contentBase64, "base64");
-
-    // Upload via REST API (upsert=true pour écraser si existe)
-    const uploadUrl = `${SUPABASE_URL}/storage/v1/object/${encodeURIComponent(SUPABASE_BUCKET)}/${encodeURIComponent(filename)}?upsert=true`;
-    const resp = await fetch(uploadUrl, {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${SUPABASE_SERVICE_KEY}`,
-        "apikey": SUPABASE_SERVICE_KEY,
-        "Content-Type": "application/octet-stream"
-      },
-      body: buffer
-    });
-
-    if (!resp.ok) {
-      const txt = await resp.text();
-      return { statusCode: resp.status, body: `Supabase upload error: ${txt}` };
-    }
-
-    // Public URL (si le bucket est public)
-    const siteUrl = `${SUPABASE_URL}/storage/v1/object/public/${encodeURIComponent(SUPABASE_BUCKET)}/${encodeURIComponent(filename)}`;
-
-    return {
-      statusCode: 200,
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ok: true, siteUrl })
-    };
-  } catch (e) {
-    return { statusCode: 500, body: `Server error: ${e.message}` };
+export async function handler(event) {
+  if (event.httpMethod !== "POST") {
+    return { statusCode: 405, headers: { Allow: "POST" }, body: "Method Not Allowed" };
   }
-};
+  try {
+    const { filename, contentBase64 } = JSON.parse(event.body || "{}");
+    if (!filename || !contentBase64) {
+      return { statusCode: 400, body: JSON.stringify({ error: "filename & contentBase64 requis" }) };
+    }
+
+    const b64 = contentBase64.includes(",") ? contentBase64.split(",")[1] : contentBase64;
+    const buf = Buffer.from(b64, "base64");
+    const ext = (filename.split(".").pop() || "jpg").toLowerCase();
+    const ct  = ext === "png" ? "image/png" : ext === "webp" ? "image/webp" : "image/jpeg";
+
+    // upload (upsert pour écraser si même nom)
+    const { error } = await sb.storage.from(BUCKET).upload(filename, buf, { contentType: ct, upsert: true });
+    if (error) throw error;
+
+    const siteUrl = ${SUPABASE_URL}/storage/v1/object/public/${BUCKET}/${encodeURIComponent(filename)};
+    return { statusCode: 200, headers: { "content-type": "application/json" }, body: JSON.stringify({ ok: true, siteUrl }) };
+  } catch (e) {
+    return { statusCode: 500, headers: { "content-type": "application/json" }, body: JSON.stringify({ error: e.message || String(e) }) };
+  }
+}
