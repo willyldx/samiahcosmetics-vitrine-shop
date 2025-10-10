@@ -1,4 +1,3 @@
-// netlify/functions/admin-list-products.mjs
 import { createClient } from '@supabase/supabase-js';
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
@@ -21,7 +20,7 @@ function json(statusCode, data) {
   };
 }
 
-export default async (event) => {
+export async function handler(event) {
   if (event.httpMethod === 'OPTIONS') return json(200, { ok: true });
   if ((event.headers['x-admin-secret'] || '') !== (ADMIN_SECRET || '')) {
     return json(401, { error: 'unauthorized' });
@@ -54,4 +53,4 @@ export default async (event) => {
   } catch (e) {
     return json(500, { error: e?.message || 'list failed' });
   }
-};
+}
