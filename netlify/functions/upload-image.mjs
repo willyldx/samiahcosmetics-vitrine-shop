@@ -1,83 +1,57 @@
 // netlify/functions/upload-image.mjs
 import { createClient } from '@supabase/supabase-js';
 
-const SUPABASE_URL  = process.env.SUPABASE_URL;
-const SUPABASE_KEY  = process.env.SUPABASE_SERVICE_KEY; // service_role
-const BUCKET_NAME   = process.env.BUCKET_NAME || 'site-images';
+const SUPABASE_URL = process.env.SUPABASE_URL;
+const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY; // service_role key
+const ADMIN_SECRET = process.env.ADMIN_SECRET || '';
 
-const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
+const sb = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
 
-function json(statusCode, data) {
-  return {
-    statusCode,
-    headers: {
-      'Content-Type': 'application/json; charset=utf-8',
-      'Cache-Control': 'no-store',
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Headers': 'Content-Type, x-admin-secret',
-      'Access-Control-Allow-Methods': 'GET,POST,OPTIONS'
-    },
-    body: JSON.stringify(data)
-  };
-}
+const json = (statusCode, body) => ({
+  statusCode,
+  headers: {
+    'Content-Type': 'application/json',
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Headers': 'Content-Type, x-admin-secret',
+    'Access-Control-Allow-Methods': 'GET,POST,OPTIONS'
+  },
+  body: JSON.stringify(body)
+});
 
-export default async (event) => {
+export async function handler(event) {
+  // CORS preflight
   if (event.httpMethod === 'OPTIONS') return json(200, { ok: true });
 
-  // Ping de santé: /.netlify/functions/upload-image?ping=1
-  const u = new URL(event.rawUrl || `http://x${event.path}${event.queryStringParameters ? '?' + new URLSearchParams(event.queryStringParameters) : ''}`);
-  if (u.searchParams.get('ping')) {
-    return json(200, { ok: true, bucket: BUCKET_NAME });
-  }
+  // Health check
+  if (event.queryStringParameters?.ping) return json(200, { ok: true });
 
-  if (event.httpMethod !== 'POST') {
-    return json(405, { error: 'Method not allowed' });
+  if (event.httpMethod !== 'POST') return json(405, { error: 'Method not allowed' });
+
+  // Admin check
+  const hdrSecret = event.headers['x-admin-secret'] || event.headers['X-Admin-Secret'];
+  if (!ADMIN_SECRET || hdrSecret !== ADMIN_SECRET) return json(401, { error: 'Unauthorized' });
+
+  let filename, contentBase64;
+  try {
+    ({ filename, contentBase64 } = JSON.parse(event.body || '{}'));
+  } catch {
+    return json(400, { error: 'Invalid JSON body' });
   }
+  if (!filename || !contentBase64) return json(400, { error: 'filename & contentBase64 required' });
 
   try {
-    const { filename, contentBase64 } = JSON.parse(event.body || '{}');
-    if (!filename || !contentBase64) {
-      return json(400, { error: 'filename et contentBase64 requis' });
-    }
+    const buffer = Buffer.from(contentBase64, 'base64');
+    // Upload (upsert true so re-uploads replace previous)
+    const { data, error } = await sb
+      .storage.from('site-images')
+      .upload(filename, buffer, { contentType: 'image/jpeg', upsert: true });
 
-    // Décodage base64 → Buffer
-    const b64 = contentBase64.replace(/^data:[^,]+,/, '');
-    const buffer = Buffer.from(b64, 'base64');
-    if (!buffer.length) return json(400, { error: 'Image vide' });
-    if (buffer.length > 8 * 1024 * 1024) return json(413, { error: 'Fichier trop volumineux (>8Mo)' });
+    if (error) throw error;
 
-    // Détermine le content-type basique
-    const lower = filename.toLowerCase();
-    let contentType = 'image/jpeg';
-    if (lower.endsWith('.png')) contentType = 'image/png';
-    if (lower.endsWith('.webp')) contentType = 'image/webp';
-
-    // Chemin daté + nom safe
-    const now = new Date();
-    const yyyy = String(now.getUTCFullYear());
-    const mm   = String(now.getUTCMonth() + 1).padStart(2, '0');
-    const safe = lower.replace(/[^a-z0-9._-]+/g, '-');
-    let path   = `${yyyy}/${mm}/${Date.now()}-${safe}`;
-
-    // Upload (retente si collision)
-    let up = await sb.storage.from(BUCKET_NAME).upload(path, buffer, {
-      cacheControl: '3600',
-      contentType,
-      upsert: false
-    });
-    if (up.error && up.error.statusCode === '409') {
-      path = `${yyyy}/${mm}/${Date.now()}-${Math.random().toString(36).slice(2)}-${safe}`;
-      up = await sb.storage.from(BUCKET_NAME).upload(path, buffer, {
-        cacheControl: '3600',
-        contentType,
-        upsert: false
-      });
-    }
-    if (up.error) return json(500, { error: up.error.message });
-
-    const { data: pub } = sb.storage.from(BUCKET_NAME).getPublicUrl(path);
-    return json(200, { ok: true, siteUrl: pub.publicUrl, path });
+    const path = data.path; // e.g. "1710000000000-foo.jpg"
+    const { data: pub } = sb.storage.from('site-images').getPublicUrl(path);
+    return json(200, { siteUrl: pub.publicUrl });
   } catch (e) {
-    return json(500, { error: e?.message || 'Upload failed' });
+    return json(500, { error: e.message || 'upload failed' });
   }
-};
+}
