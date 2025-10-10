@@ -1,6 +1,14 @@
+[build]
+  functions = "netlify/functions"
+  publish = "."
+
+[build.environment]
+  SB_URL = "https://dzzblqlteirtzyegplgu.supabase.co"
+  SB_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR6emJscWx0ZWlydHp5ZWdwbGd1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk0MjgyMDgsImV4cCI6MjA3NTAwNDIwOH0.WbjNAjF2qxly8QMu-3VJLPQE88UgzkeAn9XPj0lcb1Y"
+  SB_SERVICE_ROLE = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR6emJscWx0ZWlydHp5ZWdwbGd1Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1OTQyODIwOCwiZXhwIjoyMDc1MDA0MjA4fQ.Q_IX5xbNsGi_Djd3u4xsOSvANY1pZVGFpEsdipFYnaY"
+
 [functions]
   node_bundler = "esbuild"
-  directory = "netlify/functions"  # <- un seul bloc [functions], pas d'autre plus bas
 
 # Upload d'images
 [[redirects]]
@@ -24,7 +32,6 @@
   to = "/.netlify/functions/admin-delete-product"
   status = 200
 
-# Catch-all vers les Functions (utile si tu en ajoutes d'autres plus tard)
 [[redirects]]
   from = "/api/*"
   to   = "/.netlify/functions/:splat"
