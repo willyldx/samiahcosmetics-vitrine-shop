@@ -1,4 +1,3 @@
-// netlify/functions/admin-delete-product.mjs
 import { createClient } from '@supabase/supabase-js';
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
@@ -21,7 +20,7 @@ function json(statusCode, data) {
   };
 }
 
-export default async (event) => {
+export async function handler(event) {
   if (event.httpMethod === 'OPTIONS') return json(200, { ok: true });
   if (event.httpMethod !== 'POST') return json(405, { error: 'Method not allowed' });
 
@@ -33,13 +32,11 @@ export default async (event) => {
     const { id } = JSON.parse(event.body || '{}');
     if (!id) return json(400, { error: 'id requis' });
 
-    // Supprime d’abord les images associées
     const di = await sb.from('product_images').delete().eq('product_id', id);
     if (di.error && di.error.code !== 'PGRST116') {
       return json(500, { error: di.error.message });
     }
 
-    // Supprime le produit
     const dp = await sb.from('products').delete().eq('id', id);
     if (dp.error) return json(500, { error: dp.error.message });
 
@@ -47,4 +44,4 @@ export default async (event) => {
   } catch (e) {
     return json(500, { error: e?.message || 'delete failed' });
   }
-};
+}
