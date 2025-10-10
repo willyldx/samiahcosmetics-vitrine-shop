@@ -36,3 +36,9 @@
   from = "/api/*"
   to   = "/.netlify/functions/:splat"
   status = 200
+
+  [[redirects]]
+  from = "/api/ping"
+  to   = "/.netlify/functions/ping"
+  status = 200
+
