@@ -1,5 +1,6 @@
 [functions]
   node_bundler = "esbuild"
+  directory = "netlify/functions"  # <- un seul bloc [functions], pas d'autre plus bas
 
 # Upload d'images
 [[redirects]]
@@ -23,15 +24,7 @@
   to = "/.netlify/functions/admin-delete-product"
   status = 200
 
-  [build]
-  publish = "."
-
-[functions]
-  directory = "netlify/functions"
-  node_bundler = "esbuild"
-  node_version = "20"
-
-
+# Catch-all vers les Functions (utile si tu en ajoutes d'autres plus tard)
 [[redirects]]
   from = "/api/*"
   to   = "/.netlify/functions/:splat"
