@@ -1,4 +1,3 @@
-// netlify/functions/admin-save-products.mjs
 import { createClient } from '@supabase/supabase-js';
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
@@ -21,7 +20,7 @@ function json(statusCode, data) {
   };
 }
 
-export default async (event) => {
+export async function handler(event) {
   if (event.httpMethod === 'OPTIONS') return json(200, { ok: true });
   if (event.httpMethod !== 'POST') return json(405, { error: 'Method not allowed' });
 
@@ -34,7 +33,6 @@ export default async (event) => {
     const products = Array.isArray(body.products) ? body.products : [];
     if (!products.length) return json(400, { error: 'products[] requis' });
 
-    // 1) Upsert produits
     const rows = products.map(p => ({
       id: p.id,
       title: p.title,
@@ -53,23 +51,16 @@ export default async (event) => {
     const up = await sb.from('products').upsert(rows, { onConflict: 'id' }).select('id');
     if (up.error) return json(500, { error: up.error.message });
 
-    // 2) Met à jour la table product_images en fonction de images[]
     for (const p of rows) {
-      // purge existant
       const del = await sb.from('product_images').delete().eq('product_id', p.id);
       if (del.error && del.error.code !== 'PGRST116') {
-        // PGRST116 = no rows found (ok)
         return json(500, { error: del.error.message });
       }
 
       const imgs = Array.isArray(p.images) ? p.images.filter(Boolean) : [];
       if (!imgs.length) continue;
 
-      const toInsert = imgs.map((url, i) => ({
-        product_id: p.id,
-        url,
-        sort: i
-      }));
+      const toInsert = imgs.map((url, i) => ({ product_id: p.id, url, sort: i }));
       const ins = await sb.from('product_images').insert(toInsert);
       if (ins.error) return json(500, { error: ins.error.message });
     }
@@ -78,4 +69,4 @@ export default async (event) => {
   } catch (e) {
     return json(500, { error: e?.message || 'save failed' });
   }
-};
+}
