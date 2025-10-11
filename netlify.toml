@@ -1,30 +1,62 @@
 [build]
-  # Dossier publié (mets "." si ton index.html est à la racine ;
-  # sinon, remplace par "dist", "build", etc.)
   publish = "."
 
 [functions]
-  directory    = "netlify/functions"
   node_bundler = "esbuild"
+  directory    = "netlify/functions"
 
-# --- API -> Functions (toujours AVANT le fallback SPA) ---
+# --- Functions routes (spécifiques) ---
+[[redirects]]
+  from = "/api/ping"
+  to   = "/.netlify/functions/ping"
+  status = 200
+
+[[redirects]]
+  from = "/api/upload-image"
+  to   = "/.netlify/functions/upload-image"
+  status = 200
+
+[[redirects]]
+  from = "/api/admin/list-products"
+  to   = "/.netlify/functions/admin-list-products"
+  status = 200
+
+[[redirects]]
+  from = "/api/admin/save-products"
+  to   = "/.netlify/functions/admin-save-products"
+  status = 200
+
+[[redirects]]
+  from = "/api/admin/delete-product"
+  to   = "/.netlify/functions/admin-delete-product"
+  status = 200
+
+# --- Catch-all API (doit rester APRÈS les règles ci-dessus) ---
 [[redirects]]
   from = "/api/*"
   to   = "/.netlify/functions/:splat"
   status = 200
 
-# Accès direct aux functions (utile pour tester /_.netlify/functions/*)
+# --- SPA fallback pour /p/{id} (facultatif) ---
 [[redirects]]
-  from = "/.netlify/functions/*"
-  to   = "/.netlify/functions/:splat"
-  status = 200
-  force = true
-
-# --- Fallback SPA (TOUJOURS EN DERNIER) ---
-[[redirects]]
-  from = "/*"
+  from = "/p/*"
   to   = "/index.html"
   status = 200
+
+# --- Headers (optionnels) ---
+[[headers]]
+  for = "/.netlify/functions/*"
+  [headers.values]
+    Access-Control-Allow-Origin  = "*"
+    Access-Control-Allow-Methods = "GET, POST, OPTIONS"
+    Access-Control-Allow-Headers = "Content-Type, x-admin-secret"
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "no-referrer-when-downgrade"
 
 [build.environment]
   NODE_VERSION = "20"
