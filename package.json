@@ -2,12 +2,5 @@
   "name": "samiahcosmetics",
   "version": "1.0.0",
   "private": true,
-  "type": "module",
-  "scripts": {
-    "dev": "netlify dev",
-    "build": "echo \"Static site\""
-  },
-  "dependencies": {
-    "@supabase/supabase-js": "^2.45.0"
-  }
+  "type": "module"
 }
