@@ -9,3 +9,13 @@ https://samiahcosmetics.shop/*  https://www.samiahcosmetics.shop/:splat  301!
 
 http://samiahcosmetics.shop/*  https://www.samiahcosmetics.shop/:splat  301!
 https://samiahcosmetics.shop/* https://www.samiahcosmetics.shop/:splat  301!
+
+/api/ping                 /.netlify/functions/ping                       200
+/api/upload-image         /.netlify/functions/upload-image                200
+/api/admin/list-products  /.netlify/functions/admin-list-products         200
+/api/admin/save-products  /.netlify/functions/admin-save-products         200
+/api/admin/delete-product /.netlify/functions/admin-delete-product        200
+
+/api/*                    /.netlify/functions/:splat                      200
+/*                        /index.html                                     200
+
