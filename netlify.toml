@@ -1,3 +1,9 @@
+# (Optionnel) catch-all pour /api/*
+[[redirects]]
+  from = "/api/*"
+  to   = "/.netlify/functions/:splat"
+  status = 200
+  
 [functions]
   node_bundler = "esbuild"
   directory = "netlify/functions"
@@ -21,12 +27,6 @@
 [[redirects]]
   from = "/api/admin/delete-product"
   to = "/.netlify/functions/admin-delete-product"
-  status = 200
-
-# (Optionnel) catch-all pour /api/*
-[[redirects]]
-  from = "/api/*"
-  to   = "/.netlify/functions/:splat"
   status = 200
 
 [build.environment]
