@@ -1,21 +1,33 @@
-# netlify.toml — configuration consolidée (une seule déclaration par table)
+[functions]
+  node_bundler = "esbuild"
+  directory = "netlify/functions"
 
-[build]
-  publish   = "."
-  functions = "netlify/functions"
+# API routes
+[[redirects]]
+  from = "/api/upload-image"
+  to = "/.netlify/functions/upload-image"
+  status = 200
+
+[[redirects]]
+  from = "/api/admin/list-products"
+  to = "/.netlify/functions/admin-list-products"
+  status = 200
+
+[[redirects]]
+  from = "/api/admin/save-products"
+  to = "/.netlify/functions/admin-save-products"
+  status = 200
+
+[[redirects]]
+  from = "/api/admin/delete-product"
+  to = "/.netlify/functions/admin-delete-product"
+  status = 200
+
+# (Optionnel) catch-all pour /api/*
+[[redirects]]
+  from = "/api/*"
+  to   = "/.netlify/functions/:splat"
+  status = 200
 
 [build.environment]
   NODE_VERSION = "20"
-  SUPABASE_URL = "https://dzzblqlteirtzyegplgu.supabase.co"
-  SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR6emJscWx0ZWlydHp5ZWdwbGd1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk0MjgyMDgsImV4cCI6MjA3NTAwNDIwOH0.WbjNAjF2qxly8QMu-3VJLPQE88UgzkeAn9XPj0lcb1Y"
-SB_SERVICE_ROLE = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR6emJscWx0ZWlydHp5ZWdwbGd1Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1OTQyODIwOCwiZXhwIjoyMDc1MDA0MjA4fQ.Q_IX5xbNsGi_Djd3u4xsOSvANY1pZVGFpEsdipFYnaY"
-
-[functions]
-  node_bundler = "esbuild"
-
-# Routage des Functions (suffit pour ping, upload-image, admin-*)
-[[redirects]]
-  from   = "/api/*"
-  to     = "/.netlify/functions/:splat"
-  status = 200
-  force  = true
