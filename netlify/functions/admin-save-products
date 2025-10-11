@@ -1,0 +1,28 @@
+export default async (req) => {
+  try {
+    const ADMIN_SECRET = process.env.ADMIN_SECRET;
+    const SUPABASE_URL = process.env.SUPABASE_URL;
+    const SERVICE_KEY  = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    if (!ADMIN_SECRET || !SUPABASE_URL || !SERVICE_KEY) return j(500, { error:"env_missing" });
+
+    if ((req.headers.get("x-admin-secret")||"") !== ADMIN_SECRET) return j(401, { error:"unauthorized" });
+
+    const { products } = await req.json();
+
+    // upsert en masse
+    const url = `${SUPABASE_URL}/rest/v1/products`;
+    const r = await fetch(url, {
+      method: "POST",
+      headers: {
+        "apikey": SERVICE_KEY,
+        "Authorization": `Bearer ${SERVICE_KEY}`,
+        "Content-Type": "application/json",
+        "Prefer": "resolution=merge-duplicates"
+      },
+      body: JSON.stringify(products || [])
+    });
+    if (!r.ok) return j(r.status, { error: await r.text() });
+    return j(200, { ok:true });
+  } catch(e){ return j(500, { error: e.message }); }
+};
+const j = (s,o)=> new Response(JSON.stringify(o),{status:s,headers:{'content-type':'application/json'}});
