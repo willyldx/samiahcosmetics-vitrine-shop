@@ -167,3 +167,21 @@ select,.search{padding:10px;border-radius:10px;border:1px solid #ddd;min-width:1
 #listControls{display:flex;align-items:center;flex-wrap:wrap;gap:10px;justify-content:space-between;margin:10px 0 12px}
 #listControls select{padding:10px;border:1px solid var(--border);border-radius:10px}
 #pageInfo{color:var(--muted)}
+
+/* --- Cards produits: swap au survol + micro-zoom --- */
+.card .img-wrap{
+  position:relative;
+  aspect-ratio:1/1;          /* carré façon Jumia (change en 4/5 si tu préfères) */
+  overflow:hidden;
+  background:#fff;
+}
+.card .img-wrap .img-layer{
+  position:absolute; inset:0;
+  width:100%; height:100%;
+  object-fit:cover;
+  transition:transform .2s ease, opacity .2s ease;
+}
+.card .img-wrap .layer1{ opacity:1; }
+.card .img-wrap .layer2{ opacity:0; }
+.card:hover .img-wrap .layer2{ opacity:1; }              /* swap */
+.card:hover .img-wrap .layer1{ transform:scale(1.06); }  /* micro-zoom */
