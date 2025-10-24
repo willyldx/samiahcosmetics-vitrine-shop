@@ -321,16 +321,21 @@ function render(list, errorText=""){
   });
 }
 
+/* === MODIFIÉ : carte avec double image (swap au survol) + micro-zoom === */
 function cardTpl(p){
   const gallery = buildGalleryLocal(p);
-  const img   = escapeHtml(gallery[0] || "/assets/images/placeholder.png");
+  const img1  = escapeHtml(gallery[0] || "/assets/images/placeholder.png");
+  const img2  = gallery[1] ? escapeHtml(gallery[1]) : null;
   const title = escapeHtml(p.title || "");
   const price = fmtXAF(p.price || 0);
   const cat   = escapeHtml(p.category || "");
   const desc  = escapeHtml(p.shortDescription || "");
   return `
     <div class="card" data-id="${escapeAttr(p.id)}" style="cursor:pointer">
-      <img src="${img}" alt="${title}" loading="lazy">
+      <div class="img-wrap">
+        <img class="img-layer layer1" src="${img1}" alt="${title}" loading="lazy">
+        ${img2 ? `<img class="img-layer layer2" src="${img2}" alt="" loading="lazy">` : ""}
+      </div>
       <div class="p">
         <div style="font-weight:700">${title}</div>
         <div class="muted" style="margin:4px 0">${cat || "&nbsp;"}</div>
