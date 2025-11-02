@@ -1,4 +1,5 @@
 User-agent: *
 Allow: /
 Disallow: /admin
+Disallow: /admin-pro.html
 Sitemap: https://www.samiahcosmetics.shop/sitemap.xml
