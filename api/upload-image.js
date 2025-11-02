@@ -1,6 +1,7 @@
 // /api/upload-image.js
-// FORMAT CORRIGÉ (CommonJS) pour Vercel
+// FORMAT CORRIGÉ (CommonJS) - v3 - Sans readJson
 
+// On utilise le Buffer global de Node.js
 const { Buffer } = require('buffer');
 
 function mimeFromExt(ext) {
@@ -9,18 +10,6 @@ function mimeFromExt(ext) {
   if (e === 'png') return 'image/png';
   if (e === 'webp') return 'image/webp';
   return 'application/octet-stream';
-}
-
-// Helper pour lire le body (nécessaire en CommonJS sur Vercel)
-function readJson(req){ 
-  return new Promise((resolve,reject)=>{ 
-    let d=''; 
-    req.on('data',c=>d+=c); 
-    req.on('end',()=>{ 
-      try{ resolve(JSON.parse(d||'{}')); }
-      catch(e){ reject(e); } 
-    }); 
-  }); 
 }
 
 module.exports = async (req, res) => {
@@ -37,11 +26,12 @@ module.exports = async (req, res) => {
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
-    // On doit lire le body manuellement en CommonJS
-    const body = await readJson(req).catch(() => ({}));
-    const { filename, contentBase64 } = body || {};
+    // Vercel parse le body pour nous, on l'utilise directement
+    const body = req.body || {};
+    const { filename, contentBase64 } = body;
     
     if (!filename || !contentBase64) {
+      console.error('Upload error: Missing filename or contentBase64');
       return res.status(400).json({ error: 'Missing filename or contentBase64' });
     }
 
@@ -70,15 +60,14 @@ module.exports = async (req, res) => {
     const r = await fetch(url, { method: 'PUT', headers: h, body: binary });
     
     if (!r.ok) {
-      const data = await r.json().catch(() => ({ text: await r.text() }));
+      const data = await r.json().catch(() => ({ text: r.statusText }));
       console.error("Supabase upload error:", data);
       return res.status(r.status).json({ error: data?.message || data?.text || 'upload failed' });
     }
     
-    // Si r.ok, Supabase renvoie les données de l'image
     const data = await r.json();
-
     const publicUrl = `${SUPABASE_URL}/storage/v1/object/public/${bucket}/${path}`;
+    
     return res.status(200).json({
       ok: true,
       path,
@@ -86,7 +75,7 @@ module.exports = async (req, res) => {
     });
 
   } catch (e) {
-    console.error("Upload function crashed:", e);
+    console.error("Upload function crashed:", e.message, e.stack);
     return res.status(500).json({ error: 'Function crashed', details: e.message });
   }
 }
