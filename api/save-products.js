@@ -1,17 +1,5 @@
 // /api/admin/save-products.js
-// FORMAT CORRIGÉ (CommonJS)
-
-// Helper pour lire le body
-function readJson(req){ 
-  return new Promise((resolve,reject)=>{ 
-    let d=''; 
-    req.on('data',c=>d+=c); 
-    req.on('end',()=>{ 
-      try{ resolve(JSON.parse(d||'{}')); }
-      catch(e){ reject(e); } 
-    }); 
-  }); 
-}
+// FORMAT CORRIGÉ (CommonJS) - v3 - Sans readJson
 
 // Helper pour fetch
 async function supabaseFetch(endpoint, options = {}) {
@@ -52,7 +40,8 @@ module.exports = async (req, res) => {
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
-    const body = await readJson(req).catch(() => ({}));
+    // Vercel parse le body pour nous
+    const body = req.body || {};
     const products = Array.isArray(body.products) ? body.products : [];
     if (!products.length) {
       return res.status(400).json({ error: 'No products payload' });
