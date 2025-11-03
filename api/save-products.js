@@ -1,5 +1,5 @@
 // /api/admin/save-products.js
-// FORMAT CORRIGÉ (CommonJS) - v3 - Sans readJson
+// FORMAT CORRIGÉ (ESM) + Logique de sauvegarde (V2.1)
 
 // Helper pour fetch
 async function supabaseFetch(endpoint, options = {}) {
@@ -28,8 +28,8 @@ async function supabaseFetch(endpoint, options = {}) {
   return await r.json();
 }
 
-// Handler principal
-module.exports = async (req, res) => {
+// Handler principal (converti en ESM 'export default')
+export default async function handler(req, res) {
   try {
     if (req.method !== 'POST') {
       return res.status(405).json({ error: 'Method Not Allowed' });
@@ -40,7 +40,7 @@ module.exports = async (req, res) => {
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
-    // Vercel parse le body pour nous
+    // Vercel parse le body en ESM
     const body = req.body || {};
     const products = Array.isArray(body.products) ? body.products : [];
     if (!products.length) {
