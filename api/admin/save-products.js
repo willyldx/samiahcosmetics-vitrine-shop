@@ -1,92 +1,69 @@
-// /api/admin/save-products.js
-// FORMAT STABLE (CommonJS)
+// /api/upload-image.js
+import { Buffer } from 'buffer'; // <-- LA CORRECTION EST ICI
 
-async function supabaseFetch(endpoint, options = {}) {
-  const { SUPABASE_URL, SUPABASE_SERVICE_ROLE } = process.env;
-  if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE) {
-    throw new Error('Variables Supabase manquantes (URL ou SERVICE_ROLE)');
-  }
-  const url = `${SUPABASE_URL}/rest/v1/${endpoint}`;
-  const headers = {
-    'apikey': SUPABASE_SERVICE_ROLE,
-    'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE}`,
-    'Content-Type': 'application/json',
-    ...(options.headers || {}),
-  };
-  const r = await fetch(url, { ...options, headers });
-  if (!r.ok) {
-    const text = await r.text();
-    let json;
-    try { json = JSON.parse(text); } catch { json = { __text: text }; }
-    console.error(`Supabase fetch failed (${r.status}) for ${endpoint}:`, json);
-    throw new Error(json?.message || json?.error || text || 'Supabase API error');
-  }
-  if (r.status === 204 || options.headers?.Prefer === 'return=minimal') {
-    return { ok: true };
-  }
-  return await r.json();
+function mimeFromExt(ext) {
+  const e = ext.toLowerCase();
+  if (e === 'jpg' || e === 'jpeg') return 'image/jpeg';
+  if (e === 'png') return 'image/png';
+  if (e === 'webp') return 'image/webp';
+  return 'application/octet-stream';
 }
 
-module.exports = async (req, res) => {
+export default async function handler(req, res) {
   try {
-    if (req.method !== 'POST') {
-      return res.status(405).json({ error: 'Method Not Allowed' });
+    if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+  
+    const { SUPABASE_URL, SUPABASE_SERVICE_ROLE, ADMIN_SECRET, SUPABASE_BUCKET } = process.env;
+    if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE) {
+      return res.status(500).json({ error: 'Missing Supabase env vars' });
+    }
+    if (req.headers['x-admin-secret'] !== (ADMIN_SECRET || '')) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+  
+    const { filename, contentBase64 } = req.body || {};
+    if (!filename || !contentBase64) {
+      return res.status(400).json({ error: 'Missing filename or contentBase64' });
+    }
+  
+    const ext = (filename.split('.').pop() || 'jpg').replace(/[^a-z0-9]/gi,'').toLowerCase();
+    const contentType = mimeFromExt(ext);
+  
+    const now = new Date();
+    const y = now.getUTCFullYear();
+    const m = String(now.getUTCMonth()+1).padStart(2,'0');
+    const d = String(now.getUTCDate()).padStart(2,'0');
+    const safeName = filename.replace(/[^a-z0-9._-]/gi, '_');
+    const path = `${y}/${m}/${d}/${Date.now()}-${safeName}`;
+  
+    const binary = Buffer.from(contentBase64, 'base64');
+  
+    const bucket = SUPABASE_BUCKET || 'product-images';
+    const url = `${SUPABASE_URL}/storage/v1/object/${bucket}/${encodeURIComponent(path)}`;
+  
+    const h = {
+      'apikey': SUPABASE_SERVICE_ROLE,
+      'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE}`,
+      'Content-Type': contentType,
+      'x-upsert': 'true'
+    };
+  
+    const r = await fetch(url, { method: 'PUT', headers: h, body: binary });
+    const data = await r.json().catch(() => ({}));
+  
+    if (!r.ok) {
+      console.error("Supabase upload error:", data);
+      return res.status(r.status).json({ error: data?.message || 'upload failed' });
     }
-    const adminSecret = req.headers['x-admin-secret'] || '';
-    if (!process.env.ADMIN_SECRET || adminSecret !== process.env.ADMIN_SECRET) {
-      if (process.env.ADMIN_SECRET === '' && adminSecret === '') {} else {
-        return res.status(401).json({ error: 'Unauthorized' });
-      }
-    }
-
-    const body = req.body || {}; // Vercel parse le body
-    const products = Array.isArray(body.products) ? body.products : [];
-    if (!products.length) {
-      return res.status(400).json({ error: 'No products payload' });
-    }
-    let updatedCount = 0;
-    for (const p of products) {
-      const galleryUrls = Array.isArray(p.images) ? p.images : [];
-      const productRow = {
-        id: p.id,
-        title: p.title ?? '',
-        price: Number.isFinite(p.price) ? p.price : 0,
-        currency: p.currency ?? 'XAF',
-        category: p.category ?? null,
-        cities: Array.isArray(p.cities) ? p.cities : [],
-        image: p.image ?? null,
-        images: galleryUrls, // Sauvegarde dans l'ancienne colonne (IMPORTANT)
-        short_description: p.shortDescription ?? '',
-        active: p.active !== false,
-        expires_after_days: (typeof p.expiresAfterDays === 'number') ? p.expiresAfterDays : null,
-        published_at: p.publishedAt ?? new Date().toISOString(),
-      };
-      await supabaseFetch('products?on_conflict=id', {
-        method: 'POST',
-        headers: { 'Prefer': 'resolution=merge-duplicates,return=minimal' },
-        body: JSON.stringify([productRow])
-      });
-      await supabaseFetch(`product_images?product_id=eq.${encodeURIComponent(p.id)}`, {
-        method: 'DELETE',
-        headers: { 'Prefer': 'return=minimal' }
-      });
-      if (galleryUrls.length > 0) {
-        const galleryRows = galleryUrls.map((url, index) => ({
-          product_id: p.id,
-          url: url,
-          sort: index
-        }));
-        await supabaseFetch('product_images', {
-          method: 'POST',
-          headers: { 'Prefer': 'return=minimal' },
-          body: JSON.stringify(galleryRows)
-        });
-      }
-      updatedCount++;
-    }
-    res.status(200).json({ ok: true, count: updatedCount });
-  } catch (e) {
-    console.error('API Error in save-products:', e);
-    res.status(500).json({ error: 'Function crashed', details: String(e && e.stack || e) });
+  
+    const publicUrl = `${SUPABASE_URL}/storage/v1/object/public/${bucket}/${path}`;
+    return res.status(200).json({
+      ok: true,
+      path,
+      siteUrl: publicUrl
+    });
+  } catch(e) {
+    console.error("Upload function crashed:", e);
+    return res.status(500).json({ error: 'Function crashed', details: e.message });
   }
 }
