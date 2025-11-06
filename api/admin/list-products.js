@@ -46,7 +46,6 @@ module.exports = async (req, res) => {
       active: row.active !== false,
       expiresAfterDays: row.expires_after_days ?? null,
       publishedAt: row.published_at || null,
-      // 'images' au lieu de 'gallery' pour que admin-pro.html le lise
       images: Array.isArray(row.product_images) ? row.product_images.map(x => x.url) : [], 
     }));
     
