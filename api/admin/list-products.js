@@ -1,27 +1,24 @@
 // /api/admin/list-products.js
-// FORMAT STABLE (CommonJS)
-const { createClient } = require('@supabase/supabase-js');
+// FORMAT MODERNE (ESM)
+import { createClient } from '@supabase/supabase-js';
 
-module.exports = async (req, res) => {
-  if (req.method !== 'GET') {
-    return res.status(405).json({ error: 'Method not allowed' });
-  }
+export default async function handler(req, res) {
+  if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
+
   const { SUPABASE_URL, SUPABASE_SERVICE_ROLE, ADMIN_SECRET } = process.env;
   if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE) {
     return res.status(500).json({ error: 'Missing Supabase env vars' });
   }
-  const adminSecret = req.headers['x-admin-secret'] || '';
-  if (!process.env.ADMIN_SECRET || adminSecret !== process.env.ADMIN_SECRET) {
-    if (process.env.ADMIN_SECRET === '' && adminSecret === '') {} else {
-      return res.status(401).json({ error: 'Unauthorized' });
-    }
+  if (req.headers['x-admin-secret'] !== (ADMIN_SECRET || '')) {
+    return res.status(401).json({ error: 'Unauthorized' });
   }
 
   try {
     const sb = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE);
     const select =
-      'id,title,price,currency,category,short_description,image,cities,active,expires_after_days,published_at,created_at,' +
-      'product_images(url,sort)';
+      'id,title,price,currency,category,short_description,image,images,cities,active,expires_after_days,published_at,created_at,' +
+      'product_images(url,sort)'; // On s'assure de lire 'images'
+
     const { data, error } = await sb
       .from('products')
       .select(select)
@@ -46,7 +43,8 @@ module.exports = async (req, res) => {
       active: row.active !== false,
       expiresAfterDays: row.expires_after_days ?? null,
       publishedAt: row.published_at || null,
-      images: Array.isArray(row.product_images) ? row.product_images.map(x => x.url) : [], 
+      // L'admin lit 'images' (pour la compatibilité)
+      images: row.images || (Array.isArray(row.product_images) ? row.product_images.map(x => x.url) : []),
     }));
     
     return res.status(200).json({ items });
