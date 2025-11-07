@@ -1,7 +1,8 @@
 // /api/admin/ping.js
-const { createClient } = require('@supabase/supabase-js');
+// Converti au format ESM
+import { createClient } from '@supabase/supabase-js';
 
-module.exports = async (req, res) => {
+export default async function handler(req, res) {
   try {
     const adminSecret = req.headers['x-admin-secret'] || '';
     if (!process.env.ADMIN_SECRET || adminSecret !== process.env.ADMIN_SECRET) {
@@ -15,4 +16,4 @@ module.exports = async (req, res) => {
   } catch (e) {
     res.status(500).json({ ok: false, error: String(e) });
   }
-};
+}
