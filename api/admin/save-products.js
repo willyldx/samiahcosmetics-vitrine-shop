@@ -1,5 +1,5 @@
 // /api/admin/save-products.js
-// FORMAT MODERNE (ESM) - Le bon code au bon endroit
+// LE BON CODE (Format ESM, qui correspond à ton package.json)
 
 // Helper pour fetch
 async function supabaseFetch(endpoint, options = {}) {
@@ -28,7 +28,7 @@ async function supabaseFetch(endpoint, options = {}) {
   return await r.json();
 }
 
-// Handler principal
+// Handler principal (converti en ESM 'export default')
 export default async function handler(req, res) {
   try {
     if (req.method !== 'POST') {
@@ -42,6 +42,7 @@ export default async function handler(req, res) {
       }
     }
 
+    // Vercel parse le body en ESM
     const body = req.body || {};
     const products = Array.isArray(body.products) ? body.products : [];
     if (!products.length) {
@@ -60,7 +61,7 @@ export default async function handler(req, res) {
         category: p.category ?? null,
         cities: Array.isArray(p.cities) ? p.cities : [],
         image: p.image ?? null,
-        // On sauvegarde dans 'images' pour le site public
+        // Correction pour sauvegarder la galerie pour le site public
         images: galleryUrls, 
         short_description: p.shortDescription ?? '',
         active: p.active !== false,
