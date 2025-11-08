@@ -1,25 +1,71 @@
-export default async (req) => {
-  try {
-    const ADMIN_SECRET = process.env.ADMIN_SECRET;
-    const SUPABASE_URL = process.env.SUPABASE_URL;
-    const SERVICE_KEY  = process.env.SUPABASE_SERVICE_ROLE_KEY;
-    if (!ADMIN_SECRET || !SUPABASE_URL || !SERVICE_KEY) return j(500, { error:"env_missing" });
+// netlify/functions/admin-list-products.js
 
-    if ((req.headers.get("x-admin-secret")||"") !== ADMIN_SECRET) return j(401, { error:"unauthorized" });
+const json = (code, body) => ({
+  statusCode: code,
+  headers: {
+    "content-type": "application/json; charset=utf-8",
+    "access-control-allow-origin": "*",
+    "access-control-allow-headers": "content-type,x-admin-secret",
+    "access-control-allow-methods": "OPTIONS,GET",
+  },
+  body: JSON.stringify(body),
+});
+
+exports.handler = async (event) => {
+  // CORS
+  if (event.httpMethod === "OPTIONS") {
+    return json(204, {});
+  }
+
+  if (event.httpMethod !== "GET") {
+    return json(405, { error: "Method Not Allowed" });
+  }
+
+  try {
+    const {
+      SUPABASE_URL,
+      SUPABASE_SERVICE_ROLE_KEY,
+      ADMIN_SECRET,
+    } = process.env;
+
+    if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY || !ADMIN_SECRET) {
+      return json(500, { error: "env_missing" });
+    }
+
+    const headerSecret =
+      event.headers["x-admin-secret"] || event.headers["X-Admin-Secret"] || "";
+    if (headerSecret !== ADMIN_SECRET) {
+      return json(401, { error: "unauthorized" });
+    }
 
     const url = new URL(`${SUPABASE_URL}/rest/v1/products`);
-    url.searchParams.set("select", "id,title,price,currency,category,cities,image,images,short_description,active,created_at,expires_after_days");
+    url.searchParams.set(
+      "select",
+      "id,title,price,currency,category,cities,image,images,short_description,active,created_at,expires_after_days"
+    );
 
-    const r = await fetch(url, {
+    const r = await fetch(url.toString(), {
       headers: {
-        "apikey": SERVICE_KEY,
-        "Authorization": `Bearer ${SERVICE_KEY}`,
-        "Accept-Profile": "public"
-      }
+        apikey: SUPABASE_SERVICE_ROLE_KEY,
+        Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+        "Accept-Profile": "public",
+      },
     });
-    if (!r.ok) return j(r.status, { error: await r.text() });
-    const items = await r.json();
-    return j(200, { items });
-  } catch(e){ return j(500, { error: e.message }); }
+
+    const text = await r.text();
+    let data;
+    try {
+      data = text ? JSON.parse(text) : [];
+    } catch {
+      return json(r.status, { error: "invalid_json_from_supabase", raw: text });
+    }
+
+    if (!r.ok) {
+      return json(r.status, { error: "supabase_error", details: data });
+    }
+
+    return json(200, { items: Array.isArray(data) ? data : [] });
+  } catch (e) {
+    return json(500, { error: "Function crashed", details: String(e) });
+  }
 };
-const j = (s,o)=> new Response(JSON.stringify(o),{status:s,headers:{'content-type':'application/json'}});
