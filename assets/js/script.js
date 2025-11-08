@@ -319,22 +319,41 @@ function render(list, errorText=""){
       if (p) openModal(p);
     });
   });
+
+  // swipe mobile -> alterner les images (effet Jumia)
+  bindCardSwipe();
 }
 
-/* === MODIFIÉ : carte avec double image (swap au survol) + micro-zoom === */
+/* === Nouvelle carte produit : double image + effet Jumia (hover + swipe) === */
 function cardTpl(p){
   const gallery = buildGalleryLocal(p);
-  const img1  = escapeHtml(gallery[0] || "/assets/images/placeholder.png");
-  const img2  = gallery[1] ? escapeHtml(gallery[1]) : null;
+  const first  = escapeHtml(gallery[0] || "/assets/images/placeholder.png");
+  const second = gallery[1] ? escapeHtml(gallery[1]) : null;
+
   const title = escapeHtml(p.title || "");
   const price = fmtXAF(p.price || 0);
   const cat   = escapeHtml(p.category || "");
   const desc  = escapeHtml(p.shortDescription || "");
+
   return `
     <div class="card" data-id="${escapeAttr(p.id)}" style="cursor:pointer">
-      <div class="img-wrap">
-        <img class="img-layer layer1" src="${img1}" alt="${title}" loading="lazy">
-        ${img2 ? `<img class="img-layer layer2" src="${img2}" alt="" loading="lazy">` : ""}
+      <div class="card-thumb">
+        <img
+          class="card-img card-img-primary"
+          src="${first}"
+          alt="${title}"
+          loading="lazy"
+        >
+        ${
+          second
+            ? `<img
+                 class="card-img card-img-secondary"
+                 src="${second}"
+                 alt="${title}"
+                 loading="lazy"
+               >`
+            : ""
+        }
       </div>
       <div class="p">
         <div style="font-weight:700">${title}</div>
@@ -344,6 +363,55 @@ function cardTpl(p){
       </div>
     </div>
   `;
+}
+
+// Effet swipe mobile type "Jumia"
+function bindCardSwipe(){
+  if (!gridEl) return;
+
+  gridEl.querySelectorAll(".card").forEach(card => {
+    const thumb = card.querySelector(".card-thumb");
+    if (!thumb) return;
+
+    let startX = null;
+    let moved  = false;
+
+    thumb.addEventListener("touchstart", (e) => {
+      const t = e.changedTouches && e.changedTouches[0];
+      if (!t) return;
+      startX = t.clientX;
+      moved = false;
+    }, { passive: true });
+
+    thumb.addEventListener("touchmove", (e) => {
+      const t = e.changedTouches && e.changedTouches[0];
+      if (!t || startX == null) return;
+      if (Math.abs(t.clientX - startX) > 10) {
+        moved = true;
+      }
+    }, { passive: true });
+
+    thumb.addEventListener("touchend", (e) => {
+      const t = e.changedTouches && e.changedTouches[0];
+      if (!t || startX == null) return;
+      const dx = t.clientX - startX;
+
+      // Swipe horizontal significatif
+      if (Math.abs(dx) > 40) {
+        card.classList.toggle("card-swiped");
+        e.stopPropagation(); // évite l'ouverture de la modale
+      }
+      startX = null;
+    });
+
+    // Si on a glissé, on annule le clic
+    thumb.addEventListener("click", (e) => {
+      if (moved) {
+        e.stopPropagation();
+        moved = false;
+      }
+    });
+  });
 }
 
 // Construit la galerie : image principale + products.images + product_images
