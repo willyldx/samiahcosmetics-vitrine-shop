@@ -1,56 +1,92 @@
-export default async (req) => {
-  try {
-    const ADMIN_SECRET = process.env.ADMIN_SECRET;
-    const SUPABASE_URL = process.env.SUPABASE_URL;
-    const SERVICE_KEY  = process.env.SUPABASE_SERVICE_ROLE_KEY;
-    const BUCKET = process.env.SB_BUCKET || "site-images";
+// netlify/functions/upload-image.js
 
-    if (!ADMIN_SECRET || !SUPABASE_URL || !SERVICE_KEY) {
+const json = (code, body) => ({
+  statusCode: code,
+  headers: {
+    "content-type": "application/json; charset=utf-8",
+    "access-control-allow-origin": "*",
+    "access-control-allow-headers": "content-type,x-admin-secret",
+    "access-control-allow-methods": "OPTIONS,POST",
+  },
+  body: JSON.stringify(body),
+});
+
+exports.handler = async (event) => {
+  // Préflight CORS
+  if (event.httpMethod === "OPTIONS") {
+    return json(204, {});
+  }
+
+  if (event.httpMethod !== "POST") {
+    return json(405, { error: "Method Not Allowed" });
+  }
+
+  try {
+    const { ADMIN_SECRET, SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, SB_BUCKET } =
+      process.env;
+    const BUCKET = SB_BUCKET || "site-images";
+
+    if (!ADMIN_SECRET || !SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
       return json(500, { error: "Server env vars missing" });
     }
 
-    // Sécurité simple (même schéma que ton admin.html)
-    const clientSecret = req.headers.get("x-admin-secret") || "";
-    if (clientSecret !== ADMIN_SECRET) {
+    const headerSecret =
+      event.headers["x-admin-secret"] || event.headers["X-Admin-Secret"] || "";
+    if (headerSecret !== ADMIN_SECRET) {
       return json(401, { error: "Unauthorized" });
     }
 
-    const { filename, contentBase64 } = await req.json();
+    let payload;
+    try {
+      payload = JSON.parse(event.body || "{}");
+    } catch {
+      return json(400, { error: "Invalid JSON body" });
+    }
+
+    const { filename, contentBase64 } = payload;
     if (!filename || !contentBase64) {
       return json(400, { error: "filename & contentBase64 required" });
     }
 
     const bin = Buffer.from(contentBase64, "base64");
 
-    // Upload binaire direct vers Storage
-    const uploadUrl = `${SUPABASE_URL}/storage/v1/object/${encodeURIComponent(BUCKET)}/${encodeURIComponent(filename)}`;
+    const uploadUrl = `${SUPABASE_URL}/storage/v1/object/${encodeURIComponent(
+      BUCKET
+    )}/${encodeURIComponent(filename)}`;
 
     const up = await fetch(uploadUrl, {
       method: "POST",
       headers: {
-        "Authorization": `Bearer ${SERVICE_KEY}`,
+        Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+        apikey: SUPABASE_SERVICE_ROLE_KEY,
         "Content-Type": "image/jpeg",
-        "x-upsert": "true"
+        "x-upsert": "true",
       },
-      body: bin
+      body: bin,
     });
 
+    const upText = await up.text();
     if (!up.ok) {
-      const txt = await up.text().catch(()=> "");
-      return json(up.status, { error: "upload_failed", details: txt });
+      let errJson;
+      try {
+        errJson = JSON.parse(upText);
+      } catch {
+        errJson = { __text: upText };
+      }
+      return json(500, {
+        error: "Upload failed",
+        details: errJson,
+        status: up.status,
+      });
     }
 
-    // URL publique (si le bucket est "public")
-    const siteUrl = `${SUPABASE_URL}/storage/v1/object/public/${encodeURIComponent(BUCKET)}/${encodeURIComponent(filename)}`;
+    // URL publique (bucket configuré en "public" côté Supabase)
+    const siteUrl = `${SUPABASE_URL}/storage/v1/object/public/${encodeURIComponent(
+      BUCKET
+    )}/${encodeURIComponent(filename)}`;
+
     return json(200, { ok: true, siteUrl });
   } catch (e) {
-    return json(500, { error: e.message || "server_error" });
+    return json(500, { error: "Function crashed", details: String(e) });
   }
 };
-
-function json(status, obj) {
-  return new Response(JSON.stringify(obj), {
-    status,
-    headers: { "content-type": "application/json" }
-  });
-}
