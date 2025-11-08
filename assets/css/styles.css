@@ -69,34 +69,10 @@ select,.search{padding:10px;border-radius:10px;border:1px solid #ddd;min-width:1
   background:#fff;border:1px solid #eee;border-radius:14px;overflow:hidden;
   box-shadow:0 6px 20px rgba(0,0,0,.05);
   transition:transform .12s ease, box-shadow .12s ease;
-  position:relative; /* pour le badge Nouveau */
 }
 .card:hover{transform:translateY(-2px);box-shadow:0 10px 30px rgba(0,0,0,.08)}
 .card>img{width:100%;height:180px;object-fit:cover}
 .card .p{padding:10px 12px}
-
-/* --- Cards produits: double image (comme avant, mais avec swap) --- */
-.card .img-wrap{
-  position:relative;
-  width:100%;
-  height:180px;        /* même hauteur que .card>img */
-  overflow:hidden;
-  background:#fff;
-}
-.card .img-wrap .img-layer{
-  position:absolute;
-  inset:0;
-  width:100%;
-  height:100%;
-  object-fit:cover;    /* même rendu que l’ancien .card>img */
-  transition:transform .2s ease, opacity .2s ease;
-}
-.card .img-wrap .layer1{ opacity:1; }
-.card .img-wrap .layer2{ opacity:0; }
-
-/* Survol desktop : petit zoom + apparition de la 2e image si présente */
-.card:hover .img-wrap .layer1{ transform:scale(1.04); }
-.card:hover .img-wrap .layer2{ opacity:1; }
 
 /* Badge générique (si besoin) */
 .badge{display:inline-block;background:#111;color:#fff;border-radius:999px;font-size:12px;padding:6px 10px;margin-right:6px;opacity:.9}
@@ -141,37 +117,37 @@ select,.search{padding:10px;border-radius:10px;border:1px solid #ddd;min-width:1
    ========================= */
 @media (max-width:1100px){
   .hero h1{font-size:34px}
-  .card>img,
-  .card .img-wrap{height:200px}
+  .card>img{height:200px}
 }
 @media (max-width:900px){
   .hero .wrap{grid-template-columns:1fr}
 }
 @media (max-width:620px){
-  .card>img,
-  .card .img-wrap{height:180px}
+  .card>img{height:180px}
   .grid{gap:14px}
 }
 
 /* === Badge "Nouveau" en overlay sur l'image === */
+.card {
+  position: relative;
+}
 .badge.badge-new {
-  position:absolute;
-  top:8px;
-  left:8px;
-  background:#D9B56C;
-  color:#111;
-  font-size:12px;
-  font-weight:700;
-  border-radius:999px;
-  padding:4px 8px;
-  box-shadow:0 2px 6px rgba(0,0,0,.15);
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  background: #D9B56C;
+  color: #111;
+  font-size: 12px;
+  font-weight: 700;
+  border-radius: 999px;
+  padding: 4px 8px;
+  box-shadow: 0 2px 6px rgba(0,0,0,.15);
 }
 
 /* Accessibilité: réduit les animations si demandé */
 @media (prefers-reduced-motion: reduce){
   *{transition:none !important; animation:none !important}
 }
-
 /* === Gestion des vignettes (drag + star) === */
 .thumbs{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
 .thumbs .thumb{position:relative;display:inline-block}
@@ -191,3 +167,74 @@ select,.search{padding:10px;border-radius:10px;border:1px solid #ddd;min-width:1
 #listControls{display:flex;align-items:center;flex-wrap:wrap;gap:10px;justify-content:space-between;margin:10px 0 12px}
 #listControls select{padding:10px;border:1px solid var(--border);border-radius:10px}
 #pageInfo{color:var(--muted)}
+
+/* --- Cards produits: swap au survol + micro-zoom --- */
+.card .img-wrap{
+  position:relative;
+  aspect-ratio:1/1;          /* carré façon Jumia (change en 4/5 si tu préfères) */
+  overflow:hidden;
+  background:#fff;
+}
+.card .img-wrap .img-layer{
+  position:absolute; inset:0;
+  width:100%; height:100%;
+  object-fit:cover;
+  transition:transform .2s ease, opacity .2s ease;
+}
+.card .img-wrap .layer1{ opacity:1; }
+.card .img-wrap .layer2{ opacity:0; }
+.card:hover .img-wrap .layer2{ opacity:1; }              /* swap */
+.card:hover .img-wrap .layer1{ transform:scale(1.06); }  /* micro-zoom */
+
+
+/* Effet "Jumia" – hover desktop + swipe mobile */
+.card-thumb{
+  position:relative;
+  overflow:hidden;
+  background:#fff;
+}
+
+.card-img{
+  width:100%;
+  height:180px;
+  object-fit:cover;
+  display:block;
+  transition:transform .25s ease, opacity .25s ease;
+}
+
+/* 2e image empilée au-dessus, invisible au départ */
+.card-img-secondary{
+  position:absolute;
+  inset:0;
+  opacity:0;
+}
+
+/* Desktop : au survol, on montre la 2e image si dispo */
+.card:hover .card-img-primary{
+  transform:scale(1.06);
+}
+.card:hover .card-img-secondary{
+  opacity:1;
+}
+
+/* Mobile / swipe : classe ajoutée en JS */
+.card.card-swiped .card-img-primary{
+  opacity:0;
+  transform:scale(1.06);
+}
+.card.card-swiped .card-img-secondary{
+  opacity:1;
+  transform:scale(1.06);
+}
+
+/* Hauteur responsive comme avant */
+@media (max-width:1100px){
+  .card-img{
+    height:200px;
+  }
+}
+@media (max-width:620px){
+  .card-img{
+    height:180px;
+  }
+}
