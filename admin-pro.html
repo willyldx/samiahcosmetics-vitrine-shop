@@ -173,6 +173,16 @@
             </label>
           </div>
 
+          <!-- Progression upload -->
+          <div id="uploadProgress" style="grid-column:1 / -1; margin-top:8px; display:none">
+            <div style="height:6px;border-radius:999px;background:#eee;overflow:hidden">
+              <div id="uploadBar" style="height:100%;width:0%;background:#0A0A0A;transition:width .2s"></div>
+            </div>
+            <div id="uploadText" class="muted" style="margin-top:4px;font-size:12px">
+              Téléversement des images…
+            </div>
+          </div>
+
           <!-- Expiration & Actif -->
           <div>
             <label>Expire dans (jours) — optionnel<br/>
@@ -242,6 +252,11 @@
     // *** Ville par défaut côté admin ***
     const DEFAULT_CITY = "N’Djamena";
 
+    // Upload en cours (pour désactiver la publication + barre de progression)
+    let activeUploads = 0;
+    let uploadTotal = 0;
+    let uploadDone = 0;
+
     const els = {
       q:$('#q'), cat:$('#catFilter'), tbody:$('#tbl tbody'), empty:$('#empty'),
       f_title:$('#f_title'), f_price:$('#f_price'), f_category:$('#f_category'),
@@ -252,18 +267,78 @@
       extraUploader:$('#extra_uploader'), extraSend:$('#extra_send'), extraPreview:$('#extraPreview'),
       refreshBtn:$('#refreshBtn'), publishBtn:$('#publishBtn'), pubLabel:$('#pubLabel'), pubStatus:$('#pubStatus'),
       menuBtn:$('#menuBtn'), menu:$('#menu'), pubModal:$('#pubModal'), pubClose:$('#pubClose'),
+      // barre de progression upload
+      uploadProgress: $('#uploadProgress'), uploadBar: $('#uploadBar'), uploadText: $('#uploadText'),
       // pager (ajout)
       prevPage:$('#prevPage'), nextPage:$('#nextPage'), pageInfo:$('#pageInfo'), pageSize:$('#pageSize')
     };
 
     function show(txt){ els.toast.textContent=txt; els.toast.classList.add('show'); setTimeout(()=>els.toast.classList.remove('show'),1700); }
-    function escapeHtml(s){return (''+s).replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+    function escapeHtml(s){return (''+s).replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#39;"}[c]));}
     async function readResp(resp){ const ct=resp.headers.get('content-type')||''; if(ct.includes('application/json')){try{return await resp.json();}catch{}} const t=await resp.text(); return {__text:t}; }
     function stamp(){ const d=new Date(); return d.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit',second:'2-digit'}); }
     function setBtnLoading(btn,labelEl,txt){ btn.dataset.prev=(labelEl.textContent||''); btn.disabled=true; labelEl.textContent=txt; }
     function setBtnDone(btn,labelEl,txt='Terminé'){ labelEl.textContent=txt; setTimeout(()=>{ labelEl.textContent=btn.dataset.prev||labelEl.textContent; btn.disabled=false; },1000); }
     function setBtnIdle(btn,labelEl){ labelEl.textContent = btn.dataset.prev || labelEl.textContent; btn.disabled=false; }
     function slugify(s){return (s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'');}
+
+    // UI de progression d’upload
+    function updateUploadUI(){
+      if (!els.uploadProgress) return;
+
+      if (activeUploads <= 0) {
+        els.uploadProgress.style.display = 'none';
+        if (els.publishBtn){
+          els.publishBtn.style.display = '';
+          els.publishBtn.disabled = false;
+        }
+        if (els.uploadBar) els.uploadBar.style.width = '0%';
+        if (els.uploadText) els.uploadText.textContent = '';
+        if (els.pubStatus && els.pubStatus.textContent.startsWith('Téléversement')){
+          els.pubStatus.textContent = '';
+        }
+        return;
+      }
+
+      els.uploadProgress.style.display = 'block';
+      if (els.publishBtn){
+        els.publishBtn.style.display = 'none';
+      }
+
+      const pctRaw = uploadTotal > 0 ? Math.round((uploadDone / uploadTotal) * 100) : 10;
+      const pct = Math.max(5, Math.min(100, pctRaw));
+
+      if (els.uploadBar) els.uploadBar.style.width = pct + '%';
+      if (els.uploadText){
+        els.uploadText.textContent = uploadTotal > 0
+          ? `Téléversement des images… ${uploadDone}/${uploadTotal}`
+          : 'Préparation des images…';
+      }
+      if (els.pubStatus){
+        els.pubStatus.textContent = 'Téléversement en cours… publication désactivée';
+      }
+    }
+
+    function startUpload(total){
+      activeUploads++;
+      uploadTotal = total || 0;
+      uploadDone = 0;
+      updateUploadUI();
+    }
+    function stepUpload(){
+      if (uploadTotal > 0 && uploadDone < uploadTotal){
+        uploadDone++;
+      }
+      updateUploadUI();
+    }
+    function endUpload(){
+      activeUploads = Math.max(0, activeUploads - 1);
+      if (activeUploads === 0){
+        uploadTotal = 0;
+        uploadDone = 0;
+      }
+      updateUploadUI();
+    }
 
     // ====== admin secret ======
     const SECRET_KEY='samiah_admin_secret';
@@ -503,8 +578,14 @@
       try{
         const f = els.mainUploader.files[0];
         if(!f){ alert('Choisis une image principale'); return; }
+
+        // Démarre la progression (1 image)
+        startUpload(1);
+
         setBtnLoading(els.mainSend, els.mainSend, 'Téléversement…');
         const { url, size } = await uploadOne(f, els.f_title.value||'image');
+        stepUpload();
+
         els.f_image.value = url;
         els.mainPreview.innerHTML = `<img src="${escapeHtml(url)}" alt="">`;
         setBtnDone(els.mainSend, els.mainSend, 'Téléversé ✅');
@@ -512,6 +593,8 @@
       }catch(e){
         setBtnIdle(els.mainSend, els.mainSend);
         alert('Erreur upload: ' + e.message);
+      }finally{
+        endUpload();
       }
     }
 
@@ -564,10 +647,15 @@
       try{
         const files = Array.from(els.extraUploader.files||[]);
         if(!files.length){ alert('Choisis au moins une image'); return; }
+
+        // Démarre la progression avec le nombre de fichiers
+        startUpload(files.length);
+
         els.extraSend.disabled = true; els.extraSend.textContent='Téléversement…';
         for(const f of files){
           const { url } = await uploadOne(f, (els.f_title.value||'image-sup'));
           extraUrls.push(url);
+          stepUpload();
         }
         renderExtraThumbs();
         els.extraSend.textContent='Téléversé ✅';
@@ -576,6 +664,8 @@
       }catch(e){
         els.extraSend.disabled=false; els.extraSend.textContent='Téléverser';
         alert('Erreur upload: ' + e.message);
+      }finally{
+        endUpload();
       }
     }
 
@@ -626,6 +716,13 @@
 
     async function publishToBackend(){
       const secret=getAdminSecret(); if(!secret){ changeAdminSecret(); return; }
+
+      // Empêche de publier pendant un upload
+      if (activeUploads > 0){
+        alert('Attends la fin du téléversement des images avant de publier.');
+        return;
+      }
+
       try{
         setBtnLoading(els.publishBtn, els.pubLabel, 'Publication…');
         const resp = await fetch('/api/admin/save-products',{
