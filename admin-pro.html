@@ -239,6 +239,9 @@
     let page = 1;
     let perPage = 10;
 
+    // *** Ville par défaut côté admin ***
+    const DEFAULT_CITY = "N’Djamena";
+
     const els = {
       q:$('#q'), cat:$('#catFilter'), tbody:$('#tbl tbody'), empty:$('#empty'),
       f_title:$('#f_title'), f_price:$('#f_price'), f_category:$('#f_category'),
@@ -342,6 +345,7 @@
 
     // ====== edit / save ======
     function selectedCities(){ return Array.from(els.f_cities.selectedOptions).map(o=>o.value); }
+
     function reset(clear=true){
       editing=null; els.formTitle.textContent='Nouveau produit'; els.del.style.display='none';
       extraUrls=[]; els.extraPreview.innerHTML='';
@@ -349,7 +353,10 @@
       if(clear){
         els.f_title.value=els.f_price.value=els.f_category.value=els.f_id.value=els.f_desc.value=els.f_image.value='';
         els.f_active.checked=true; els.f_expDays.value='';
-        Array.from(els.f_cities.options).forEach(o=>o.selected=false);
+        // *** N’Djamena sélectionnée par défaut ***
+        Array.from(els.f_cities.options).forEach(o=>{
+          o.selected = (o.value === DEFAULT_CITY);
+        });
         if(els.mainUploader) els.mainUploader.value='';
         if(els.extraUploader) els.extraUploader.value='';
       }
@@ -363,6 +370,7 @@
       els.f_desc.value=p.shortDescription||''; els.f_image.value=p.image||'';
       els.f_active.checked = (p.active!==false);
       els.f_expDays.value = (typeof p.expiresAfterDays==='number') ? p.expiresAfterDays : '';
+      // pour un produit déjà existant, on respecte ce qui est stocké
       Array.from(els.f_cities.options).forEach(o=>o.selected=(p.cities||[]).includes(o.value));
 
       // previews
@@ -396,6 +404,10 @@
       const nowIso = new Date().toISOString();
       const expDays = parseInt((els.f_expDays?.value||'').trim(),10);
 
+      // *** On force N’Djamena si aucune ville n’est choisie ***
+      const selCities = selectedCities();
+      const cities = selCities.length ? selCities : [DEFAULT_CITY];
+
       const p = {
         id: (els.f_id.value||slugify(els.f_title.value)).trim(),
         title: els.f_title.value.trim(),
@@ -405,7 +417,7 @@
         shortDescription: els.f_desc.value.trim(),
         image: els.f_image.value.trim(),
         images: extraUrls.slice(),    // <= photos supplémentaires
-        cities: selectedCities(),
+        cities,
         active: els.f_active.checked,
         expiresAfterDays: isNaN(expDays)? null : expDays,
         publishedAt: items[editing]?.publishedAt || nowIso
