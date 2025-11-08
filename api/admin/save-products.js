@@ -60,6 +60,9 @@ async function supabaseFetch(endpoint, options = {}) {
   return json;
 }
 
+// *** Ville par défaut si rien n'est envoyé ***
+const DEFAULT_CITY = "N’Djamena";
+
 // Handler principal
 export default async function handler(req, res) {
   try {
@@ -114,13 +117,19 @@ export default async function handler(req, res) {
         ? p.images.filter(Boolean)
         : [];
 
+      // *** On force N’Djamena si aucune ville n'est envoyée ***
+      const cities =
+        Array.isArray(p.cities) && p.cities.length
+          ? p.cities
+          : [DEFAULT_CITY];
+
       const productRow = {
         id: p.id,
         title: p.title ?? "",
         price: Number.isFinite(p.price) ? p.price : 0,
         currency: p.currency ?? "XAF",
         category: p.category ?? null,
-        cities: Array.isArray(p.cities) ? p.cities : [],
+        cities, // <= ici avec le défaut
         image: p.image ?? null,
         // on stocke la galerie dans la colonne "images" pour le site public
         images: galleryUrls,
