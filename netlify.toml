@@ -5,7 +5,7 @@
   node_bundler = "esbuild"
   directory    = "netlify/functions"
 
-# --- Functions routes (spécifiques) ---
+# --- Routes API (fonctions Netlify) ---
 [[redirects]]
   from = "/api/ping"
   to   = "/.netlify/functions/ping"
@@ -31,19 +31,24 @@
   to   = "/.netlify/functions/admin-delete-product"
   status = 200
 
-# --- Catch-all API (doit rester APRÈS les règles ci-dessus) ---
+# Catch-all pour les autres routes API
 [[redirects]]
   from = "/api/*"
   to   = "/.netlify/functions/:splat"
   status = 200
 
-# --- SPA fallback pour /p/{id} (facultatif) ---
+# SPA fallback pour le site (index.html)
 [[redirects]]
   from = "/p/*"
   to   = "/index.html"
   status = 200
 
-# --- Headers (optionnels) ---
+[[redirects]]
+  from = "/*"
+  to   = "/index.html"
+  status = 200
+
+# --- Headers pour les fonctions (CORS) ---
 [[headers]]
   for = "/.netlify/functions/*"
   [headers.values]
@@ -51,12 +56,16 @@
     Access-Control-Allow-Methods = "GET, POST, OPTIONS"
     Access-Control-Allow-Headers = "Content-Type, x-admin-secret"
 
+# --- Headers de sécurité global ---
 [[headers]]
   for = "/*"
   [headers.values]
-    X-Frame-Options = "DENY"
-    X-Content-Type-Options = "nosniff"
-    Referrer-Policy = "no-referrer-when-downgrade"
+    Strict-Transport-Security = "max-age=31536000; includeSubDomains; preload"
+    X-Frame-Options           = "DENY"
+    X-Content-Type-Options    = "nosniff"
+    Referrer-Policy           = "strict-origin-when-cross-origin"
+    Permissions-Policy        = "camera=(), microphone=(), geolocation=()"
+    Content-Security-Policy   = "default-src 'self'; connect-src 'self' https://dzzblqlteirtzyegplgu.supabase.co https://*.supabase.co https://*.supabase.in; script-src 'self' https://cdn.jsdelivr.net 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self' data: https:; frame-ancestors 'none'; base-uri 'self'"
 
 [build.environment]
   NODE_VERSION = "20"
