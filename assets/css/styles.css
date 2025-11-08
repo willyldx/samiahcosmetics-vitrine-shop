@@ -185,3 +185,56 @@ select,.search{padding:10px;border-radius:10px;border:1px solid #ddd;min-width:1
 .card .img-wrap .layer2{ opacity:0; }
 .card:hover .img-wrap .layer2{ opacity:1; }              /* swap */
 .card:hover .img-wrap .layer1{ transform:scale(1.06); }  /* micro-zoom */
+
+
+/* Effet "Jumia" – hover desktop + swipe mobile */
+.card-thumb{
+  position:relative;
+  overflow:hidden;
+  background:#fff;
+}
+
+.card-img{
+  width:100%;
+  height:180px;
+  object-fit:cover;
+  display:block;
+  transition:transform .25s ease, opacity .25s ease;
+}
+
+/* 2e image empilée au-dessus, invisible au départ */
+.card-img-secondary{
+  position:absolute;
+  inset:0;
+  opacity:0;
+}
+
+/* Desktop : au survol, on montre la 2e image si dispo */
+.card:hover .card-img-primary{
+  transform:scale(1.06);
+}
+.card:hover .card-img-secondary{
+  opacity:1;
+}
+
+/* Mobile / swipe : classe ajoutée en JS */
+.card.card-swiped .card-img-primary{
+  opacity:0;
+  transform:scale(1.06);
+}
+.card.card-swiped .card-img-secondary{
+  opacity:1;
+  transform:scale(1.06);
+}
+
+/* Hauteur responsive comme avant */
+@media (max-width:1100px){
+  .card-img{
+    height:200px;
+  }
+}
+@media (max-width:620px){
+  .card-img{
+    height:180px;
+  }
+}
