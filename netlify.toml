@@ -31,6 +31,11 @@
   to   = "/.netlify/functions/admin-delete-product"
   status = 200
 
+[[redirects]]
+  from = "/api/admin/list-testimonials"
+  to   = "/.netlify/functions/admin-list-testimonials"
+  status = 200
+
 # Catch-all pour les autres routes API
 [[redirects]]
   from = "/api/*"
