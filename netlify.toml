@@ -36,6 +36,11 @@
   to   = "/.netlify/functions/admin-list-testimonials"
   status = 200
 
+[[redirects]]
+  from = "/api/admin/save-testimonials"
+  to   = "/.netlify/functions/admin-save-testimonials"
+  status = 200
+
 # Catch-all pour les autres routes API
 [[redirects]]
   from = "/api/*"
