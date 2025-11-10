@@ -58,18 +58,13 @@
     .modal-text{margin:0 0 12px;color:#444}
     .modal-actions{display:flex;gap:8px;justify-content:flex-end}
 
-    /* Tabs Produits / Témoignages */
-    .tabs{display:flex;gap:8px;margin-bottom:16px}
-    .tab-btn{
-      padding:8px 14px;border-radius:999px;border:1px solid var(--border);
-      background:#fff;cursor:pointer;font-weight:600;font-size:13px;
-    }
-    .tab-btn.active{background:#111;color:#fff;border-color:#111}
+    /* Progress bar */
+    #uploadProgress{grid-column:1 / -1; margin-top:8px; display:none}
+    #uploadProgress .bar-bg{height:6px;border-radius:999px;background:#eee;overflow:hidden}
+    #uploadBar{height:100%;width:0%;background:#0A0A0A;transition:width .2s}
 
-    /* Témoignages */
-    .t-badge{display:inline-block;border-radius:999px;padding:2px 8px;font-size:11px}
-    .t-badge.on{background:#16a34a20;color:#166534}
-    .t-badge.off{background:#b4231820;color:#7f1d1d}
+    /* Témoignages layout */
+    .subsection-title{margin-top:24px;font-size:18px;font-weight:600}
   </style>
 </head>
 <body>
@@ -108,198 +103,200 @@
   </div>
 
   <div class="wrap">
-    <!-- Onglets -->
-    <div class="tabs">
-      <button class="tab-btn active" id="tabProducts">Catalogue produits</button>
-      <button class="tab-btn" id="tabTestimonials">Témoignages</button>
-    </div>
-
-    <!-- ===== Vue PRODUITS ===== -->
-    <div id="viewProducts">
-      <div class="grid">
-        <!-- LISTE -->
-        <div class="panel">
-          <h2>Catalogue</h2>
-          <div class="filters">
-            <input type="text" id="q" placeholder="Recherche (titre, catégorie)…"/>
-            <select id="catFilter"></select>
-          </div>
-          <div class="note">Astuce : clique sur une ligne pour l’éditer. Téléverse une image (ou des images supplémentaires), puis « Publier » pour enregistrer en base.</div>
-          <div style="overflow:auto;max-height:520px;margin-top:10px;border:1px solid var(--border);border-radius:12px">
-            <table id="tbl" aria-describedby="tableau-produits">
-              <thead>
-                <tr>
-                  <th style="min-width:200px">Titre</th>
-                  <th style="min-width:100px">Prix</th>
-                  <th style="min-width:140px">Catégorie</th>
-                  <th>Villes</th>
-                  <th style="min-width:120px">Aperçu</th>
-                  <th style="min-width:150px"></th>
-                </tr>
-              </thead>
-              <tbody></tbody>
-            </table>
-          </div>
-
-          <!-- Pagination -->
-          <div id="pager" style="display:flex;align-items:center;gap:8px;justify-content:flex-end;margin-top:8px">
-            <button class="iconbtn" id="prevPage" aria-label="Page précédente">◀</button>
-            <span id="pageInfo" class="muted">—</span>
-            <button class="iconbtn" id="nextPage" aria-label="Page suivante">▶</button>
-            <select id="pageSize" title="Par page">
-              <option value="10" selected>10</option>
-              <option value="25">25</option>
-              <option value="50">50</option>
-            </select>
-          </div>
-          <!-- /Pagination -->
-
-          <div class="empty" id="empty" style="display:none">Aucun produit</div>
+    <!-- ===================== PRODUITS ===================== -->
+    <div class="grid">
+      <!-- LISTE produits -->
+      <div class="panel">
+        <h2>Catalogue</h2>
+        <div class="filters">
+          <input type="text" id="q" placeholder="Recherche (titre, catégorie)…"/>
+          <select id="catFilter"></select>
+        </div>
+        <div class="note">Astuce : clique sur une ligne pour l’éditer. Téléverse une image (ou des images supplémentaires), puis « Publier » pour enregistrer en base.</div>
+        <div style="overflow:auto;max-height:520px;margin-top:10px;border:1px solid var(--border);border-radius:12px">
+          <table id="tbl" aria-describedby="tableau-produits">
+            <thead>
+              <tr>
+                <th style="min-width:200px">Titre</th>
+                <th style="min-width:100px">Prix</th>
+                <th style="min-width:140px">Catégorie</th>
+                <th>Villes</th>
+                <th style="min-width:120px">Aperçu</th>
+                <th style="min-width:150px"></th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
         </div>
 
-        <!-- FORM -->
-        <div class="panel">
-          <h2 id="formTitle">Nouveau produit</h2>
-          <div class="note" style="margin-bottom:10px">Champs requis : <strong>Titre</strong>, <strong>Prix</strong>. L’ID (slug) est auto-généré si vide.</div>
+        <!-- Pagination -->
+        <div id="pager" style="display:flex;align-items:center;gap:8px;justify-content:flex-end;margin-top:8px">
+          <button class="iconbtn" id="prevPage" aria-label="Page précédente">◀</button>
+          <span id="pageInfo" class="muted">—</span>
+          <button class="iconbtn" id="nextPage" aria-label="Page suivante">▶</button>
+          <select id="pageSize" title="Par page">
+            <option value="10" selected>10</option>
+            <option value="25">25</option>
+            <option value="50">50</option>
+          </select>
+        </div>
+        <!-- /Pagination -->
 
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-            <div><label>Titre<br/><input id="f_title"></label></div>
-            <div><label>Prix XAF<br/><input id="f_price" type="number" min="0" step="100"></label></div>
-            <div><label>Catégorie<br/><input id="f_category" placeholder="Shampoings, Soins cheveux, Services"></label></div>
-            <div><label>ID (slug)<br/><input id="f_id" placeholder="auto si vide"></label></div>
-            <div style="grid-column:1 / -1"><label>Description courte<br/><textarea id="f_desc" placeholder="Texte court…"></textarea></label></div>
+        <div class="empty" id="empty" style="display:none">Aucun produit</div>
+      </div>
 
-            <!-- Image principale -->
-            <div style="grid-column:1 / -1">
-              <label>Image principale<br/>
-                <input type="hidden" id="f_image">
-                <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-                  <input type="file" id="main_uploader" accept="image/*">
-                  <button type="button" class="btn secondary" id="main_send">Téléverser</button>
-                  <small class="muted">JPG/PNG — <strong>compression auto</strong> (envoi ~4&nbsp;Mo max).</small>
-                </div>
-                <div id="mainPreview" class="thumbs"></div>
-              </label>
-            </div>
+      <!-- FORM produit -->
+      <div class="panel">
+        <h2 id="formTitle">Nouveau produit</h2>
+        <div class="note" style="margin-bottom:10px">Champs requis : <strong>Titre</strong>, <strong>Prix</strong>. L’ID (slug) est auto-généré si vide.</div>
 
-            <!-- Photos supplémentaires -->
-            <div style="grid-column:1 / -1">
-              <label>Photos supplémentaires (optionnel)<br/>
-                <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-                  <input type="file" id="extra_uploader" accept="image/*" multiple>
-                  <button type="button" class="btn secondary" id="extra_send">Téléverser</button>
-                  <small class="muted">Plusieurs images — <strong>compression auto</strong>.</small>
-                </div>
-                <div id="extraPreview" class="thumbs"></div>
-              </label>
-            </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+          <div><label>Titre<br/><input id="f_title"></label></div>
+          <div><label>Prix XAF<br/><input id="f_price" type="number" min="0" step="100"></label></div>
+          <div><label>Catégorie<br/><input id="f_category" placeholder="Shampoings, Soins cheveux, Services"></label></div>
+          <div><label>ID (slug)<br/><input id="f_id" placeholder="auto si vide"></label></div>
+          <div style="grid-column:1 / -1"><label>Description courte<br/><textarea id="f_desc" placeholder="Texte court…"></textarea></label></div>
 
-            <!-- Progression upload -->
-            <div id="uploadProgress" style="grid-column:1 / -1; margin-top:8px; display:none">
-              <div style="height:6px;border-radius:999px;background:#eee;overflow:hidden">
-                <div id="uploadBar" style="height:100%;width:0%;background:#0A0A0A;transition:width .2s"></div>
+          <!-- Image principale -->
+          <div style="grid-column:1 / -1">
+            <label>Image principale<br/>
+              <input type="hidden" id="f_image">
+              <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+                <input type="file" id="main_uploader" accept="image/*">
+                <button type="button" class="btn secondary" id="main_send">Téléverser</button>
+                <small class="muted">JPG/PNG — <strong>compression auto</strong> (envoi ~4&nbsp;Mo max).</small>
               </div>
-              <div id="uploadText" class="muted" style="margin-top:4px;font-size:12px">
-                Téléversement des images…
+              <div id="mainPreview" class="thumbs"></div>
+            </label>
+          </div>
+
+          <!-- Photos supplémentaires -->
+          <div style="grid-column:1 / -1">
+            <label>Photos supplémentaires (optionnel)<br/>
+              <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+                <input type="file" id="extra_uploader" accept="image/*" multiple>
+                <button type="button" class="btn secondary" id="extra_send">Téléverser</button>
+                <small class="muted">Plusieurs images — <strong>compression auto</strong>.</small>
               </div>
-            </div>
+              <div id="extraPreview" class="thumbs"></div>
+            </label>
+          </div>
 
-            <!-- Expiration & Actif -->
-            <div>
-              <label>Expire dans (jours) — optionnel<br/>
-                <input id="f_expDays" type="number" min="0" placeholder="ex: 14">
-              </label>
-              <small class="muted">Laisser vide pour “pas d’expiration”.</small>
+          <!-- Progression upload (commune produits + témoignages) -->
+          <div id="uploadProgress">
+            <div class="bar-bg">
+              <div id="uploadBar"></div>
             </div>
-            <div style="display:flex;align-items:center;gap:8px;margin-top:6px">
-              <input id="f_active" type="checkbox" checked>
-              <label for="f_active">Activer l’affichage</label>
-            </div>
-
-            <div><label>Villes (liste)<br/>
-              <select id="f_cities" multiple size="6" style="height:140px">
-                <option>N’Djamena</option><option>Moundou</option><option>Sarh</option><option>Abéché</option><option>Bongor</option>
-                <option>Kélo</option><option>Pala</option><option>Koumra</option><option>Faya-Largeau</option>
-              </select>
-              <small class="muted">Maintenir Ctrl/Cmd pour multisélection</small>
+            <div id="uploadText" class="muted" style="margin-top:4px;font-size:12px">
+              Téléversement des images…
             </div>
           </div>
 
-          <div style="display:flex;gap:10px;margin-top:12px">
-            <button class="btn" id="save">Enregistrer</button>
-            <button class="btn secondary" id="reset">Annuler</button>
-            <button class="btn" id="del" style="display:none;background:#b42318">Supprimer</button>
+          <!-- Expiration & Actif -->
+          <div>
+            <label>Expire dans (jours) — optionnel<br/>
+              <input id="f_expDays" type="number" min="0" placeholder="ex: 14">
+            </label>
+            <small class="muted">Laisser vide pour “pas d’expiration”.</small>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;margin-top:6px">
+            <input id="f_active" type="checkbox" checked>
+            <label for="f_active">Activer l’affichage</label>
           </div>
 
-          <div style="margin-top:14px">
-            <div class="note">Aperçu WhatsApp :</div>
-            <div id="waPreview" class="muted" style="margin-top:6px;font-family:ui-monospace,Menlo,monospace;font-size:12px;background:#fff;border:1px solid var(--border);padding:8px;border-radius:8px;white-space:pre-wrap"></div>
+          <div><label>Villes (liste)<br/>
+            <select id="f_cities" multiple size="6" style="height:140px">
+              <option>N’Djamena</option><option>Moundou</option><option>Sarh</option><option>Abéché</option><option>Bongor</option>
+              <option>Kélo</option><option>Pala</option><option>Koumra</option><option>Faya-Largeau</option>
+            </select>
+            <small class="muted">Maintenir Ctrl/Cmd pour multisélection</small>
           </div>
+        </div>
+
+        <div style="display:flex;gap:10px;margin-top:12px">
+          <button class="btn" id="save">Enregistrer</button>
+          <button class="btn secondary" id="reset">Annuler</button>
+          <button class="btn" id="del" style="display:none;background:#b42318">Supprimer</button>
+        </div>
+
+        <div style="margin-top:14px">
+          <div class="note">Aperçu WhatsApp :</div>
+          <div id="waPreview" class="muted" style="margin-top:6px;font-family:ui-monospace,Menlo,monospace;font-size:12px;background:#fff;border:1px solid var(--border);padding:8px;border-radius:8px;white-space:pre-wrap"></div>
         </div>
       </div>
     </div>
 
-    <!-- ===== Vue TÉMOIGNAGES ===== -->
-    <div id="viewTestimonials" style="display:none">
-      <div class="grid">
-        <!-- Liste témoignages -->
-        <div class="panel">
-          <h2>Témoignages</h2>
-          <div class="note" style="margin-bottom:10px">
-            Gère ici les avis qui s’affichent sur le site public.<br>
-            <strong>Astuce :</strong> désactive un témoignage sans le supprimer en décochant « Actif ».
-          </div>
-          <div style="overflow:auto;max-height:520px;margin-top:10px;border:1px solid var(--border);border-radius:12px">
-            <table id="tblTesti">
-              <thead>
-                <tr>
-                  <th style="min-width:160px">Nom</th>
-                  <th style="min-width:120px">Ville</th>
-                  <th style="min-width:80px">Note</th>
-                  <th>Message</th>
-                  <th style="min-width:80px">Statut</th>
-                  <th style="min-width:130px"></th>
-                </tr>
-              </thead>
-              <tbody></tbody>
-            </table>
-          </div>
-          <div class="empty" id="emptyTesti" style="display:none">Aucun témoignage pour l’instant.</div>
+    <!-- ===================== TÉMOIGNAGES ===================== -->
+    <div class="panel">
+      <h2>Gestion des témoignages</h2>
+      <div class="note" style="margin-bottom:10px">
+        Ici tu peux ajouter, modifier ou supprimer les témoignages clients. Ils sont stockés dans Supabase, comme les produits.
+      </div>
+
+      <h3 class="subsection-title">Liste des témoignages</h3>
+      <div style="overflow:auto;max-height:360px;margin-top:6px;border:1px solid var(--border);border-radius:12px">
+        <table id="tblTesti" aria-describedby="tableau-temoignages">
+          <thead>
+            <tr>
+              <th style="min-width:160px">Client</th>
+              <th style="min-width:120px">Ville</th>
+              <th style="min-width:80px">Note</th>
+              <th>Extrait</th>
+              <th style="min-width:80px">Actif</th>
+              <th style="min-width:150px"></th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <div class="empty" id="emptyTesti" style="display:none;margin-top:6px">Aucun témoignage pour l’instant.</div>
+    </div>
+
+    <div class="panel">
+      <h3 class="subsection-title" id="t_formTitle">Nouveau témoignage</h3>
+      <div class="note" style="margin-bottom:10px">
+        Champs requis : <strong>Nom</strong>, <strong>Message</strong>. La note et la photo sont facultatives.
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div><label>Nom du client<br/><input id="t_name" placeholder="Ex : Amina D."></label></div>
+        <div><label>Ville<br/><input id="t_city" placeholder="N’Djamena"></label></div>
+
+        <div>
+          <label>Note (1 à 5) — optionnel<br/>
+            <input id="t_rating" type="number" min="1" max="5" placeholder="5">
+          </label>
+          <small class="muted">Laisser vide pour « sans note ».</small>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;margin-top:6px">
+          <input id="t_active" type="checkbox" checked>
+          <label for="t_active">Actif (visible sur le site)</label>
         </div>
 
-        <!-- Form témoignage -->
-        <div class="panel">
-          <h2 id="t_formTitle">Nouveau témoignage</h2>
-          <div class="note" style="margin-bottom:10px">
-            Champs requis : <strong>Nom</strong>, <strong>Message</strong>. La note est facultative (1 à 5).
-          </div>
-
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-            <div><label>Nom du client<br/><input id="t_name" placeholder="Ex : Amina D."></label></div>
-            <div><label>Ville<br/><input id="t_city" placeholder="N’Djamena"></label></div>
-            <div>
-              <label>Note (1 à 5) — optionnel<br/>
-                <input id="t_rating" type="number" min="1" max="5" placeholder="5">
-              </label>
-              <small class="muted">Laisser vide pour « sans note ».</small>
+        <!-- Photo de preuve (optionnelle) -->
+        <div style="grid-column:1 / -1">
+          <label>Photo (optionnel)<br/>
+            <input type="hidden" id="t_photoUrl">
+            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+              <input type="file" id="t_photoUploader" accept="image/*">
+              <button type="button" class="btn secondary" id="t_photoSend">Téléverser</button>
+              <small class="muted">JPG/PNG — compression auto (comme les produits).</small>
             </div>
-            <div style="display:flex;align-items:center;gap:8px;margin-top:6px">
-              <input id="t_active" type="checkbox" checked>
-              <label for="t_active">Actif (visible sur le site)</label>
-            </div>
-            <div style="grid-column:1 / -1">
-              <label>Message<br/>
-                <textarea id="t_message" placeholder="Ex : J’ai adoré l’accompagnement, mes cheveux revivent…"></textarea>
-              </label>
-            </div>
-          </div>
-
-          <div style="display:flex;gap:10px;margin-top:12px">
-            <button class="btn" id="t_save">Enregistrer le témoignage</button>
-            <button class="btn secondary" id="t_reset">Annuler</button>
-            <button class="btn" id="t_del" style="display:none;background:#b42318">Supprimer</button>
-          </div>
+            <div id="t_photoPreview" class="thumbs"></div>
+          </label>
         </div>
+
+        <div style="grid-column:1 / -1">
+          <label>Message<br/>
+            <textarea id="t_message" placeholder="Ex : J’ai adoré l’accompagnement, mes cheveux revivent…"></textarea>
+          </label>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:10px;margin-top:12px">
+        <button class="btn" id="t_save">Enregistrer le témoignage</button>
+        <button class="btn secondary" id="t_reset">Annuler</button>
+        <button class="btn" id="t_del" style="display:none;background:#b42318">Supprimer</button>
       </div>
     </div>
 
@@ -327,6 +324,7 @@
     const $ = s => document.querySelector(s);
     const $$ = s => Array.from(document.querySelectorAll(s));
 
+    // Produits
     let items = [];
     let editing = null;
     let extraUrls = []; // photos supplémentaires en cours (tableau d'URLs)
@@ -339,7 +337,7 @@
     let page = 1;
     let perPage = 10;
 
-    // Ville par défaut côté admin
+    // *** Ville par défaut côté admin ***
     const DEFAULT_CITY = "N’Djamena";
 
     // Upload en cours (pour désactiver la publication + barre de progression)
@@ -348,12 +346,6 @@
     let uploadDone = 0;
 
     const els = {
-      // Tabs / vues
-      tabProducts: $('#tabProducts'),
-      tabTestimonials: $('#tabTestimonials'),
-      viewProducts: $('#viewProducts'),
-      viewTestimonials: $('#viewTestimonials'),
-
       // Produits
       q:$('#q'), cat:$('#catFilter'), tbody:$('#tbl tbody'), empty:$('#empty'),
       f_title:$('#f_title'), f_price:$('#f_price'), f_category:$('#f_category'),
@@ -378,32 +370,23 @@
       t_active: $('#t_active'),
       t_save: $('#t_save'),
       t_reset: $('#t_reset'),
-      t_del: $('#t_del')
+      t_del: $('#t_del'),
+      t_photoUrl: $('#t_photoUrl'),
+      t_photoUploader: $('#t_photoUploader'),
+      t_photoSend: $('#t_photoSend'),
+      t_photoPreview: $('#t_photoPreview')
     };
 
-    function show(txt){
-      els.toast.textContent=txt;
-      els.toast.classList.add('show');
-      setTimeout(()=>els.toast.classList.remove('show'),1700);
-    }
-    function escapeHtml(s){
-      return (''+s).replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-    }
-    async function readResp(resp){
-      const ct=resp.headers.get('content-type')||'';
-      if(ct.includes('application/json')){try{return await resp.json();}catch{}}
-      const t=await resp.text(); return {__text:t};
-    }
-    function stamp(){
-      const d=new Date();
-      return d.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
-    }
-    function setBtnLoading(btn,labelEl,txt){ btn.dataset.prev=(labelEl.textContent||''); btn.disabled=true; labelEl.textContent=txt; }
-    function setBtnDone(btn,labelEl,txt='Terminé'){ labelEl.textContent=txt; setTimeout(()=>{ labelEl.textContent=btn.dataset.prev||labelEl.textContent; btn.disabled=false; },1000); }
-    function setBtnIdle(btn,labelEl){ labelEl.textContent = btn.dataset.prev || labelEl.textContent; btn.disabled=false; }
+    function show(txt){ els.toast.textContent=txt; els.toast.classList.add('show'); setTimeout(()=>els.toast.classList.remove('show'),1700); }
+    function escapeHtml(s){return (''+s).replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#39;"}[c]));}
+    async function readResp(resp){ const ct=resp.headers.get('content-type')||''; if(ct.includes('application/json')){try{return await resp.json();}catch{}} const t=await resp.text(); return {__text:t}; }
+    function stamp(){ const d=new Date(); return d.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit',second:'2-digit'}); }
+    function setBtnLoading(btn,labelEl,txt){ if(!btn||!labelEl)return; btn.dataset.prev=(labelEl.textContent||''); btn.disabled=true; labelEl.textContent=txt; }
+    function setBtnDone(btn,labelEl,txt='Terminé'){ if(!btn||!labelEl)return; labelEl.textContent=txt; setTimeout(()=>{ labelEl.textContent=btn.dataset.prev||labelEl.textContent; btn.disabled=false; },1000); }
+    function setBtnIdle(btn,labelEl){ if(!btn||!labelEl)return; labelEl.textContent = btn.dataset.prev || labelEl.textContent; btn.disabled=false; }
     function slugify(s){return (s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'');}
 
-    // ====== UI upload progress ======
+    // UI de progression d’upload
     function updateUploadUI(){
       if (!els.uploadProgress) return;
 
@@ -472,7 +455,7 @@
     }
     function logoutAdmin(){ localStorage.removeItem(SECRET_KEY); show('Déconnecté'); setTimeout(()=>location.reload(),400); }
 
-    // ====== PRODUITS : fetch ======
+    // ====== PRODUITS: fetch list ======
     async function refreshList(){
       try{
         ensureAdminSecret();
@@ -490,6 +473,7 @@
       els.cat.innerHTML = '<option value="">Toutes</option>' + cats.map(c=>`<option>${escapeHtml(c)}</option>`).join('');
     }
 
+    // ====== pagination helpers ======
     function updatePager(total, start, shown){
       const lastPage = Math.max(1, Math.ceil(total / perPage));
       const from = total ? (start + 1) : 0;
@@ -497,7 +481,10 @@
       if(els.pageInfo) els.pageInfo.textContent = `${from}-${to} / ${total}`;
       if(els.prevPage) els.prevPage.disabled = (page <= 1);
       if(els.nextPage) els.nextPage.disabled = (page >= lastPage);
-      if(els.pageSize){ const v = parseInt(els.pageSize.value||'10',10); if(v !== perPage) els.pageSize.value = String(perPage); }
+      if(els.pageSize){
+        const v = parseInt(els.pageSize.value||'10',10);
+        if(v !== perPage) els.pageSize.value = String(perPage);
+      }
     }
 
     function render(){
@@ -538,7 +525,7 @@
       </tr>`;
     }
 
-    // ====== PRODUITS : edit / save ======
+    // ====== PRODUITS: edit / save ======
     function selectedCities(){ return Array.from(els.f_cities.selectedOptions).map(o=>o.value); }
 
     function reset(clear=true){
@@ -628,7 +615,7 @@
       $('#waPreview').textContent = `Bonjour Samiah Cosmetics, je suis intéressé(e) par ${title} (${price}).`;
     }
 
-    // ====== Compression adaptative / upload images ======
+    // ====== Compression adaptative ======
     const MAX_PAYLOAD_BYTES = 4_000_000;
     const START_SIDE = 2200, MIN_SIDE = 900;
     const START_QUALITY = 0.9, MIN_QUALITY = 0.6;
@@ -695,6 +682,7 @@
         if(!f){ alert('Choisis une image principale'); return; }
 
         startUpload(1);
+
         setBtnLoading(els.mainSend, els.mainSend, 'Téléverser…');
         const { url, size } = await uploadOne(f, els.f_title.value||'image');
         stepUpload();
@@ -711,6 +699,7 @@
       }
     }
 
+    // ====== Vignettes produits ======
     function renderExtraThumbs(){
       const main = (els.f_image.value||'').trim();
       els.extraPreview.innerHTML = extraUrls.map((u,i)=>
@@ -778,6 +767,7 @@
       }
     }
 
+    // Aperçus locaux produits
     function previewMainLocal(){
       if(!els.mainPreview) return;
       els.mainPreview.innerHTML = '';
@@ -848,7 +838,7 @@
       }
     }
 
-    // ====== TÉMOIGNAGES : fetch / render ======
+    // ================== TÉMOIGNAGES: front ==================
     async function refreshTestimonials(){
       try{
         ensureAdminSecret();
@@ -862,76 +852,86 @@
         testimonials = [];
       }
       renderTestimonials();
-      resetTestimonialForm(true);
     }
 
     function renderTestimonials(){
-      if (!els.t_tbody) return;
-      if (!Array.isArray(testimonials)) testimonials = [];
-
+      if(!els.t_tbody || !els.t_empty) return;
+      if(!testimonials.length){
+        els.t_tbody.innerHTML = '';
+        els.t_empty.style.display = 'block';
+        return;
+      }
+      els.t_empty.style.display = 'none';
       els.t_tbody.innerHTML = testimonials.map((t,i)=>testimonialRowTpl(t,i)).join('');
-      els.t_empty.style.display = testimonials.length ? 'none' : 'block';
     }
 
     function testimonialRowTpl(t,i){
-      const name = escapeHtml(t.authorName || t.author_name || '');
-      const city = escapeHtml(t.city || '');
-      const msg  = escapeHtml(t.message || '');
-      const rating = (typeof t.rating === 'number' && t.rating>0) ? `${t.rating}/5` : '—';
-      const active = (t.active !== false);
-      const badge = active
-        ? '<span class="t-badge on">Actif</span>'
-        : '<span class="t-badge off">Masqué</span>';
+      const name = t.authorName || t.author_name || '';
+      const city = t.city || '';
+      const rating = (t.rating != null) ? `${t.rating}/5` : '—';
+      const msg = (t.message || '').slice(0,80) + ((t.message||'').length>80?'…':'');
+      const active = (t.active!==false) ? '<span class="pill">Actif</span>' : '<span class="muted">Masqué</span>';
+      const hasPhoto = !!(t.photoUrl || t.photo_url);
+      const photoLabel = hasPhoto ? '📷' : '';
       return `<tr>
-        <td>${name || '—'}</td>
-        <td>${city || '—'}</td>
-        <td>${rating}</td>
-        <td>${msg}</td>
-        <td>${badge}</td>
+        <td>${escapeHtml(name || '—')} ${photoLabel}</td>
+        <td>${escapeHtml(city || '—')}</td>
+        <td>${escapeHtml(rating)}</td>
+        <td>${escapeHtml(msg || '')}</td>
+        <td>${active}</td>
         <td class="actions">
-          <button class="btn secondary" data-tact="edit" data-idx="${i}">Éditer</button>
-          <button class="btn" style="background:#b42318" data-tact="del" data-idx="${i}">Supprimer</button>
+          <button class="btn secondary" data-tact="edit" data-tidx="${i}">Éditer</button>
+          <button class="btn" style="background:#b42318" data-tact="del" data-tidx="${i}">Supprimer</button>
         </td>
       </tr>`;
     }
 
-    // ====== TÉMOIGNAGES : form / actions ======
     function resetTestimonialForm(clear=true){
       tEditing = null;
-      if (els.t_formTitle) els.t_formTitle.textContent = 'Nouveau témoignage';
-      if (els.t_del) els.t_del.style.display = 'none';
+      if(els.t_formTitle) els.t_formTitle.textContent = 'Nouveau témoignage';
+      if(els.t_del) els.t_del.style.display = 'none';
+
       if (clear){
         if (els.t_name) els.t_name.value = '';
         if (els.t_city) els.t_city.value = '';
         if (els.t_rating) els.t_rating.value = '';
         if (els.t_message) els.t_message.value = '';
         if (els.t_active) els.t_active.checked = true;
+        if (els.t_photoUrl) els.t_photoUrl.value = '';
+        if (els.t_photoPreview) els.t_photoPreview.innerHTML = '';
+        if (els.t_photoUploader) els.t_photoUploader.value = '';
       }
     }
 
     function editTestimonial(idx){
       const t = testimonials[idx];
-      if (!t) return;
+      if(!t) return;
       tEditing = idx;
-      if (els.t_formTitle) els.t_formTitle.textContent = 'Modifier le témoignage';
-      if (els.t_del) els.t_del.style.display = '';
+      if(els.t_formTitle) els.t_formTitle.textContent = 'Modifier le témoignage';
+      if(els.t_del) els.t_del.style.display = '';
 
-      const name = t.authorName ?? t.author_name ?? '';
-      if (els.t_name) els.t_name.value = name;
+      if (els.t_name) els.t_name.value = t.authorName || t.author_name || '';
       if (els.t_city) els.t_city.value = t.city || '';
-      if (els.t_rating) els.t_rating.value = (typeof t.rating === 'number' && t.rating>0)? t.rating : '';
+      if (els.t_rating) els.t_rating.value = (t.rating != null ? t.rating : '');
       if (els.t_message) els.t_message.value = t.message || '';
       if (els.t_active) els.t_active.checked = (t.active !== false);
-      window.scrollTo({top:0,behavior:'smooth'});
+
+      const photo = t.photoUrl || t.photo_url || '';
+      if (els.t_photoUrl) els.t_photoUrl.value = photo;
+      if (els.t_photoPreview){
+        els.t_photoPreview.innerHTML = photo
+          ? `<img src="${escapeHtml(photo)}" alt="" style="width:56px;height:56px;object-fit:cover;border:1px solid #eee;border-radius:8px">`
+          : '';
+      }
+
+      window.scrollTo({top:document.body.scrollHeight, behavior:'smooth'});
     }
 
     async function saveTestimonial(){
-      const secret = getAdminSecret(); if(!secret){ changeAdminSecret(); return; }
-
       const name = (els.t_name?.value || '').trim();
       const city = (els.t_city?.value || '').trim();
-      const ratingRaw = (els.t_rating?.value || '').trim();
       const message = (els.t_message?.value || '').trim();
+      const ratingRaw = (els.t_rating?.value || '').trim();
       const active = !!(els.t_active?.checked);
 
       if (!name){ alert('Nom requis'); return; }
@@ -939,9 +939,9 @@
 
       let rating = null;
       if (ratingRaw){
-        const n = parseInt(ratingRaw, 10);
-        if (Number.isNaN(n) || n<1 || n>5){
-          alert('La note doit être entre 1 et 5.');
+        const n = parseInt(ratingRaw,10);
+        if (isNaN(n) || n<1 || n>5){
+          alert('La note doit être entre 1 et 5');
           return;
         }
         rating = n;
@@ -949,107 +949,144 @@
 
       const existing = (tEditing!=null) ? testimonials[tEditing] : null;
       const payload = {
-        id: existing?.id,            // laisser undefined pour nouveau
+        id: existing?.id,
         authorName: name,
         city,
         rating,
         message,
-        active
+        active,
+        photoUrl: els.t_photoUrl ? (els.t_photoUrl.value || '').trim() : undefined
       };
 
       try{
-        if (els.t_save) els.t_save.disabled = true;
+        ensureAdminSecret();
+        const secret = getAdminSecret();
         const resp = await fetch('/api/admin/save-testimonial',{
           method:'POST',
           headers:{'Content-Type':'application/json','x-admin-secret':secret},
-          body: JSON.stringify({ item: payload })
+          body: JSON.stringify({ testimonial: payload })
         });
         const out = await readResp(resp);
-        if (!resp.ok) throw new Error(out?.error || out?.__text || resp.statusText);
+        if(!resp.ok) throw new Error(out?.error || out?.__text || resp.statusText);
+
+        if (out.item){
+          if (tEditing!=null) testimonials[tEditing] = out.item;
+          else testimonials.unshift(out.item);
+        }else{
+          await refreshTestimonials();
+        }
 
         show('Témoignage enregistré ✅');
-        await refreshTestimonials();
+        resetTestimonialForm(false);
+        renderTestimonials();
       }catch(e){
         alert('Erreur enregistrement témoignage: ' + e.message);
-      }finally{
-        if (els.t_save) els.t_save.disabled = false;
       }
     }
 
     async function deleteTestimonial(){
-      if (tEditing == null){ resetTestimonialForm(true); return; }
+      if (tEditing==null) return;
       const t = testimonials[tEditing];
-      if (!t || !t.id){ resetTestimonialForm(true); return; }
-
+      if (!t || !t.id){ alert('ID témoignage manquant'); return; }
       if (!confirm('Supprimer ce témoignage ?')) return;
-      const secret = getAdminSecret(); if(!secret){ changeAdminSecret(); return; }
 
       try{
-        if (els.t_del) els.t_del.disabled = true;
+        ensureAdminSecret();
+        const secret = getAdminSecret();
         const resp = await fetch('/api/admin/delete-testimonial',{
           method:'POST',
           headers:{'Content-Type':'application/json','x-admin-secret':secret},
           body: JSON.stringify({ id: t.id })
         });
         const out = await readResp(resp);
-        if (!resp.ok) throw new Error(out?.error || out?.__text || resp.statusText);
+        if(!resp.ok) throw new Error(out?.error || out?.__text || resp.statusText);
+
+        testimonials.splice(tEditing,1);
         show('Témoignage supprimé ✅');
-        await refreshTestimonials();
+        resetTestimonialForm(true);
+        renderTestimonials();
       }catch(e){
         alert('Erreur suppression témoignage: ' + e.message);
-      }finally{
-        if (els.t_del) els.t_del.disabled = false;
       }
     }
 
-    // ====== Tabs ======
-    function setView(view){
-      const prod = (view === 'products');
-      if (els.viewProducts) els.viewProducts.style.display = prod ? '' : 'none';
-      if (els.viewTestimonials) els.viewTestimonials.style.display = prod ? 'none' : '';
+    // Upload photo témoignage
+    async function uploadTestimonialPhoto(){
+      try{
+        const f = els.t_photoUploader?.files?.[0];
+        if(!f){ alert('Choisis une photo pour le témoignage'); return; }
 
-      if (els.tabProducts){
-        els.tabProducts.classList.toggle('active', prod);
-      }
-      if (els.tabTestimonials){
-        els.tabTestimonials.classList.toggle('active', !prod);
-      }
+        startUpload(1);
 
-      if (!prod){
-        // Quand on passe sur Témoignages, rafraîchir si vide
-        if (!testimonials.length){
-          refreshTestimonials();
+        if (els.t_photoSend){
+          els.t_photoSend.disabled = true;
+          els.t_photoSend.textContent = 'Téléverser…';
         }
+
+        const { url } = await uploadOne(f, (els.t_name?.value || 'temoignage'));
+        if (els.t_photoUrl) els.t_photoUrl.value = url;
+        if (els.t_photoPreview){
+          els.t_photoPreview.innerHTML = `<img src="${escapeHtml(url)}" alt="" style="width:56px;height:56px;object-fit:cover;border:1px solid #eee;border-radius:8px">`;
+        }
+
+        if (els.t_photoSend){
+          els.t_photoSend.textContent = 'Téléversé ✅';
+          setTimeout(()=>{ els.t_photoSend.textContent = 'Téléverser'; els.t_photoSend.disabled = false; }, 1000);
+        }
+        show('Photo de témoignage envoyée ✅');
+      }catch(e){
+        if (els.t_photoSend){
+          els.t_photoSend.disabled = false;
+          els.t_photoSend.textContent = 'Téléverser';
+        }
+        alert('Erreur upload photo témoignage: ' + e.message);
+      }finally{
+        endUpload();
       }
+    }
+
+    // Aperçu local photo témoignage
+    function bindTestimonialPhotoPreview(){
+      if (!els.t_photoUploader || !els.t_photoPreview) return;
+      els.t_photoUploader.addEventListener('change', ()=>{
+        els.t_photoPreview.innerHTML = '';
+        const f = els.t_photoUploader.files?.[0];
+        if(!f) return;
+        const url = URL.createObjectURL(f);
+        const img = document.createElement('img');
+        img.style.width = '56px';
+        img.style.height = '56px';
+        img.style.objectFit = 'cover';
+        img.style.border = '1px solid #eee';
+        img.style.borderRadius = '8px';
+        img.onload = ()=>URL.revokeObjectURL(url);
+        img.src = url;
+        els.t_photoPreview.appendChild(img);
+      });
     }
 
     // ====== events ======
     function bind(){
-      // Tabs
-      if (els.tabProducts) els.tabProducts.addEventListener('click', ()=>setView('products'));
-      if (els.tabTestimonials) els.tabTestimonials.addEventListener('click', ()=>setView('testimonials'));
-
       // table produits
       $('#tbl').addEventListener('click', (e)=>{
         const b=e.target.closest('button'); if(!b) return;
         const idx = parseInt(b.dataset.idx,10);
+        if(Number.isNaN(idx)) return;
         if(b.dataset.act==='edit') edit(idx);
         if(b.dataset.act==='del') removeItem(idx);
       });
 
       // table témoignages
-      const tblT = $('#tblTesti');
-      if (tblT){
-        tblT.addEventListener('click', (e)=>{
-          const b = e.target.closest('button'); if(!b) return;
-          const idx = parseInt(b.dataset.idx,10);
-          if (b.dataset.tact === 'edit') editTestimonial(idx);
-          if (b.dataset.tact === 'del'){
-            tEditing = idx;
-            deleteTestimonial();
-          }
-        });
-      }
+      $('#tblTesti').addEventListener('click', (e)=>{
+        const b = e.target.closest('button'); if(!b) return;
+        const idx = parseInt(b.dataset.tidx,10);
+        if(Number.isNaN(idx)) return;
+        if (b.dataset.tact === 'edit') editTestimonial(idx);
+        if (b.dataset.tact === 'del') {
+          tEditing = idx;
+          deleteTestimonial();
+        }
+      });
 
       // recherche / filtre produits
       els.q.oninput = ()=>{ page=1; render(); };
@@ -1089,17 +1126,11 @@
       if (els.mainUploader) els.mainUploader.addEventListener('change', previewMainLocal);
       if (els.extraUploader) els.extraUploader.addEventListener('change', previewExtraLocal);
 
-      // top buttons
       els.refreshBtn.onclick = () => {
-        if (els.viewProducts && els.viewProducts.style.display !== 'none'){
-          refreshList().then(()=>show('Liste produits mise à jour'));
-        } else {
-          refreshTestimonials().then(()=>show('Témoignages mis à jour'));
-        }
+        Promise.all([refreshList(), refreshTestimonials()]).then(()=>show('Données mises à jour'));
       };
       els.publishBtn.onclick = publishToBackend;
 
-      // pager produits
       if(els.prevPage) els.prevPage.onclick = ()=>{ if(page>1){ page--; render(); } };
       if(els.nextPage) els.nextPage.onclick = ()=>{ page++; render(); };
       if(els.pageSize) els.pageSize.onchange = ()=>{
@@ -1124,10 +1155,12 @@
       els.pubModal.addEventListener('click', e=>{ if(e.target===els.pubModal) hideModal(els.pubModal); });
       document.addEventListener('keydown', e=>{ if(e.key==='Escape') hideModal(els.pubModal); });
 
-      // Témoignages : boutons form
+      // Témoignages: boutons formulaire
       if (els.t_save) els.t_save.addEventListener('click', saveTestimonial);
       if (els.t_reset) els.t_reset.addEventListener('click', ()=>resetTestimonialForm(true));
       if (els.t_del) els.t_del.addEventListener('click', deleteTestimonial);
+      if (els.t_photoSend) els.t_photoSend.addEventListener('click', uploadTestimonialPhoto);
+      bindTestimonialPhotoPreview();
     }
 
     // ====== start ======
@@ -1135,8 +1168,9 @@
       if(els.pageSize) perPage = parseInt(els.pageSize.value||'10',10) || 10;
       bind();
       reset(true);
+      resetTestimonialForm(true);
       refreshList();
-      // Témoignages seront chargés au premier clic sur l’onglet
+      refreshTestimonials();
     }
 
     if(document.readyState!=='loading') start();
