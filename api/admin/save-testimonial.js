@@ -1,25 +1,31 @@
 // api/admin/save-testimonial.js
 import { createClient } from "@supabase/supabase-js";
 
-const SUPABASE_URL = process.env.SUPABASE_URL;
-const SERVICE_KEY  = process.env.SUPABASE_SERVICE_ROLE_KEY;
-const ADMIN_SECRET = process.env.ADMIN_SECRET;
+const SUPABASE_URL  = process.env.SUPABASE_URL;
+const SERVICE_KEY   = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const ADMIN_SECRET  = process.env.ADMIN_SECRET;
 
 const sb = createClient(SUPABASE_URL, SERVICE_KEY);
 
 export default async function handler(req, res) {
   if (req.method !== "POST") {
+    res.setHeader("Allow", "POST");
     return res.status(405).json({ error: "Method not allowed" });
   }
 
-  const headerSecret = req.headers["x-admin-secret"] || req.headers["X-Admin-Secret"];
+  const headerSecret =
+    req.headers["x-admin-secret"] ||
+    req.headers["X-Admin-Secret"];
+
   if (!ADMIN_SECRET || headerSecret !== ADMIN_SECRET) {
     return res.status(401).json({ error: "Unauthorized" });
   }
 
   let payload;
   try {
-    payload = typeof req.body === "string" ? JSON.parse(req.body) : req.body;
+    payload = req.body && typeof req.body === "string"
+      ? JSON.parse(req.body)
+      : (req.body || {});
   } catch {
     return res.status(400).json({ error: "Invalid JSON body" });
   }
@@ -41,15 +47,16 @@ export default async function handler(req, res) {
     active
   } = payload || {};
 
-  // Normalisation vers les colonnes de la table "testimonials"
+  // On normalise les champs vers la table `testimonials`
   const row = {
     client_name: client_name || name || null,
     city: city || location || null,
-    rating: typeof rating === "number" ? rating
-          : typeof note === "number"    ? note
-          : null,
+    rating: typeof rating === "number"
+      ? rating
+      : typeof note === "number"
+        ? note
+        : null,
     message: message || quote || text || "",
-    // photos -> colonne JSONB "photos"
     photos: Array.isArray(photos)
       ? photos
       : Array.isArray(images)
