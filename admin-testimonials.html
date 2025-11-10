@@ -1,0 +1,410 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+
+  <title>Samiah — Admin Témoignages</title>
+  <meta name="robots" content="noindex,nofollow"/>
+
+  <style>
+    :root{
+      --charcoal:#0A0A0A;
+      --ivory:#F5F2EA;
+      --gold:#D9B56C;
+      --soft:#f7f5f2;
+      --border:#eaeaea;
+      --muted:#6b7280;
+    }
+    *{box-sizing:border-box}
+    html,body{margin:0;background:#fafafa;color:#111;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
+    .topbar{position:sticky;top:0;z-index:10;background:#fff;border-bottom:1px solid var(--border)}
+    .nav{max-width:1200px;margin:0 auto;display:flex;gap:10px;align-items:center;padding:12px 16px}
+    .brand{display:flex;gap:10px;align-items:center}
+    .logo{display:inline-flex;width:42px;height:42px;border-radius:10px;background:var(--charcoal);align-items:center;justify-content:center}
+    .logo svg{width:28px;height:28px}
+    .brand h1{font-size:16px;margin:0;font-weight:700;letter-spacing:.06em}
+    .nav .spacer{flex:1}
+    .btn{appearance:none;border:0;border-radius:10px;background:var(--charcoal);color:#fff;padding:10px 14px;font-weight:600;cursor:pointer}
+    .btn.secondary{background:#1111110d;color:#111;border:1px solid var(--border)}
+    .btn.green{background:#16a34a}
+    .btn:disabled{opacity:.7;cursor:not-allowed}
+    .iconbtn{appearance:none;border:1px solid var(--border);background:#fff;border-radius:10px;padding:8px;display:inline-flex;align-items:center;justify-content:center;cursor:pointer}
+    .iconbtn:hover{background:#f8f8f8}
+    .wrap{max-width:1200px;margin:0 auto;padding:20px}
+    .panel{background:#fff;border:1px solid var(--border);border-radius:16px;box-shadow:0 10px 30px rgba(0,0,0,.04);padding:16px;margin-bottom:18px}
+    h2{margin:0 0 10px;font-size:20px}
+    .muted{color:var(--muted)}
+    .note{background:var(--soft);border:1px dashed var(--border);border-radius:12px;padding:10px 12px;color:#444}
+    .grid{display:grid;grid-template-columns:1.2fr .8fr;gap:18px}
+    @media(max-width:900px){.grid{grid-template-columns:1fr}}
+    table{width:100%;border-collapse:collapse}
+    th,td{font-size:14px;padding:10px;border-bottom:1px solid var(--border);text-align:left;vertical-align:top}
+    th{position:sticky;top:0;background:#fff;z-index:1}
+    input[type="text"],input[type="number"],textarea,select{
+      width:100%;padding:9px;border-radius:10px;border:1px solid var(--border);background:#fff
+    }
+    textarea{min-height:110px;resize:vertical}
+    .actions{display:flex;gap:6px}
+    .empty{padding:20px;text-align:center;color:var(--muted)}
+    .toast{position:fixed;bottom:16px;right:16px;background:#111;color:#fff;padding:12px 14px;border-radius:10px;opacity:0;transform:translateY(10px);transition:.25s;pointer-events:none;font-size:13px}
+    .toast.show{opacity:1;transform:translateY(0)}
+    .footer{padding:20px 0 40px;color:#777;font-size:13px;text-align:center}
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <div class="nav">
+      <div class="brand">
+        <span class="logo" title="Samiah">
+          <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <circle cx="50" cy="50" r="42" fill="none" stroke="#F5F2EA" stroke-width="6"/>
+            <circle cx="50" cy="50" r="34" fill="none" stroke="#D9B56C" stroke-width="6"/>
+            <g transform="translate(50,50)" fill="none" stroke="#F5F2EA" stroke-width="6" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M0,-14 C4,-24 16,-24 20,-14 C16,-4 4,-4 0,-14Z"/>
+              <path d="M-6,4 C-14,2 -18,8 -13,12 C-7,15 -2,10 -6,4Z"/>
+            </g>
+          </svg>
+        </span>
+        <h1>SAMIAH — Témoignages</h1>
+      </div>
+      <div class="spacer"></div>
+      <!-- Lien retour catalogue admin si tu veux -->
+      <a href="/admin.html" class="btn secondary">← Catalogue</a>
+      <button class="btn green" id="publishBtn"><span id="pubLabel">Publier</span></button>
+      <span id="pubStatus" class="muted" style="margin-left:8px"></span>
+    </div>
+  </div>
+
+  <div class="wrap">
+    <div class="grid">
+      <!-- LISTE -->
+      <div class="panel">
+        <h2>Liste des témoignages</h2>
+        <div class="note">Astuce : clique sur « Éditer » pour modifier un témoignage, puis « Publier » pour enregistrer en base.</div>
+        <div style="overflow:auto;max-height:520px;margin-top:10px;border:1px solid var(--border);border-radius:12px">
+          <table>
+            <thead>
+              <tr>
+                <th>Client</th>
+                <th>Ville</th>
+                <th>Note</th>
+                <th>Message</th>
+                <th>Actif</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="tbody"></tbody>
+          </table>
+        </div>
+        <div class="empty" id="empty" style="display:none">Aucun témoignage</div>
+      </div>
+
+      <!-- FORM -->
+      <div class="panel">
+        <h2 id="formTitle">Nouveau témoignage</h2>
+        <div class="note" style="margin-bottom:10px">
+          Champs : <strong>Nom</strong>, <strong>Message</strong>. La note (1–5) et la ville sont optionnels.
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+          <div><label>Nom du client<br/><input id="f_name"></label></div>
+          <div><label>Ville<br/><input id="f_city" placeholder="N’Djamena, Moundou…"></label></div>
+          <div><label>Note sur 5 (optionnel)<br/><input id="f_rating" type="number" min="1" max="5" step="1"></label></div>
+          <div style="display:flex;align-items:center;gap:8px;margin-top:22px">
+            <input id="f_active" type="checkbox" checked>
+            <label for="f_active">Afficher sur le site</label>
+          </div>
+          <div style="grid-column:1/-1">
+            <label>Message du client<br/>
+              <textarea id="f_message" placeholder="Texte du témoignage…"></textarea>
+            </label>
+          </div>
+          <div style="grid-column:1/-1">
+            <label>Ordre d’affichage (optionnel)<br/>
+              <input id="f_sort" type="number" min="0" placeholder="0, 1, 2…">
+            </label>
+            <small class="muted">Plus le nombre est petit, plus le témoignage monte en haut de la liste.</small>
+          </div>
+        </div>
+
+        <div style="display:flex;gap:10px;margin-top:12px">
+          <button class="btn" id="save">Enregistrer localement</button>
+          <button class="btn secondary" id="reset">Annuler</button>
+          <button class="btn" id="del" style="display:none;background:#b42318">Supprimer</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer">© 2025 Samiah Cosmetics — Témoignages</div>
+  </div>
+
+  <div class="toast" id="toast">OK</div>
+
+  <script>
+  (function(){
+    const $  = s => document.querySelector(s);
+    const $$ = s => Array.from(document.querySelectorAll(s));
+    const els = {
+      tbody:$('#tbody'), empty:$('#empty'),
+      f_name:$('#f_name'), f_city:$('#f_city'),
+      f_rating:$('#f_rating'), f_message:$('#f_message'),
+      f_active:$('#f_active'), f_sort:$('#f_sort'),
+      formTitle:$('#formTitle'), del:$('#del'),
+      toast:$('#toast'),
+      publishBtn:$('#publishBtn'), pubLabel:$('#pubLabel'), pubStatus:$('#pubStatus')
+    };
+
+    const SECRET_KEY = 'samiah_admin_secret';
+    const getAdminSecret = () => localStorage.getItem(SECRET_KEY) || '';
+    function ensureAdminSecret(){
+      if (!getAdminSecret()){
+        const v = prompt('Code admin ?');
+        if (v) localStorage.setItem(SECRET_KEY, v.trim());
+      }
+    }
+
+    function showToast(msg){
+      els.toast.textContent = msg;
+      els.toast.classList.add('show');
+      setTimeout(()=>els.toast.classList.remove('show'), 1700);
+    }
+
+    let items = [];
+    let editingIndex = null;
+
+    function rowTpl(t, i){
+      const msgShort = (t.message || '').length > 80
+        ? t.message.slice(0,80) + '…'
+        : (t.message || '');
+      const rating = t.rating ? `${t.rating}/5` : '—';
+      return `<tr>
+        <td>${t.customerName || ''}</td>
+        <td>${t.city || ''}</td>
+        <td>${rating}</td>
+        <td>${msgShort}</td>
+        <td>${t.active !== false ? '✅' : '❌'}</td>
+        <td class="actions">
+          <button class="btn secondary" data-act="edit" data-idx="${i}">Éditer</button>
+          <button class="btn" style="background:#b42318" data-act="del" data-idx="${i}">Supprimer</button>
+        </td>
+      </tr>`;
+    }
+
+    function render(){
+      if (!items.length){
+        els.tbody.innerHTML = '';
+        els.empty.style.display = 'block';
+        return;
+      }
+      els.empty.style.display = 'none';
+      els.tbody.innerHTML = items.map((t,i)=>rowTpl(t,i)).join('');
+    }
+
+    function resetForm(clear=true){
+      editingIndex = null;
+      els.formTitle.textContent = 'Nouveau témoignage';
+      els.del.style.display = 'none';
+      if (clear){
+        els.f_name.value = '';
+        els.f_city.value = '';
+        els.f_rating.value = '';
+        els.f_message.value = '';
+        els.f_sort.value = '';
+        els.f_active.checked = true;
+      }
+    }
+
+    function edit(i){
+      const t = items[i];
+      if (!t) return;
+      editingIndex = i;
+      els.formTitle.textContent = 'Modifier le témoignage';
+      els.del.style.display = '';
+      els.f_name.value = t.customerName || '';
+      els.f_city.value  = t.city || '';
+      els.f_rating.value = t.rating != null ? t.rating : '';
+      els.f_message.value = t.message || '';
+      els.f_sort.value = t.sortOrder != null ? t.sortOrder : '';
+      els.f_active.checked = t.active !== false;
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function saveLocal(){
+      const name = els.f_name.value.trim();
+      const msg  = els.f_message.value.trim();
+      if (!name){ alert('Nom du client requis'); return; }
+      if (!msg){ alert('Message requis'); return; }
+
+      const ratingRaw = els.f_rating.value.trim();
+      const sortRaw   = els.f_sort.value.trim();
+      const rating = ratingRaw ? parseInt(ratingRaw,10) : null;
+      const sortOrder = sortRaw ? parseInt(sortRaw,10) : null;
+
+      const nowIso = new Date().toISOString();
+      const base = {
+        id: items[editingIndex]?.id || ('t-' + Date.now() + '-' + Math.random().toString(16).slice(2)),
+        customerName: name,
+        city: els.f_city.value.trim() || null,
+        rating: Number.isFinite(rating) ? rating : null,
+        message: msg,
+        active: els.f_active.checked,
+        sortOrder: Number.isFinite(sortOrder) ? sortOrder : null,
+        createdAt: items[editingIndex]?.createdAt || nowIso
+      };
+
+      if (editingIndex != null){
+        items[editingIndex] = base;
+        showToast('Témoignage mis à jour (en local)');
+      } else {
+        items.unshift(base);
+        showToast('Témoignage ajouté (en local)');
+      }
+      resetForm(false);
+      render();
+    }
+
+    async function removeLocalAndRemote(idx){
+      const t = items[idx];
+      if (!t) return;
+      if (!confirm('Supprimer ce témoignage ?')) return;
+      const saved = t.id;
+
+      // On supprime d’abord de la liste locale
+      items.splice(idx,1);
+      render();
+      resetForm();
+      showToast('Supprimé (en local)');
+
+      // Puis on appelle la fonction delete (si id existe)
+      try{
+        if (!saved) return;
+        ensureAdminSecret();
+        const secret = getAdminSecret();
+        const resp = await fetch('/api/admin/delete-testimonial', {
+          method:'POST',
+          headers:{
+            'Content-Type':'application/json',
+            'x-admin-secret':secret
+          },
+          body:JSON.stringify({ id:saved })
+        });
+        const out = await resp.json().catch(()=>({}));
+        if (!resp.ok){
+          console.error('delete-testimonial fail', out);
+          alert('Erreur suppression en base: ' + (out.error || resp.statusText));
+        } else {
+          showToast('Supprimé en base ✅');
+        }
+      }catch(e){
+        console.error(e);
+        alert('Erreur réseau pendant la suppression: ' + e.message);
+      }
+    }
+
+    async function refreshList(){
+      try{
+        ensureAdminSecret();
+        const secret = getAdminSecret();
+        const resp = await fetch('/api/admin/list-testimonials', {
+          headers:{ 'x-admin-secret':secret }
+        });
+        const j = await resp.json();
+        if (!resp.ok){
+          console.error('list-testimonials error', j);
+          alert('Erreur chargement témoignages: ' + (j.error || resp.statusText));
+          items = [];
+        } else {
+          items = Array.isArray(j.items) ? j.items.map(t=>({
+            id: t.id,
+            customerName: t.customer_name || '',
+            city: t.city || null,
+            rating: t.rating,
+            message: t.message || '',
+            active: t.active !== false,
+            sortOrder: t.sort_order,
+            createdAt: t.created_at
+          })) : [];
+        }
+      }catch(e){
+        console.error(e);
+        alert('Erreur réseau chargement: ' + e.message);
+        items = [];
+      }
+      render();
+    }
+
+    function setBtnLoading(btn,labelEl,text){
+      btn.dataset.prev = labelEl.textContent || '';
+      btn.disabled = true;
+      labelEl.textContent = text;
+    }
+    function setBtnDone(btn,labelEl,text){
+      labelEl.textContent = text;
+      setTimeout(()=>{
+        labelEl.textContent = btn.dataset.prev || labelEl.textContent;
+        btn.disabled = false;
+      }, 1000);
+    }
+    function setBtnIdle(btn,labelEl){
+      labelEl.textContent = btn.dataset.prev || labelEl.textContent;
+      btn.disabled = false;
+    }
+
+    async function publishToBackend(){
+      try{
+        ensureAdminSecret();
+        const secret = getAdminSecret();
+        setBtnLoading(els.publishBtn, els.pubLabel, 'Publication…');
+        const resp = await fetch('/api/admin/save-testimonials', {
+          method:'POST',
+          headers:{
+            'Content-Type':'application/json',
+            'x-admin-secret':secret
+          },
+          body:JSON.stringify({ testimonials:items })
+        });
+        const out = await resp.json().catch(()=>({}));
+        if (!resp.ok){
+          console.error('save-testimonials error', out);
+          setBtnIdle(els.publishBtn, els.pubLabel);
+          alert('Erreur publication: ' + (out.error || resp.statusText));
+          return;
+        }
+        setBtnDone(els.publishBtn, els.pubLabel, 'Publié ✅');
+        els.pubStatus.textContent = 'Dernière publication : ' + new Date().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+        showToast('Témoignages publiés ✅');
+      }catch(e){
+        console.error(e);
+        setBtnIdle(els.publishBtn, els.pubLabel);
+        alert('Erreur réseau publication: ' + e.message);
+      }
+    }
+
+    function bind(){
+      $('#tbody').addEventListener('click', (e)=>{
+        const btn = e.target.closest('button');
+        if (!btn) return;
+        const idx = parseInt(btn.dataset.idx,10);
+        if (btn.dataset.act === 'edit') edit(idx);
+        if (btn.dataset.act === 'del')  removeLocalAndRemote(idx);
+      });
+
+      $('#save').onclick  = saveLocal;
+      $('#reset').onclick = ()=>resetForm(true);
+      els.del.onclick     = ()=>{ if (editingIndex!=null) removeLocalAndRemote(editingIndex); };
+
+      els.publishBtn.onclick = publishToBackend;
+    }
+
+    function start(){
+      bind();
+      resetForm(true);
+      refreshList();
+    }
+
+    if (document.readyState !== 'loading') start();
+    else document.addEventListener('DOMContentLoaded', start);
+  })();
+  </script>
+</body>
+</html>
