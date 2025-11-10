@@ -1,5 +1,5 @@
 // =======================
-// Samiah — Vitrine (Supabase + Galerie multi-images + Plein écran robuste + Lien partageable + TRI & PAGINATION)
+// Samiah — Vitrine (Supabase + Galerie multi-images + Plein écran robuste + Lien partageable + TRI & PAGINATION + Témoignages)
 // =======================
 import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
 
@@ -14,6 +14,10 @@ const emptyEl  = document.getElementById("emptyMsg");
 const qEl      = document.getElementById("search");
 const catEl    = document.getElementById("category");
 const cityEl   = document.getElementById("city");
+
+// Témoignages
+const testiGrid  = document.getElementById("testiGrid");
+const testiEmpty = document.getElementById("testiEmpty");
 
 // Modale produit
 const overlay  = document.getElementById("overlay");
@@ -614,6 +618,79 @@ window.addEventListener("popstate", () => {
 });
 
 // =======================
+// Témoignages (vitrine)
+// =======================
+async function loadTestimonials(){
+  if (!testiGrid) return; // au cas où ancienne version du HTML
+
+  try{
+    const { data, error } = await sb
+      .from("testimonials")
+      .select("*")
+      .eq("active", true)
+      .order("created_at", { ascending:false });
+
+    if (error) throw error;
+    renderTestimonials(data || []);
+  }catch(e){
+    console.warn("[testimonials]", e);
+    renderTestimonials([], e.message || "Erreur");
+  }
+}
+
+function renderTestimonials(list, errText = ""){
+  if (!testiGrid) return;
+
+  const rows = Array.isArray(list) ? list : [];
+  if (!rows.length){
+    testiGrid.innerHTML = "";
+    if (testiEmpty){
+      testiEmpty.style.display = "block";
+      if (errText){
+        testiEmpty.textContent = "Les premiers témoignages arrivent bientôt ("+errText+")";
+      }
+    }
+    return;
+  }
+
+  const html = rows.map(t => {
+    const name  = escapeHtml(t.client_name || t.name || "");
+    const city  = escapeHtml(t.city || t.location || "");
+    const quote = escapeHtml(t.quote || t.message || t.text || "");
+    const photosRaw = t.photos || t.photo_urls || t.images || t.image || "";
+    const gallery = uniq(toArray(photosRaw));
+    const img = gallery[0] || "/assets/images/placeholder-testimonial.png";
+
+    const date = t.created_at ? new Date(t.created_at) : null;
+    const dateStr = date
+      ? date.toLocaleDateString("fr-FR",{year:"numeric",month:"short",day:"2-digit"})
+      : "";
+
+    return `
+      <article class="card" style="overflow:hidden">
+        <div style="border-radius:12px;overflow:hidden;border:1px solid #eee;margin-bottom:8px">
+          <img
+            src="${escapeAttr(img)}"
+            alt="${name ? "Résultat de " + name : "Témoignage cliente"}"
+            loading="lazy"
+            style="width:100%;height:220px;object-fit:cover;display:block"
+          >
+        </div>
+        <div class="p">
+          <p style="font-size:13px;line-height:1.5">“${quote || "Témoignage en attente de texte."}”</p>
+          <div class="muted" style="margin-top:6px;font-size:12px">
+            ${name || "Cliente Samiah"}${city ? " • " + city : ""}${dateStr ? " • " + dateStr : ""}
+          </div>
+        </div>
+      </article>
+    `;
+  }).join("");
+
+  testiGrid.innerHTML = html;
+  if (testiEmpty) testiEmpty.style.display = "none";
+}
+
+// =======================
 // Realtime
 // =======================
 function subscribeRealtime(){
@@ -624,6 +701,11 @@ function subscribeRealtime(){
   sb.channel("realtime:product_images")
     .on("postgres_changes", { event:"*", schema:"public", table:"product_images" }, () => loadProducts().catch(console.error))
     .subscribe();
+
+  // Realtime pour les témoignages (optionnel mais pratique)
+  sb.channel("realtime:testimonials")
+    .on("postgres_changes", { event:"*", schema:"public", table:"testimonials" }, () => loadTestimonials().catch(console.error))
+    .subscribe();
 }
 
 // =======================
@@ -631,6 +713,7 @@ function subscribeRealtime(){
 // =======================
 async function init(){
   await loadProducts();
+  await loadTestimonials();
   subscribeRealtime();
 }
 init().catch(console.error);
