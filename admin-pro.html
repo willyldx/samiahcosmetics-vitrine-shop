@@ -57,6 +57,19 @@
     .modal-title{margin:0 0 6px;font-size:18px}
     .modal-text{margin:0 0 12px;color:#444}
     .modal-actions{display:flex;gap:8px;justify-content:flex-end}
+
+    /* Tabs Produits / Témoignages */
+    .tabs{display:flex;gap:8px;margin-bottom:16px}
+    .tab-btn{
+      padding:8px 14px;border-radius:999px;border:1px solid var(--border);
+      background:#fff;cursor:pointer;font-weight:600;font-size:13px;
+    }
+    .tab-btn.active{background:#111;color:#fff;border-color:#111}
+
+    /* Témoignages */
+    .t-badge{display:inline-block;border-radius:999px;padding:2px 8px;font-size:11px}
+    .t-badge.on{background:#16a34a20;color:#166534}
+    .t-badge.off{background:#b4231820;color:#7f1d1d}
   </style>
 </head>
 <body>
@@ -95,124 +108,197 @@
   </div>
 
   <div class="wrap">
-    <div class="grid">
-      <!-- LISTE -->
-      <div class="panel">
-        <h2>Catalogue</h2>
-        <div class="filters">
-          <input type="text" id="q" placeholder="Recherche (titre, catégorie)…"/>
-          <select id="catFilter"></select>
-        </div>
-        <div class="note">Astuce : clique sur une ligne pour l’éditer. Téléverse une image (ou des images supplémentaires), puis « Publier » pour enregistrer en base.</div>
-        <div style="overflow:auto;max-height:520px;margin-top:10px;border:1px solid var(--border);border-radius:12px">
-          <table id="tbl" aria-describedby="tableau-produits">
-            <thead>
-              <tr>
-                <th style="min-width:200px">Titre</th>
-                <th style="min-width:100px">Prix</th>
-                <th style="min-width:140px">Catégorie</th>
-                <th>Villes</th>
-                <th style="min-width:120px">Aperçu</th>
-                <th style="min-width:150px"></th>
-              </tr>
-            </thead>
-            <tbody></tbody>
-          </table>
-        </div>
+    <!-- Onglets -->
+    <div class="tabs">
+      <button class="tab-btn active" id="tabProducts">Catalogue produits</button>
+      <button class="tab-btn" id="tabTestimonials">Témoignages</button>
+    </div>
 
-        <!-- Pagination -->
-        <div id="pager" style="display:flex;align-items:center;gap:8px;justify-content:flex-end;margin-top:8px">
-          <button class="iconbtn" id="prevPage" aria-label="Page précédente">◀</button>
-          <span id="pageInfo" class="muted">—</span>
-          <button class="iconbtn" id="nextPage" aria-label="Page suivante">▶</button>
-          <select id="pageSize" title="Par page">
-            <option value="10" selected>10</option>
-            <option value="25">25</option>
-            <option value="50">50</option>
-          </select>
-        </div>
-        <!-- /Pagination -->
-
-        <div class="empty" id="empty" style="display:none">Aucun produit</div>
-      </div>
-
-      <!-- FORM -->
-      <div class="panel">
-        <h2 id="formTitle">Nouveau produit</h2>
-        <div class="note" style="margin-bottom:10px">Champs requis : <strong>Titre</strong>, <strong>Prix</strong>. L’ID (slug) est auto-généré si vide.</div>
-
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-          <div><label>Titre<br/><input id="f_title"></label></div>
-          <div><label>Prix XAF<br/><input id="f_price" type="number" min="0" step="100"></label></div>
-          <div><label>Catégorie<br/><input id="f_category" placeholder="Shampoings, Soins cheveux, Services"></label></div>
-          <div><label>ID (slug)<br/><input id="f_id" placeholder="auto si vide"></label></div>
-          <div style="grid-column:1 / -1"><label>Description courte<br/><textarea id="f_desc" placeholder="Texte court…"></textarea></label></div>
-
-          <!-- Image principale -->
-          <div style="grid-column:1 / -1">
-            <label>Image principale<br/>
-              <input type="hidden" id="f_image">
-              <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-                <input type="file" id="main_uploader" accept="image/*">
-                <button type="button" class="btn secondary" id="main_send">Téléverser</button>
-                <small class="muted">JPG/PNG — <strong>compression auto</strong> (envoi ~4&nbsp;Mo max).</small>
-              </div>
-              <div id="mainPreview" class="thumbs"></div>
-            </label>
+    <!-- ===== Vue PRODUITS ===== -->
+    <div id="viewProducts">
+      <div class="grid">
+        <!-- LISTE -->
+        <div class="panel">
+          <h2>Catalogue</h2>
+          <div class="filters">
+            <input type="text" id="q" placeholder="Recherche (titre, catégorie)…"/>
+            <select id="catFilter"></select>
+          </div>
+          <div class="note">Astuce : clique sur une ligne pour l’éditer. Téléverse une image (ou des images supplémentaires), puis « Publier » pour enregistrer en base.</div>
+          <div style="overflow:auto;max-height:520px;margin-top:10px;border:1px solid var(--border);border-radius:12px">
+            <table id="tbl" aria-describedby="tableau-produits">
+              <thead>
+                <tr>
+                  <th style="min-width:200px">Titre</th>
+                  <th style="min-width:100px">Prix</th>
+                  <th style="min-width:140px">Catégorie</th>
+                  <th>Villes</th>
+                  <th style="min-width:120px">Aperçu</th>
+                  <th style="min-width:150px"></th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
           </div>
 
-          <!-- Photos supplémentaires -->
-          <div style="grid-column:1 / -1">
-            <label>Photos supplémentaires (optionnel)<br/>
-              <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-                <input type="file" id="extra_uploader" accept="image/*" multiple>
-                <button type="button" class="btn secondary" id="extra_send">Téléverser</button>
-                <small class="muted">Plusieurs images — <strong>compression auto</strong>.</small>
-              </div>
-              <div id="extraPreview" class="thumbs"></div>
-            </label>
-          </div>
-
-          <!-- Progression upload -->
-          <div id="uploadProgress" style="grid-column:1 / -1; margin-top:8px; display:none">
-            <div style="height:6px;border-radius:999px;background:#eee;overflow:hidden">
-              <div id="uploadBar" style="height:100%;width:0%;background:#0A0A0A;transition:width .2s"></div>
-            </div>
-            <div id="uploadText" class="muted" style="margin-top:4px;font-size:12px">
-              Téléversement des images…
-            </div>
-          </div>
-
-          <!-- Expiration & Actif -->
-          <div>
-            <label>Expire dans (jours) — optionnel<br/>
-              <input id="f_expDays" type="number" min="0" placeholder="ex: 14">
-            </label>
-            <small class="muted">Laisser vide pour “pas d’expiration”.</small>
-          </div>
-          <div style="display:flex;align-items:center;gap:8px;margin-top:6px">
-            <input id="f_active" type="checkbox" checked>
-            <label for="f_active">Activer l’affichage</label>
-          </div>
-
-          <div><label>Villes (liste)<br/>
-            <select id="f_cities" multiple size="6" style="height:140px">
-              <option>N’Djamena</option><option>Moundou</option><option>Sarh</option><option>Abéché</option><option>Bongor</option>
-              <option>Kélo</option><option>Pala</option><option>Koumra</option><option>Faya-Largeau</option>
+          <!-- Pagination -->
+          <div id="pager" style="display:flex;align-items:center;gap:8px;justify-content:flex-end;margin-top:8px">
+            <button class="iconbtn" id="prevPage" aria-label="Page précédente">◀</button>
+            <span id="pageInfo" class="muted">—</span>
+            <button class="iconbtn" id="nextPage" aria-label="Page suivante">▶</button>
+            <select id="pageSize" title="Par page">
+              <option value="10" selected>10</option>
+              <option value="25">25</option>
+              <option value="50">50</option>
             </select>
-            <small class="muted">Maintenir Ctrl/Cmd pour multisélection</small>
+          </div>
+          <!-- /Pagination -->
+
+          <div class="empty" id="empty" style="display:none">Aucun produit</div>
+        </div>
+
+        <!-- FORM -->
+        <div class="panel">
+          <h2 id="formTitle">Nouveau produit</h2>
+          <div class="note" style="margin-bottom:10px">Champs requis : <strong>Titre</strong>, <strong>Prix</strong>. L’ID (slug) est auto-généré si vide.</div>
+
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+            <div><label>Titre<br/><input id="f_title"></label></div>
+            <div><label>Prix XAF<br/><input id="f_price" type="number" min="0" step="100"></label></div>
+            <div><label>Catégorie<br/><input id="f_category" placeholder="Shampoings, Soins cheveux, Services"></label></div>
+            <div><label>ID (slug)<br/><input id="f_id" placeholder="auto si vide"></label></div>
+            <div style="grid-column:1 / -1"><label>Description courte<br/><textarea id="f_desc" placeholder="Texte court…"></textarea></label></div>
+
+            <!-- Image principale -->
+            <div style="grid-column:1 / -1">
+              <label>Image principale<br/>
+                <input type="hidden" id="f_image">
+                <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+                  <input type="file" id="main_uploader" accept="image/*">
+                  <button type="button" class="btn secondary" id="main_send">Téléverser</button>
+                  <small class="muted">JPG/PNG — <strong>compression auto</strong> (envoi ~4&nbsp;Mo max).</small>
+                </div>
+                <div id="mainPreview" class="thumbs"></div>
+              </label>
+            </div>
+
+            <!-- Photos supplémentaires -->
+            <div style="grid-column:1 / -1">
+              <label>Photos supplémentaires (optionnel)<br/>
+                <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+                  <input type="file" id="extra_uploader" accept="image/*" multiple>
+                  <button type="button" class="btn secondary" id="extra_send">Téléverser</button>
+                  <small class="muted">Plusieurs images — <strong>compression auto</strong>.</small>
+                </div>
+                <div id="extraPreview" class="thumbs"></div>
+              </label>
+            </div>
+
+            <!-- Progression upload -->
+            <div id="uploadProgress" style="grid-column:1 / -1; margin-top:8px; display:none">
+              <div style="height:6px;border-radius:999px;background:#eee;overflow:hidden">
+                <div id="uploadBar" style="height:100%;width:0%;background:#0A0A0A;transition:width .2s"></div>
+              </div>
+              <div id="uploadText" class="muted" style="margin-top:4px;font-size:12px">
+                Téléversement des images…
+              </div>
+            </div>
+
+            <!-- Expiration & Actif -->
+            <div>
+              <label>Expire dans (jours) — optionnel<br/>
+                <input id="f_expDays" type="number" min="0" placeholder="ex: 14">
+              </label>
+              <small class="muted">Laisser vide pour “pas d’expiration”.</small>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;margin-top:6px">
+              <input id="f_active" type="checkbox" checked>
+              <label for="f_active">Activer l’affichage</label>
+            </div>
+
+            <div><label>Villes (liste)<br/>
+              <select id="f_cities" multiple size="6" style="height:140px">
+                <option>N’Djamena</option><option>Moundou</option><option>Sarh</option><option>Abéché</option><option>Bongor</option>
+                <option>Kélo</option><option>Pala</option><option>Koumra</option><option>Faya-Largeau</option>
+              </select>
+              <small class="muted">Maintenir Ctrl/Cmd pour multisélection</small>
+            </div>
+          </div>
+
+          <div style="display:flex;gap:10px;margin-top:12px">
+            <button class="btn" id="save">Enregistrer</button>
+            <button class="btn secondary" id="reset">Annuler</button>
+            <button class="btn" id="del" style="display:none;background:#b42318">Supprimer</button>
+          </div>
+
+          <div style="margin-top:14px">
+            <div class="note">Aperçu WhatsApp :</div>
+            <div id="waPreview" class="muted" style="margin-top:6px;font-family:ui-monospace,Menlo,monospace;font-size:12px;background:#fff;border:1px solid var(--border);padding:8px;border-radius:8px;white-space:pre-wrap"></div>
           </div>
         </div>
+      </div>
+    </div>
 
-        <div style="display:flex;gap:10px;margin-top:12px">
-          <button class="btn" id="save">Enregistrer</button>
-          <button class="btn secondary" id="reset">Annuler</button>
-          <button class="btn" id="del" style="display:none;background:#b42318">Supprimer</button>
+    <!-- ===== Vue TÉMOIGNAGES ===== -->
+    <div id="viewTestimonials" style="display:none">
+      <div class="grid">
+        <!-- Liste témoignages -->
+        <div class="panel">
+          <h2>Témoignages</h2>
+          <div class="note" style="margin-bottom:10px">
+            Gère ici les avis qui s’affichent sur le site public.<br>
+            <strong>Astuce :</strong> désactive un témoignage sans le supprimer en décochant « Actif ».
+          </div>
+          <div style="overflow:auto;max-height:520px;margin-top:10px;border:1px solid var(--border);border-radius:12px">
+            <table id="tblTesti">
+              <thead>
+                <tr>
+                  <th style="min-width:160px">Nom</th>
+                  <th style="min-width:120px">Ville</th>
+                  <th style="min-width:80px">Note</th>
+                  <th>Message</th>
+                  <th style="min-width:80px">Statut</th>
+                  <th style="min-width:130px"></th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <div class="empty" id="emptyTesti" style="display:none">Aucun témoignage pour l’instant.</div>
         </div>
 
-        <div style="margin-top:14px">
-          <div class="note">Aperçu WhatsApp :</div>
-          <div id="waPreview" class="muted" style="margin-top:6px;font-family:ui-monospace,Menlo,monospace;font-size:12px;background:#fff;border:1px solid var(--border);padding:8px;border-radius:8px;white-space:pre-wrap"></div>
+        <!-- Form témoignage -->
+        <div class="panel">
+          <h2 id="t_formTitle">Nouveau témoignage</h2>
+          <div class="note" style="margin-bottom:10px">
+            Champs requis : <strong>Nom</strong>, <strong>Message</strong>. La note est facultative (1 à 5).
+          </div>
+
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+            <div><label>Nom du client<br/><input id="t_name" placeholder="Ex : Amina D."></label></div>
+            <div><label>Ville<br/><input id="t_city" placeholder="N’Djamena"></label></div>
+            <div>
+              <label>Note (1 à 5) — optionnel<br/>
+                <input id="t_rating" type="number" min="1" max="5" placeholder="5">
+              </label>
+              <small class="muted">Laisser vide pour « sans note ».</small>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;margin-top:6px">
+              <input id="t_active" type="checkbox" checked>
+              <label for="t_active">Actif (visible sur le site)</label>
+            </div>
+            <div style="grid-column:1 / -1">
+              <label>Message<br/>
+                <textarea id="t_message" placeholder="Ex : J’ai adoré l’accompagnement, mes cheveux revivent…"></textarea>
+              </label>
+            </div>
+          </div>
+
+          <div style="display:flex;gap:10px;margin-top:12px">
+            <button class="btn" id="t_save">Enregistrer le témoignage</button>
+            <button class="btn secondary" id="t_reset">Annuler</button>
+            <button class="btn" id="t_del" style="display:none;background:#b42318">Supprimer</button>
+          </div>
         </div>
       </div>
     </div>
@@ -245,11 +331,15 @@
     let editing = null;
     let extraUrls = []; // photos supplémentaires en cours (tableau d'URLs)
 
-    // Pagination state (ajout)
+    // Témoignages
+    let testimonials = [];
+    let tEditing = null;
+
+    // Pagination produits
     let page = 1;
     let perPage = 10;
 
-    // *** Ville par défaut côté admin ***
+    // Ville par défaut côté admin
     const DEFAULT_CITY = "N’Djamena";
 
     // Upload en cours (pour désactiver la publication + barre de progression)
@@ -258,6 +348,13 @@
     let uploadDone = 0;
 
     const els = {
+      // Tabs / vues
+      tabProducts: $('#tabProducts'),
+      tabTestimonials: $('#tabTestimonials'),
+      viewProducts: $('#viewProducts'),
+      viewTestimonials: $('#viewTestimonials'),
+
+      // Produits
       q:$('#q'), cat:$('#catFilter'), tbody:$('#tbl tbody'), empty:$('#empty'),
       f_title:$('#f_title'), f_price:$('#f_price'), f_category:$('#f_category'),
       f_id:$('#f_id'), f_desc:$('#f_desc'), f_image:$('#f_image'), f_cities:$('#f_cities'),
@@ -267,22 +364,46 @@
       extraUploader:$('#extra_uploader'), extraSend:$('#extra_send'), extraPreview:$('#extraPreview'),
       refreshBtn:$('#refreshBtn'), publishBtn:$('#publishBtn'), pubLabel:$('#pubLabel'), pubStatus:$('#pubStatus'),
       menuBtn:$('#menuBtn'), menu:$('#menu'), pubModal:$('#pubModal'), pubClose:$('#pubClose'),
-      // barre de progression upload
       uploadProgress: $('#uploadProgress'), uploadBar: $('#uploadBar'), uploadText: $('#uploadText'),
-      // pager (ajout)
-      prevPage:$('#prevPage'), nextPage:$('#nextPage'), pageInfo:$('#pageInfo'), pageSize:$('#pageSize')
+      prevPage:$('#prevPage'), nextPage:$('#nextPage'), pageInfo:$('#pageInfo'), pageSize:$('#pageSize'),
+
+      // Témoignages
+      t_tbody: $('#tblTesti tbody'),
+      t_empty: $('#emptyTesti'),
+      t_formTitle: $('#t_formTitle'),
+      t_name: $('#t_name'),
+      t_city: $('#t_city'),
+      t_rating: $('#t_rating'),
+      t_message: $('#t_message'),
+      t_active: $('#t_active'),
+      t_save: $('#t_save'),
+      t_reset: $('#t_reset'),
+      t_del: $('#t_del')
     };
 
-    function show(txt){ els.toast.textContent=txt; els.toast.classList.add('show'); setTimeout(()=>els.toast.classList.remove('show'),1700); }
-    function escapeHtml(s){return (''+s).replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#39;"}[c]));}
-    async function readResp(resp){ const ct=resp.headers.get('content-type')||''; if(ct.includes('application/json')){try{return await resp.json();}catch{}} const t=await resp.text(); return {__text:t}; }
-    function stamp(){ const d=new Date(); return d.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit',second:'2-digit'}); }
+    function show(txt){
+      els.toast.textContent=txt;
+      els.toast.classList.add('show');
+      setTimeout(()=>els.toast.classList.remove('show'),1700);
+    }
+    function escapeHtml(s){
+      return (''+s).replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    }
+    async function readResp(resp){
+      const ct=resp.headers.get('content-type')||'';
+      if(ct.includes('application/json')){try{return await resp.json();}catch{}}
+      const t=await resp.text(); return {__text:t};
+    }
+    function stamp(){
+      const d=new Date();
+      return d.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+    }
     function setBtnLoading(btn,labelEl,txt){ btn.dataset.prev=(labelEl.textContent||''); btn.disabled=true; labelEl.textContent=txt; }
     function setBtnDone(btn,labelEl,txt='Terminé'){ labelEl.textContent=txt; setTimeout(()=>{ labelEl.textContent=btn.dataset.prev||labelEl.textContent; btn.disabled=false; },1000); }
     function setBtnIdle(btn,labelEl){ labelEl.textContent = btn.dataset.prev || labelEl.textContent; btn.disabled=false; }
     function slugify(s){return (s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'');}
 
-    // UI de progression d’upload
+    // ====== UI upload progress ======
     function updateUploadUI(){
       if (!els.uploadProgress) return;
 
@@ -351,7 +472,7 @@
     }
     function logoutAdmin(){ localStorage.removeItem(SECRET_KEY); show('Déconnecté'); setTimeout(()=>location.reload(),400); }
 
-    // ====== fetch list ======
+    // ====== PRODUITS : fetch ======
     async function refreshList(){
       try{
         ensureAdminSecret();
@@ -360,7 +481,7 @@
         const j=await r.json();
         items = Array.isArray(j.items)? j.items : [];
       }catch(e){ items=[]; }
-      page = 1; // reset page sur refresh
+      page = 1;
       fillCats(); render(); updateWAPreview();
     }
 
@@ -369,7 +490,6 @@
       els.cat.innerHTML = '<option value="">Toutes</option>' + cats.map(c=>`<option>${escapeHtml(c)}</option>`).join('');
     }
 
-    // ====== pagination helpers (ajout) ======
     function updatePager(total, start, shown){
       const lastPage = Math.max(1, Math.ceil(total / perPage));
       const from = total ? (start + 1) : 0;
@@ -418,7 +538,7 @@
       </tr>`;
     }
 
-    // ====== edit / save ======
+    // ====== PRODUITS : edit / save ======
     function selectedCities(){ return Array.from(els.f_cities.selectedOptions).map(o=>o.value); }
 
     function reset(clear=true){
@@ -428,7 +548,6 @@
       if(clear){
         els.f_title.value=els.f_price.value=els.f_category.value=els.f_id.value=els.f_desc.value=els.f_image.value='';
         els.f_active.checked=true; els.f_expDays.value='';
-        // *** N’Djamena sélectionnée par défaut ***
         Array.from(els.f_cities.options).forEach(o=>{
           o.selected = (o.value === DEFAULT_CITY);
         });
@@ -445,10 +564,8 @@
       els.f_desc.value=p.shortDescription||''; els.f_image.value=p.image||'';
       els.f_active.checked = (p.active!==false);
       els.f_expDays.value = (typeof p.expiresAfterDays==='number') ? p.expiresAfterDays : '';
-      // pour un produit déjà existant, on respecte ce qui est stocké
       Array.from(els.f_cities.options).forEach(o=>o.selected=(p.cities||[]).includes(o.value));
 
-      // previews
       els.mainPreview.innerHTML = p.image? `<img src="${escapeHtml(p.image)}" alt="">` : '';
       extraUrls = Array.isArray(p.images)? [...p.images] : [];
       renderExtraThumbs();
@@ -462,7 +579,6 @@
       const p = items[i];
       items.splice(i,1);
       editing=null; render(); show('Produit supprimé');
-      // suppression en base si id + secret
       try{
         const secret=getAdminSecret();
         if(p?.id && secret){
@@ -479,7 +595,6 @@
       const nowIso = new Date().toISOString();
       const expDays = parseInt((els.f_expDays?.value||'').trim(),10);
 
-      // *** On force N’Djamena si aucune ville n’est choisie ***
       const selCities = selectedCities();
       const cities = selCities.length ? selCities : [DEFAULT_CITY];
 
@@ -491,7 +606,7 @@
         category: els.f_category.value.trim(),
         shortDescription: els.f_desc.value.trim(),
         image: els.f_image.value.trim(),
-        images: extraUrls.slice(),    // <= photos supplémentaires
+        images: extraUrls.slice(),
         cities,
         active: els.f_active.checked,
         expiresAfterDays: isNaN(expDays)? null : expDays,
@@ -513,8 +628,8 @@
       $('#waPreview').textContent = `Bonjour Samiah Cosmetics, je suis intéressé(e) par ${title} (${price}).`;
     }
 
-    // ====== Compression adaptative ======
-    const MAX_PAYLOAD_BYTES = 4_000_000; // cible ~ <4 Mo
+    // ====== Compression adaptative / upload images ======
+    const MAX_PAYLOAD_BYTES = 4_000_000;
     const START_SIDE = 2200, MIN_SIDE = 900;
     const START_QUALITY = 0.9, MIN_QUALITY = 0.6;
 
@@ -534,7 +649,7 @@
       return c;
     }
     function dataUrlToB64(u){ return (u||'').split(',')[1]||''; }
-    function base64Size(b64){ return Math.ceil((b64.length)*0.75); } // bytes ≈ 3/4
+    function base64Size(b64){ return Math.ceil((b64.length)*0.75); }
 
     async function compressToTargetBase64(file){
       const img = await loadImageFromFile(file);
@@ -579,10 +694,8 @@
         const f = els.mainUploader.files[0];
         if(!f){ alert('Choisis une image principale'); return; }
 
-        // Démarre la progression (1 image)
         startUpload(1);
-
-        setBtnLoading(els.mainSend, els.mainSend, 'Téléversement…');
+        setBtnLoading(els.mainSend, els.mainSend, 'Téléverser…');
         const { url, size } = await uploadOne(f, els.f_title.value||'image');
         stepUpload();
 
@@ -598,7 +711,6 @@
       }
     }
 
-    /* ====== NOUVELLE VERSION: vignettes + star + drag ====== */
     function renderExtraThumbs(){
       const main = (els.f_image.value||'').trim();
       els.extraPreview.innerHTML = extraUrls.map((u,i)=>
@@ -612,7 +724,6 @@
       bindDnDThumbs();
     }
 
-    // Drag & Drop réordonnable
     let dragIndex = null;
     let hoverIndex = null;
     function bindDnDThumbs(){
@@ -641,17 +752,15 @@
         });
       });
     }
-    /* ====== /vignettes + star + drag ====== */
 
     async function uploadExtra(){
       try{
         const files = Array.from(els.extraUploader.files||[]);
         if(!files.length){ alert('Choisis au moins une image'); return; }
 
-        // Démarre la progression avec le nombre de fichiers
         startUpload(files.length);
 
-        els.extraSend.disabled = true; els.extraSend.textContent='Téléversement…';
+        els.extraSend.disabled = true; els.extraSend.textContent='Téléverser…';
         for(const f of files){
           const { url } = await uploadOne(f, (els.f_title.value||'image-sup'));
           extraUrls.push(url);
@@ -669,7 +778,6 @@
       }
     }
 
-    /* ====== Aperçu local AVANT envoi ====== */
     function previewMainLocal(){
       if(!els.mainPreview) return;
       els.mainPreview.innerHTML = '';
@@ -708,16 +816,14 @@
         els.extraPreview.appendChild(wrap);
       });
     }
-    /* ====== /Aperçu local ====== */
 
-    // ====== publish to backend ======
+    // ====== publish produits ======
     function showModal(m){ m.classList.add('show'); m.setAttribute('aria-hidden','false'); }
     function hideModal(m){ m.classList.remove('show'); m.setAttribute('aria-hidden','true'); }
 
     async function publishToBackend(){
       const secret=getAdminSecret(); if(!secret){ changeAdminSecret(); return; }
 
-      // Empêche de publier pendant un upload
       if (activeUploads > 0){
         alert('Attends la fin du téléversement des images avant de publier.');
         return;
@@ -742,9 +848,188 @@
       }
     }
 
+    // ====== TÉMOIGNAGES : fetch / render ======
+    async function refreshTestimonials(){
+      try{
+        ensureAdminSecret();
+        const secret = getAdminSecret();
+        const r = await fetch('/api/admin/list-testimonials',{
+          headers:{'x-admin-secret':secret}
+        });
+        const j = await r.json();
+        testimonials = Array.isArray(j.items) ? j.items : [];
+      }catch(e){
+        testimonials = [];
+      }
+      renderTestimonials();
+      resetTestimonialForm(true);
+    }
+
+    function renderTestimonials(){
+      if (!els.t_tbody) return;
+      if (!Array.isArray(testimonials)) testimonials = [];
+
+      els.t_tbody.innerHTML = testimonials.map((t,i)=>testimonialRowTpl(t,i)).join('');
+      els.t_empty.style.display = testimonials.length ? 'none' : 'block';
+    }
+
+    function testimonialRowTpl(t,i){
+      const name = escapeHtml(t.authorName || t.author_name || '');
+      const city = escapeHtml(t.city || '');
+      const msg  = escapeHtml(t.message || '');
+      const rating = (typeof t.rating === 'number' && t.rating>0) ? `${t.rating}/5` : '—';
+      const active = (t.active !== false);
+      const badge = active
+        ? '<span class="t-badge on">Actif</span>'
+        : '<span class="t-badge off">Masqué</span>';
+      return `<tr>
+        <td>${name || '—'}</td>
+        <td>${city || '—'}</td>
+        <td>${rating}</td>
+        <td>${msg}</td>
+        <td>${badge}</td>
+        <td class="actions">
+          <button class="btn secondary" data-tact="edit" data-idx="${i}">Éditer</button>
+          <button class="btn" style="background:#b42318" data-tact="del" data-idx="${i}">Supprimer</button>
+        </td>
+      </tr>`;
+    }
+
+    // ====== TÉMOIGNAGES : form / actions ======
+    function resetTestimonialForm(clear=true){
+      tEditing = null;
+      if (els.t_formTitle) els.t_formTitle.textContent = 'Nouveau témoignage';
+      if (els.t_del) els.t_del.style.display = 'none';
+      if (clear){
+        if (els.t_name) els.t_name.value = '';
+        if (els.t_city) els.t_city.value = '';
+        if (els.t_rating) els.t_rating.value = '';
+        if (els.t_message) els.t_message.value = '';
+        if (els.t_active) els.t_active.checked = true;
+      }
+    }
+
+    function editTestimonial(idx){
+      const t = testimonials[idx];
+      if (!t) return;
+      tEditing = idx;
+      if (els.t_formTitle) els.t_formTitle.textContent = 'Modifier le témoignage';
+      if (els.t_del) els.t_del.style.display = '';
+
+      const name = t.authorName ?? t.author_name ?? '';
+      if (els.t_name) els.t_name.value = name;
+      if (els.t_city) els.t_city.value = t.city || '';
+      if (els.t_rating) els.t_rating.value = (typeof t.rating === 'number' && t.rating>0)? t.rating : '';
+      if (els.t_message) els.t_message.value = t.message || '';
+      if (els.t_active) els.t_active.checked = (t.active !== false);
+      window.scrollTo({top:0,behavior:'smooth'});
+    }
+
+    async function saveTestimonial(){
+      const secret = getAdminSecret(); if(!secret){ changeAdminSecret(); return; }
+
+      const name = (els.t_name?.value || '').trim();
+      const city = (els.t_city?.value || '').trim();
+      const ratingRaw = (els.t_rating?.value || '').trim();
+      const message = (els.t_message?.value || '').trim();
+      const active = !!(els.t_active?.checked);
+
+      if (!name){ alert('Nom requis'); return; }
+      if (!message){ alert('Message requis'); return; }
+
+      let rating = null;
+      if (ratingRaw){
+        const n = parseInt(ratingRaw, 10);
+        if (Number.isNaN(n) || n<1 || n>5){
+          alert('La note doit être entre 1 et 5.');
+          return;
+        }
+        rating = n;
+      }
+
+      const existing = (tEditing!=null) ? testimonials[tEditing] : null;
+      const payload = {
+        id: existing?.id,            // laisser undefined pour nouveau
+        authorName: name,
+        city,
+        rating,
+        message,
+        active
+      };
+
+      try{
+        if (els.t_save) els.t_save.disabled = true;
+        const resp = await fetch('/api/admin/save-testimonial',{
+          method:'POST',
+          headers:{'Content-Type':'application/json','x-admin-secret':secret},
+          body: JSON.stringify({ item: payload })
+        });
+        const out = await readResp(resp);
+        if (!resp.ok) throw new Error(out?.error || out?.__text || resp.statusText);
+
+        show('Témoignage enregistré ✅');
+        await refreshTestimonials();
+      }catch(e){
+        alert('Erreur enregistrement témoignage: ' + e.message);
+      }finally{
+        if (els.t_save) els.t_save.disabled = false;
+      }
+    }
+
+    async function deleteTestimonial(){
+      if (tEditing == null){ resetTestimonialForm(true); return; }
+      const t = testimonials[tEditing];
+      if (!t || !t.id){ resetTestimonialForm(true); return; }
+
+      if (!confirm('Supprimer ce témoignage ?')) return;
+      const secret = getAdminSecret(); if(!secret){ changeAdminSecret(); return; }
+
+      try{
+        if (els.t_del) els.t_del.disabled = true;
+        const resp = await fetch('/api/admin/delete-testimonial',{
+          method:'POST',
+          headers:{'Content-Type':'application/json','x-admin-secret':secret},
+          body: JSON.stringify({ id: t.id })
+        });
+        const out = await readResp(resp);
+        if (!resp.ok) throw new Error(out?.error || out?.__text || resp.statusText);
+        show('Témoignage supprimé ✅');
+        await refreshTestimonials();
+      }catch(e){
+        alert('Erreur suppression témoignage: ' + e.message);
+      }finally{
+        if (els.t_del) els.t_del.disabled = false;
+      }
+    }
+
+    // ====== Tabs ======
+    function setView(view){
+      const prod = (view === 'products');
+      if (els.viewProducts) els.viewProducts.style.display = prod ? '' : 'none';
+      if (els.viewTestimonials) els.viewTestimonials.style.display = prod ? 'none' : '';
+
+      if (els.tabProducts){
+        els.tabProducts.classList.toggle('active', prod);
+      }
+      if (els.tabTestimonials){
+        els.tabTestimonials.classList.toggle('active', !prod);
+      }
+
+      if (!prod){
+        // Quand on passe sur Témoignages, rafraîchir si vide
+        if (!testimonials.length){
+          refreshTestimonials();
+        }
+      }
+    }
+
     // ====== events ======
     function bind(){
-      // table actions
+      // Tabs
+      if (els.tabProducts) els.tabProducts.addEventListener('click', ()=>setView('products'));
+      if (els.tabTestimonials) els.tabTestimonials.addEventListener('click', ()=>setView('testimonials'));
+
+      // table produits
       $('#tbl').addEventListener('click', (e)=>{
         const b=e.target.closest('button'); if(!b) return;
         const idx = parseInt(b.dataset.idx,10);
@@ -752,7 +1037,21 @@
         if(b.dataset.act==='del') removeItem(idx);
       });
 
-      // recherche / filtre -> reset page
+      // table témoignages
+      const tblT = $('#tblTesti');
+      if (tblT){
+        tblT.addEventListener('click', (e)=>{
+          const b = e.target.closest('button'); if(!b) return;
+          const idx = parseInt(b.dataset.idx,10);
+          if (b.dataset.tact === 'edit') editTestimonial(idx);
+          if (b.dataset.tact === 'del'){
+            tEditing = idx;
+            deleteTestimonial();
+          }
+        });
+      }
+
+      // recherche / filtre produits
       els.q.oninput = ()=>{ page=1; render(); };
       els.cat.onchange = ()=>{ page=1; render(); };
 
@@ -768,7 +1067,6 @@
       els.mainSend.onclick = uploadMain;
       els.extraSend.onclick = uploadExtra;
 
-      // delete (déjà existant)
       els.extraPreview.addEventListener('click', (e)=>{
         const btn = e.target.closest('button[data-x]');
         if(!btn) return;
@@ -777,7 +1075,6 @@
         renderExtraThumbs();
       });
 
-      // ★ définir image principale
       els.extraPreview.addEventListener('click', (e)=>{
         const starBtn = e.target.closest('button[data-star]');
         if(!starBtn) return;
@@ -789,15 +1086,20 @@
         show('Image principale définie ✅');
       });
 
-      // Aperçu local (sans upload)
       if (els.mainUploader) els.mainUploader.addEventListener('change', previewMainLocal);
       if (els.extraUploader) els.extraUploader.addEventListener('change', previewExtraLocal);
 
       // top buttons
-      els.refreshBtn.onclick = () => { refreshList().then(()=>show('Liste mise à jour')); };
+      els.refreshBtn.onclick = () => {
+        if (els.viewProducts && els.viewProducts.style.display !== 'none'){
+          refreshList().then(()=>show('Liste produits mise à jour'));
+        } else {
+          refreshTestimonials().then(()=>show('Témoignages mis à jour'));
+        }
+      };
       els.publishBtn.onclick = publishToBackend;
 
-      // pager (ajout)
+      // pager produits
       if(els.prevPage) els.prevPage.onclick = ()=>{ if(page>1){ page--; render(); } };
       if(els.nextPage) els.nextPage.onclick = ()=>{ page++; render(); };
       if(els.pageSize) els.pageSize.onchange = ()=>{
@@ -821,17 +1123,22 @@
       els.pubClose.onclick = ()=> hideModal(els.pubModal);
       els.pubModal.addEventListener('click', e=>{ if(e.target===els.pubModal) hideModal(els.pubModal); });
       document.addEventListener('keydown', e=>{ if(e.key==='Escape') hideModal(els.pubModal); });
+
+      // Témoignages : boutons form
+      if (els.t_save) els.t_save.addEventListener('click', saveTestimonial);
+      if (els.t_reset) els.t_reset.addEventListener('click', ()=>resetTestimonialForm(true));
+      if (els.t_del) els.t_del.addEventListener('click', deleteTestimonial);
     }
 
     // ====== start ======
     function start(){
-      if(els.pageSize) perPage = parseInt(els.pageSize.value||'10',10) || 10; // init perPage depuis le select
+      if(els.pageSize) perPage = parseInt(els.pageSize.value||'10',10) || 10;
       bind();
       reset(true);
       refreshList();
+      // Témoignages seront chargés au premier clic sur l’onglet
     }
 
-    // DOM ready
     if(document.readyState!=='loading') start();
     else document.addEventListener('DOMContentLoaded', start);
   })();
