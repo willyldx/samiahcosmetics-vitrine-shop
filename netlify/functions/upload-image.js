@@ -1,92 +1,77 @@
 // netlify/functions/upload-image.js
 
-const json = (code, body) => ({
+const json = (body, code = 200) => ({
   statusCode: code,
   headers: {
     "content-type": "application/json; charset=utf-8",
     "access-control-allow-origin": "*",
     "access-control-allow-headers": "content-type,x-admin-secret",
-    "access-control-allow-methods": "OPTIONS,POST",
   },
   body: JSON.stringify(body),
 });
 
-exports.handler = async (event) => {
-  // Préflight CORS
+export async function handler(event) {
+  // CORS préflight
   if (event.httpMethod === "OPTIONS") {
-    return json(204, {});
+    return { statusCode: 204, headers: json({}).headers };
   }
 
   if (event.httpMethod !== "POST") {
-    return json(405, { error: "Method Not Allowed" });
+    return json({ error: "Method Not Allowed" }, 405);
   }
 
+  const { ADMIN_SECRET, SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, SB_BUCKET } =
+    process.env;
+
+  if (!ADMIN_SECRET || !SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
+    return json({ error: "Server env vars missing" }, 500);
+  }
+
+  const clientSecret =
+    event.headers["x-admin-secret"] || event.headers["X-Admin-Secret"] || "";
+  if (clientSecret !== ADMIN_SECRET) {
+    return json({ error: "Unauthorized" }, 401);
+  }
+
+  let payload;
   try {
-    const { ADMIN_SECRET, SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, SB_BUCKET } =
-      process.env;
-    const BUCKET = SB_BUCKET || "site-images";
-
-    if (!ADMIN_SECRET || !SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
-      return json(500, { error: "Server env vars missing" });
-    }
-
-    const headerSecret =
-      event.headers["x-admin-secret"] || event.headers["X-Admin-Secret"] || "";
-    if (headerSecret !== ADMIN_SECRET) {
-      return json(401, { error: "Unauthorized" });
-    }
-
-    let payload;
-    try {
-      payload = JSON.parse(event.body || "{}");
-    } catch {
-      return json(400, { error: "Invalid JSON body" });
-    }
-
-    const { filename, contentBase64 } = payload;
-    if (!filename || !contentBase64) {
-      return json(400, { error: "filename & contentBase64 required" });
-    }
-
-    const bin = Buffer.from(contentBase64, "base64");
-
-    const uploadUrl = `${SUPABASE_URL}/storage/v1/object/${encodeURIComponent(
-      BUCKET
-    )}/${encodeURIComponent(filename)}`;
-
-    const up = await fetch(uploadUrl, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
-        apikey: SUPABASE_SERVICE_ROLE_KEY,
-        "Content-Type": "image/jpeg",
-        "x-upsert": "true",
-      },
-      body: bin,
-    });
-
-    const upText = await up.text();
-    if (!up.ok) {
-      let errJson;
-      try {
-        errJson = JSON.parse(upText);
-      } catch {
-        errJson = { __text: upText };
-      }
-      return json(500, {
-        error: "Upload failed",
-        details: errJson,
-        status: up.status,
-      });
-    }
-
-    // URL publique (bucket configuré en "public" côté Supabase)
-    const siteUrl = `${SUPABASE_URL}/storage/v1/object/public/${encodeURIComponent(
-      BUCKET
-    )}/${encodeURIComponent(filename)}`;
-
-    return json(200, { ok: true, siteUrl });
-  } catch (e) {
-    return json(500, { error: "Function crashed", details: String(e) });
+    payload = JSON.parse(event.body || "{}");
+  } catch {
+    return json({ error: "Invalid JSON body" }, 400);
   }
-};
+
+  const { filename, contentBase64 } = payload;
+  if (!filename || !contentBase64) {
+    return json({ error: "filename & contentBase64 required" }, 400);
+  }
+
+  const bin = Buffer.from(contentBase64, "base64");
+
+  const bucket = SB_BUCKET || "site-images";
+  const uploadUrl = `${SUPABASE_URL}/storage/v1/object/${encodeURIComponent(
+    bucket
+  )}/${encodeURIComponent(filename)}`;
+
+  const r = await fetch(uploadUrl, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+      "Content-Type": "image/jpeg",
+      "x-upsert": "true",
+      apikey: SUPABASE_SERVICE_ROLE_KEY,
+    },
+    body: bin,
+  });
+
+  if (!r.ok) {
+    const txt = await r.text();
+    return json({ error: "Upload failed", details: txt }, 500);
+  }
+
+  // URL publique (comme sur Vercel)
+  const publicUrl = `${SUPABASE_URL}/storage/v1/object/public/${encodeURIComponent(
+    bucket
+  )}/${encodeURIComponent(filename)}`;
+
+  return json({ ok: true, siteUrl: publicUrl });
+}
