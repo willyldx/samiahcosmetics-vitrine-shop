@@ -57,32 +57,6 @@
     .modal-title{margin:0 0 6px;font-size:18px}
     .modal-text{margin:0 0 12px;color:#444}
     .modal-actions{display:flex;gap:8px;justify-content:flex-end}
-
-    /* Progress bar */
-    #uploadProgress{grid-column:1 / -1; margin-top:8px; display:none}
-    #uploadProgress .bar-bg{height:6px;border-radius:999px;background:#eee;overflow:hidden}
-    #uploadBar{height:100%;width:0%;background:#0A0A0A;transition:width .2s}
-
-    /* Témoignages */
-    .subsection-title{margin-top:24px;font-size:18px;font-weight:600}
-
-    /* Onglets */
-    .tabs{display:flex;gap:8px;margin-bottom:16px;border-bottom:1px solid var(--border)}
-    .tab{
-      border:0;
-      background:transparent;
-      padding:8px 12px;
-      font-weight:500;
-      color:var(--muted);
-      cursor:pointer;
-      border-bottom:2px solid transparent;
-    }
-    .tab-active{
-      color:#111;
-      border-color:var(--charcoal);
-    }
-    .tab-panel{display:none}
-    .tab-panel-active{display:block}
   </style>
 </head>
 <body>
@@ -121,210 +95,198 @@
   </div>
 
   <div class="wrap">
-    <!-- Onglets -->
-    <div class="tabs">
-      <button class="tab tab-active" data-tab="products">Catalogue</button>
-      <button class="tab" data-tab="testimonials">Témoignages</button>
-    </div>
-
-    <!-- ============== ONGLET CATALOGUE ============== -->
-    <div id="tab-products" class="tab-panel tab-panel-active">
-      <div class="grid">
-        <!-- LISTE produits -->
-        <div class="panel">
-          <h2>Catalogue</h2>
-          <div class="filters">
-            <input type="text" id="q" placeholder="Recherche (titre, catégorie)…"/>
-            <select id="catFilter"></select>
-          </div>
-          <div class="note">Astuce : clique sur une ligne pour l’éditer. Téléverse une image (ou des images supplémentaires), puis « Publier » pour enregistrer en base.</div>
-          <div style="overflow:auto;max-height:520px;margin-top:10px;border:1px solid var(--border);border-radius:12px">
-            <table id="tbl" aria-describedby="tableau-produits">
-              <thead>
-                <tr>
-                  <th style="min-width:200px">Titre</th>
-                  <th style="min-width:100px">Prix</th>
-                  <th style="min-width:140px">Catégorie</th>
-                  <th>Villes</th>
-                  <th style="min-width:120px">Aperçu</th>
-                  <th style="min-width:150px"></th>
-                </tr>
-              </thead>
-              <tbody></tbody>
-            </table>
-          </div>
-
-          <!-- Pagination -->
-          <div id="pager" style="display:flex;align-items:center;gap:8px;justify-content:flex-end;margin-top:8px">
-            <button class="iconbtn" id="prevPage" aria-label="Page précédente">◀</button>
-            <span id="pageInfo" class="muted">—</span>
-            <button class="iconbtn" id="nextPage" aria-label="Page suivante">▶</button>
-            <select id="pageSize" title="Par page">
-              <option value="10" selected>10</option>
-              <option value="25">25</option>
-              <option value="50">50</option>
-            </select>
-          </div>
-          <!-- /Pagination -->
-
-          <div class="empty" id="empty" style="display:none">Aucun produit</div>
-        </div>
-
-        <!-- FORM produit -->
-        <div class="panel">
-          <h2 id="formTitle">Nouveau produit</h2>
-          <div class="note" style="margin-bottom:10px">Champs requis : <strong>Titre</strong>, <strong>Prix</strong>. L’ID (slug) est auto-généré si vide.</div>
-
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-            <div><label>Titre<br/><input id="f_title"></label></div>
-            <div><label>Prix XAF<br/><input id="f_price" type="number" min="0" step="100"></label></div>
-            <div><label>Catégorie<br/><input id="f_category" placeholder="Shampoings, Soins cheveux, Services"></label></div>
-            <div><label>ID (slug)<br/><input id="f_id" placeholder="auto si vide"></label></div>
-            <div style="grid-column:1 / -1"><label>Description courte<br/><textarea id="f_desc" placeholder="Texte court…"></textarea></label></div>
-
-            <!-- Image principale -->
-            <div style="grid-column:1 / -1">
-              <label>Image principale<br/>
-                <input type="hidden" id="f_image">
-                <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-                  <input type="file" id="main_uploader" accept="image/*">
-                  <button type="button" class="btn secondary" id="main_send">Téléverser</button>
-                  <small class="muted">JPG/PNG — <strong>compression auto</strong> (envoi ~4&nbsp;Mo max).</small>
-                </div>
-                <div id="mainPreview" class="thumbs"></div>
-              </label>
-            </div>
-
-            <!-- Photos supplémentaires -->
-            <div style="grid-column:1 / -1">
-              <label>Photos supplémentaires (optionnel)<br/>
-                <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-                  <input type="file" id="extra_uploader" accept="image/*" multiple>
-                  <button type="button" class="btn secondary" id="extra_send">Téléverser</button>
-                  <small class="muted">Plusieurs images — <strong>compression auto</strong>.</small>
-                </div>
-                <div id="extraPreview" class="thumbs"></div>
-              </label>
-            </div>
-
-            <!-- Progression upload (commune produits + témoignages) -->
-            <div id="uploadProgress">
-              <div class="bar-bg">
-                <div id="uploadBar"></div>
-              </div>
-              <div id="uploadText" class="muted" style="margin-top:4px;font-size:12px">
-                Téléversement des images…
-              </div>
-            </div>
-
-            <!-- Expiration & Actif -->
-            <div>
-              <label>Expire dans (jours) — optionnel<br/>
-                <input id="f_expDays" type="number" min="0" placeholder="ex: 14">
-              </label>
-              <small class="muted">Laisser vide pour “pas d’expiration”.</small>
-            </div>
-            <div style="display:flex;align-items:center;gap:8px;margin-top:6px">
-              <input id="f_active" type="checkbox" checked>
-              <label for="f_active">Activer l’affichage</label>
-            </div>
-
-            <div><label>Villes (liste)<br/>
-              <select id="f_cities" multiple size="6" style="height:140px">
-                <option>N’Djamena</option><option>Moundou</option><option>Sarh</option><option>Abéché</option><option>Bongor</option>
-                <option>Kélo</option><option>Pala</option><option>Koumra</option><option>Faya-Largeau</option>
-              </select>
-              <small class="muted">Maintenir Ctrl/Cmd pour multisélection</small>
-            </div>
-          </div>
-
-          <div style="display:flex;gap:10px;margin-top:12px">
-            <button class="btn" id="save">Enregistrer</button>
-            <button class="btn secondary" id="reset">Annuler</button>
-            <button class="btn" id="del" style="display:none;background:#b42318">Supprimer</button>
-          </div>
-
-          <div style="margin-top:14px">
-            <div class="note">Aperçu WhatsApp :</div>
-            <div id="waPreview" class="muted" style="margin-top:6px;font-family:ui-monospace,Menlo,monospace;font-size:12px;background:#fff;border:1px solid var(--border);padding:8px;border-radius:8px;white-space:pre-wrap"></div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- ============== ONGLET TÉMOIGNAGES ============== -->
-    <div id="tab-testimonials" class="tab-panel">
+    <div class="grid">
+      <!-- LISTE PRODUITS -->
       <div class="panel">
-        <h2>Gestion des témoignages</h2>
-        <div class="note" style="margin-bottom:10px">
-          Ici tu peux ajouter, modifier ou supprimer les témoignages clients. Ils sont stockés dans Supabase, comme les produits.
+        <h2>Catalogue</h2>
+        <div class="filters">
+          <input type="text" id="q" placeholder="Recherche (titre, catégorie)…"/>
+          <select id="catFilter"></select>
         </div>
-
-        <h3 class="subsection-title">Liste des témoignages</h3>
-        <div style="overflow:auto;max-height:360px;margin-top:6px;border:1px solid var(--border);border-radius:12px">
-          <table id="tblTesti" aria-describedby="tableau-temoignages">
+        <div class="note">Astuce : clique sur une ligne pour l’éditer. Téléverse une image (ou des images supplémentaires), puis « Publier » pour enregistrer en base.</div>
+        <div style="overflow:auto;max-height:520px;margin-top:10px;border:1px solid var(--border);border-radius:12px">
+          <table id="tbl" aria-describedby="tableau-produits">
             <thead>
               <tr>
-                <th style="min-width:160px">Client</th>
-                <th style="min-width:120px">Ville</th>
-                <th style="min-width:80px">Note</th>
-                <th>Extrait</th>
-                <th style="min-width:80px">Actif</th>
+                <th style="min-width:200px">Titre</th>
+                <th style="min-width:100px">Prix</th>
+                <th style="min-width:140px">Catégorie</th>
+                <th>Villes</th>
+                <th style="min-width:120px">Aperçu</th>
                 <th style="min-width:150px"></th>
               </tr>
             </thead>
             <tbody></tbody>
           </table>
         </div>
-        <div class="empty" id="emptyTesti" style="display:none;margin-top:6px">Aucun témoignage pour l’instant.</div>
+
+        <!-- Pagination -->
+        <div id="pager" style="display:flex;align-items:center;gap:8px;justify-content:flex-end;margin-top:8px">
+          <button class="iconbtn" id="prevPage" aria-label="Page précédente">◀</button>
+          <span id="pageInfo" class="muted">—</span>
+          <button class="iconbtn" id="nextPage" aria-label="Page suivante">▶</button>
+          <select id="pageSize" title="Par page">
+            <option value="10" selected>10</option>
+            <option value="25">25</option>
+            <option value="50">50</option>
+          </select>
+        </div>
+        <!-- /Pagination -->
+
+        <div class="empty" id="empty" style="display:none">Aucun produit</div>
       </div>
 
+      <!-- FORM PRODUIT -->
       <div class="panel">
-        <h3 class="subsection-title" id="t_formTitle">Nouveau témoignage</h3>
-        <div class="note" style="margin-bottom:10px">
-          Champs requis : <strong>Nom</strong>, <strong>Message</strong>. La note et la photo sont facultatives.
-        </div>
+        <h2 id="formTitle">Nouveau produit</h2>
+        <div class="note" style="margin-bottom:10px">Champs requis : <strong>Titre</strong>, <strong>Prix</strong>. L’ID (slug) est auto-généré si vide.</div>
 
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-          <div><label>Nom du client<br/><input id="t_name" placeholder="Ex : Amina D."></label></div>
-          <div><label>Ville<br/><input id="t_city" placeholder="N’Djamena"></label></div>
+          <div><label>Titre<br/><input id="f_title"></label></div>
+          <div><label>Prix XAF<br/><input id="f_price" type="number" min="0" step="100"></label></div>
+          <div><label>Catégorie<br/><input id="f_category" placeholder="Shampoings, Soins cheveux, Services"></label></div>
+          <div><label>ID (slug)<br/><input id="f_id" placeholder="auto si vide"></label></div>
+          <div style="grid-column:1 / -1"><label>Description courte<br/><textarea id="f_desc" placeholder="Texte court…"></textarea></label></div>
 
-          <div>
-            <label>Note (1 à 5) — optionnel<br/>
-              <input id="t_rating" type="number" min="1" max="5" placeholder="5">
+          <!-- Image principale -->
+          <div style="grid-column:1 / -1">
+            <label>Image principale<br/>
+              <input type="hidden" id="f_image">
+              <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+                <input type="file" id="main_uploader" accept="image/*">
+                <button type="button" class="btn secondary" id="main_send">Téléverser</button>
+                <small class="muted">JPG/PNG — <strong>compression auto</strong> (envoi ~4&nbsp;Mo max).</small>
+              </div>
+              <div id="mainPreview" class="thumbs"></div>
             </label>
-            <small class="muted">Laisser vide pour « sans note ».</small>
+          </div>
+
+          <!-- Photos supplémentaires -->
+          <div style="grid-column:1 / -1">
+            <label>Photos supplémentaires (optionnel)<br/>
+              <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+                <input type="file" id="extra_uploader" accept="image/*" multiple>
+                <button type="button" class="btn secondary" id="extra_send">Téléverser</button>
+                <small class="muted">Plusieurs images — <strong>compression auto</strong>.</small>
+              </div>
+              <div id="extraPreview" class="thumbs"></div>
+            </label>
+          </div>
+
+          <!-- Progression upload (COMMUNE) -->
+          <div id="uploadProgress" style="grid-column:1 / -1; margin-top:8px; display:none">
+            <div style="height:6px;border-radius:999px;background:#eee;overflow:hidden">
+              <div id="uploadBar" style="height:100%;width:0%;background:#0A0A0A;transition:width .2s"></div>
+            </div>
+            <div id="uploadText" class="muted" style="margin-top:4px;font-size:12px">
+              Téléversement des images…
+            </div>
+          </div>
+
+          <!-- Expiration & Actif -->
+          <div>
+            <label>Expire dans (jours) — optionnel<br/>
+              <input id="f_expDays" type="number" min="0" placeholder="ex: 14">
+            </label>
+            <small class="muted">Laisser vide pour “pas d’expiration”.</small>
           </div>
           <div style="display:flex;align-items:center;gap:8px;margin-top:6px">
-            <input id="t_active" type="checkbox" checked>
-            <label for="t_active">Actif (visible sur le site)</label>
+            <input id="f_active" type="checkbox" checked>
+            <label for="f_active">Activer l’affichage</label>
           </div>
 
-          <!-- Photo de preuve (optionnelle) -->
-          <div style="grid-column:1 / -1">
-            <label>Photo (optionnel)<br/>
-              <input type="hidden" id="t_photoUrl">
-              <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-                <input type="file" id="t_photoUploader" accept="image/*">
-                <button type="button" class="btn secondary" id="t_photoSend">Téléverser</button>
-                <small class="muted">JPG/PNG — compression auto (comme les produits).</small>
-              </div>
-              <div id="t_photoPreview" class="thumbs"></div>
-            </label>
-          </div>
-
-          <div style="grid-column:1 / -1">
-            <label>Message<br/>
-              <textarea id="t_message" placeholder="Ex : J’ai adoré l’accompagnement, mes cheveux revivent…"></textarea>
-            </label>
+          <div><label>Villes (liste)<br/>
+            <select id="f_cities" multiple size="6" style="height:140px">
+              <option>N’Djamena</option><option>Moundou</option><option>Sarh</option><option>Abéché</option><option>Bongor</option>
+              <option>Kélo</option><option>Pala</option><option>Koumra</option><option>Faya-Largeau</option>
+            </select>
+            <small class="muted">Maintenir Ctrl/Cmd pour multisélection</small>
           </div>
         </div>
 
         <div style="display:flex;gap:10px;margin-top:12px">
-          <button class="btn" id="t_save">Enregistrer le témoignage</button>
-          <button class="btn secondary" id="t_reset">Annuler</button>
-          <button class="btn" id="t_del" style="display:none;background:#b42318">Supprimer</button>
+          <button class="btn" id="save">Enregistrer</button>
+          <button class="btn secondary" id="reset">Annuler</button>
+          <button class="btn" id="del" style="display:none;background:#b42318">Supprimer</button>
         </div>
+
+        <div style="margin-top:14px">
+          <div class="note">Aperçu WhatsApp :</div>
+          <div id="waPreview" class="muted" style="margin-top:6px;font-family:ui-monospace,Menlo,monospace;font-size:12px;background:#fff;border:1px solid var(--border);padding:8px;border-radius:8px;white-space:pre-wrap"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========== TÉMOIGNAGES EN DESSOUS ========== -->
+    <div class="panel">
+      <h2>Gestion des témoignages</h2>
+      <div class="note" style="margin-bottom:10px">
+        Ajoute ici les témoignages de tes clientes. Ils s’afficheront ensuite sur la vitrine (partie publique).
+      </div>
+
+      <div style="overflow:auto;max-height:360px;margin-top:6px;border:1px solid var(--border);border-radius:12px">
+        <table id="tblTesti" aria-describedby="tableau-temoignages">
+          <thead>
+            <tr>
+              <th style="min-width:160px">Client</th>
+              <th style="min-width:120px">Ville</th>
+              <th style="min-width:80px">Note</th>
+              <th>Extrait</th>
+              <th style="min-width:80px">Actif</th>
+              <th style="min-width:150px"></th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <div class="empty" id="emptyTesti" style="display:none;margin-top:6px">Aucun témoignage pour l’instant.</div>
+    </div>
+
+    <div class="panel">
+      <h2 id="t_formTitle">Nouveau témoignage</h2>
+      <div class="note" style="margin-bottom:10px">
+        Champs requis : <strong>Nom</strong>, <strong>Message</strong>. La note et la photo sont facultatives.
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div><label>Nom du client<br/><input id="t_name" placeholder="Ex : Amina D."></label></div>
+        <div><label>Ville<br/><input id="t_city" placeholder="N’Djamena"></label></div>
+
+        <div>
+          <label>Note (1 à 5) — optionnel<br/>
+            <input id="t_rating" type="number" min="1" max="5" placeholder="5">
+          </label>
+          <small class="muted">Laisser vide pour « sans note ».</small>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;margin-top:6px">
+          <input id="t_active" type="checkbox" checked>
+          <label for="t_active">Actif (visible sur le site)</label>
+        </div>
+
+        <!-- Photo de preuve (optionnelle) -->
+        <div style="grid-column:1 / -1">
+          <label>Photo (optionnel)<br/>
+            <input type="hidden" id="t_photoUrl">
+            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+              <input type="file" id="t_photoUploader" accept="image/*">
+              <button type="button" class="btn secondary" id="t_photoSend">Téléverser</button>
+              <small class="muted">JPG/PNG — compression auto (comme les produits).</small>
+            </div>
+            <div id="t_photoPreview" class="thumbs"></div>
+          </label>
+        </div>
+
+        <div style="grid-column:1 / -1">
+          <label>Message<br/>
+            <textarea id="t_message" placeholder="Ex : J’ai adoré l’accompagnement, mes cheveux revivent…"></textarea>
+          </label>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:10px;margin-top:12px">
+        <button class="btn" id="t_save">Enregistrer le témoignage</button>
+        <button class="btn secondary" id="t_reset">Annuler</button>
+        <button class="btn" id="t_del" style="display:none;background:#b42318">Supprimer</button>
       </div>
     </div>
 
@@ -352,12 +314,12 @@
     const $ = s => document.querySelector(s);
     const $$ = s => Array.from(document.querySelectorAll(s));
 
-    // Produits
+    // PRODUITS
     let items = [];
     let editing = null;
-    let extraUrls = [];
+    let extraUrls = []; // photos supplémentaires
 
-    // Témoignages
+    // TÉMOIGNAGES
     let testimonials = [];
     let tEditing = null;
 
@@ -365,9 +327,10 @@
     let page = 1;
     let perPage = 10;
 
+    // Ville par défaut
     const DEFAULT_CITY = "N’Djamena";
 
-    // Upload
+    // Upload global (produits + témoignages)
     let activeUploads = 0;
     let uploadTotal = 0;
     let uploadDone = 0;
@@ -385,10 +348,6 @@
       menuBtn:$('#menuBtn'), menu:$('#menu'), pubModal:$('#pubModal'), pubClose:$('#pubClose'),
       uploadProgress: $('#uploadProgress'), uploadBar: $('#uploadBar'), uploadText: $('#uploadText'),
       prevPage:$('#prevPage'), nextPage:$('#nextPage'), pageInfo:$('#pageInfo'), pageSize:$('#pageSize'),
-
-      // onglets
-      tabs: $$('.tab'),
-
       // témoignages
       t_tbody: $('#tblTesti tbody'),
       t_empty: $('#emptyTesti'),
@@ -416,9 +375,10 @@
     function setBtnIdle(btn,labelEl){ if(!btn||!labelEl)return; labelEl.textContent = btn.dataset.prev || labelEl.textContent; btn.disabled=false; }
     function slugify(s){return (s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'');}
 
-    // upload UI
+    // UI progression upload
     function updateUploadUI(){
       if (!els.uploadProgress) return;
+
       if (activeUploads <= 0) {
         els.uploadProgress.style.display = 'none';
         if (els.publishBtn){
@@ -432,12 +392,15 @@
         }
         return;
       }
+
       els.uploadProgress.style.display = 'block';
       if (els.publishBtn){
         els.publishBtn.style.display = 'none';
       }
+
       const pctRaw = uploadTotal > 0 ? Math.round((uploadDone / uploadTotal) * 100) : 10;
       const pct = Math.max(5, Math.min(100, pctRaw));
+
       if (els.uploadBar) els.uploadBar.style.width = pct + '%';
       if (els.uploadText){
         els.uploadText.textContent = uploadTotal > 0
@@ -448,11 +411,29 @@
         els.pubStatus.textContent = 'Téléversement en cours… publication désactivée';
       }
     }
-    function startUpload(total){ activeUploads++; uploadTotal = total || 0; uploadDone = 0; updateUploadUI(); }
-    function stepUpload(){ if (uploadTotal > 0 && uploadDone < uploadTotal){ uploadDone++; } updateUploadUI(); }
-    function endUpload(){ activeUploads = Math.max(0, activeUploads - 1); if (activeUploads === 0){ uploadTotal = 0; uploadDone = 0; } updateUploadUI(); }
 
-    // admin secret
+    function startUpload(total){
+      activeUploads++;
+      uploadTotal = total || 0;
+      uploadDone = 0;
+      updateUploadUI();
+    }
+    function stepUpload(){
+      if (uploadTotal > 0 && uploadDone < uploadTotal){
+        uploadDone++;
+      }
+      updateUploadUI();
+    }
+    function endUpload(){
+      activeUploads = Math.max(0, activeUploads - 1);
+      if (activeUploads === 0){
+        uploadTotal = 0;
+        uploadDone = 0;
+      }
+      updateUploadUI();
+    }
+
+    // ====== admin secret ======
     const SECRET_KEY='samiah_admin_secret';
     const getAdminSecret=()=>localStorage.getItem(SECRET_KEY)||'';
     function ensureAdminSecret(){ if(!getAdminSecret()){ changeAdminSecret(); } }
@@ -463,7 +444,7 @@
     }
     function logoutAdmin(){ localStorage.removeItem(SECRET_KEY); show('Déconnecté'); setTimeout(()=>location.reload(),400); }
 
-    // PRODUITS
+    // ====== PRODUITS ======
     async function refreshList(){
       try{
         ensureAdminSecret();
@@ -475,10 +456,12 @@
       page = 1;
       fillCats(); render(); updateWAPreview();
     }
+
     function fillCats(){
       const cats = Array.from(new Set(items.map(p=>p.category).filter(Boolean))).sort();
       els.cat.innerHTML = '<option value="">Toutes</option>' + cats.map(c=>`<option>${escapeHtml(c)}</option>`).join('');
     }
+
     function updatePager(total, start, shown){
       const lastPage = Math.max(1, Math.ceil(total / perPage));
       const from = total ? (start + 1) : 0;
@@ -486,11 +469,9 @@
       if(els.pageInfo) els.pageInfo.textContent = `${from}-${to} / ${total}`;
       if(els.prevPage) els.prevPage.disabled = (page <= 1);
       if(els.nextPage) els.nextPage.disabled = (page >= lastPage);
-      if(els.pageSize){
-        const v = parseInt(els.pageSize.value||'10',10);
-        if(v !== perPage) els.pageSize.value = String(perPage);
-      }
+      if(els.pageSize){ const v = parseInt(els.pageSize.value||'10',10); if(v !== perPage) els.pageSize.value = String(perPage); }
     }
+
     function render(){
       const q = (els.q.value||'').toLowerCase();
       const cat = (els.cat.value||'');
@@ -499,15 +480,20 @@
         const okC = !cat || p.category===cat;
         return okQ && okC;
       });
+
       const total = all.length;
       const lastPage = Math.max(1, Math.ceil(total / perPage));
       if(page > lastPage) page = lastPage;
+
       const start = (page - 1) * perPage;
       const slice = all.slice(start, start + perPage);
+
       els.tbody.innerHTML = slice.map((p,i)=>rowTpl(p, (start+i))).join('');
       els.empty.style.display = total?'none':'block';
+
       updatePager(total, start, slice.length);
     }
+
     function rowTpl(p,i){
       const cities=(p.cities||[]).slice(0,3).join(', ')+((p.cities||[]).length>3?'…':'');
       const img = p.image? `<img src="${escapeHtml(p.image)}" alt="" style="width:60px;height:40px;object-fit:cover;border:1px solid #eee;border-radius:6px">` : '<span class="muted">—</span>';
@@ -523,7 +509,10 @@
         </td>
       </tr>`;
     }
+
+    // ====== edit / save produits ======
     function selectedCities(){ return Array.from(els.f_cities.selectedOptions).map(o=>o.value); }
+
     function reset(clear=true){
       editing=null; els.formTitle.textContent='Nouveau produit'; els.del.style.display='none';
       extraUrls=[]; els.extraPreview.innerHTML='';
@@ -531,12 +520,15 @@
       if(clear){
         els.f_title.value=els.f_price.value=els.f_category.value=els.f_id.value=els.f_desc.value=els.f_image.value='';
         els.f_active.checked=true; els.f_expDays.value='';
-        Array.from(els.f_cities.options).forEach(o=>{ o.selected = (o.value === DEFAULT_CITY); });
+        Array.from(els.f_cities.options).forEach(o=>{
+          o.selected = (o.value === DEFAULT_CITY);
+        });
         if(els.mainUploader) els.mainUploader.value='';
         if(els.extraUploader) els.extraUploader.value='';
       }
       updateWAPreview();
     }
+
     function edit(idx){
       const p=items[idx]; if(!p) return;
       editing=idx; els.formTitle.textContent='Modifier le produit'; els.del.style.display='';
@@ -545,12 +537,15 @@
       els.f_active.checked = (p.active!==false);
       els.f_expDays.value = (typeof p.expiresAfterDays==='number') ? p.expiresAfterDays : '';
       Array.from(els.f_cities.options).forEach(o=>o.selected=(p.cities||[]).includes(o.value));
+
       els.mainPreview.innerHTML = p.image? `<img src="${escapeHtml(p.image)}" alt="">` : '';
       extraUrls = Array.isArray(p.images)? [...p.images] : [];
       renderExtraThumbs();
+
       updateWAPreview();
       window.scrollTo({top:0,behavior:'smooth'});
     }
+
     function removeItem(i){
       if(!confirm('Supprimer ce produit ?')) return;
       const p = items[i];
@@ -567,11 +562,13 @@
         }
       }catch{}
     }
+
     function save(){
       const nowIso = new Date().toISOString();
       const expDays = parseInt((els.f_expDays?.value||'').trim(),10);
       const selCities = selectedCities();
       const cities = selCities.length ? selCities : [DEFAULT_CITY];
+
       const p = {
         id: (els.f_id.value||slugify(els.f_title.value)).trim(),
         title: els.f_title.value.trim(),
@@ -588,22 +585,25 @@
       };
       if(!p.title){ alert('Titre requis'); return; }
       if(isNaN(p.price)){ alert('Prix invalide'); return; }
+
       if(editing!=null){ items[editing]=p; show('Produit mis à jour'); }
       else { items.unshift(p); show('Produit ajouté'); }
+
       reset(false); render();
     }
 
-    // WA preview
+    // ====== WhatsApp preview ======
     function updateWAPreview(){
       const title = els.f_title.value || 'Nom du produit';
       const price = els.f_price.value ? fmt(parseInt(els.f_price.value,10))+' XAF' : 'Prix à préciser';
       $('#waPreview').textContent = `Bonjour Samiah Cosmetics, je suis intéressé(e) par ${title} (${price}).`;
     }
 
-    // compression
+    // ====== Compression adaptative ======
     const MAX_PAYLOAD_BYTES = 4_000_000;
     const START_SIDE = 2200, MIN_SIDE = 900;
     const START_QUALITY = 0.9, MIN_QUALITY = 0.6;
+
     function loadImageFromFile(file){
       return new Promise((resolve,reject)=>{
         const r=new FileReader();
@@ -621,10 +621,12 @@
     }
     function dataUrlToB64(u){ return (u||'').split(',')[1]||''; }
     function base64Size(b64){ return Math.ceil((b64.length)*0.75); }
+
     async function compressToTargetBase64(file){
       const img = await loadImageFromFile(file);
       let side = START_SIDE, quality = START_QUALITY;
       let attempt = 0, b64='', bytes=Infinity;
+
       while(attempt++ < 10){
         const canvas = drawToCanvas(img, side);
         const dataUrl = canvas.toDataURL('image/jpeg', quality);
@@ -636,13 +638,17 @@
       }
       return { base64:b64, approxBytes:bytes };
     }
+
     async function uploadOne(file, nameHint){
       if(!file){ throw new Error('Aucun fichier'); }
       const secret=getAdminSecret(); if(!secret){ changeAdminSecret(); throw new Error('Code admin requis.'); }
+
       const { base64, approxBytes } = await compressToTargetBase64(file);
+
       const ext = 'jpg';
       const base = (nameHint || file.name.replace(/\.[^.]+$/,'') || 'image').toLowerCase();
       const filename = `${Date.now()}-${slugify(base)}.${ext}`;
+
       const resp = await fetch('/api/upload-image',{
         method:'POST',
         headers:{'Content-Type':'application/json','x-admin-secret':secret},
@@ -658,10 +664,13 @@
       try{
         const f = els.mainUploader.files[0];
         if(!f){ alert('Choisis une image principale'); return; }
+
         startUpload(1);
+
         setBtnLoading(els.mainSend, els.mainSend, 'Téléverser…');
         const { url, size } = await uploadOne(f, els.f_title.value||'image');
         stepUpload();
+
         els.f_image.value = url;
         els.mainPreview.innerHTML = `<img src="${escapeHtml(url)}" alt="">`;
         setBtnDone(els.mainSend, els.mainSend, 'Téléversé ✅');
@@ -687,6 +696,7 @@
       ).join('');
       bindDnDThumbs();
     }
+
     let dragIndex = null;
     let hoverIndex = null;
     function bindDnDThumbs(){
@@ -720,7 +730,9 @@
       try{
         const files = Array.from(els.extraUploader.files||[]);
         if(!files.length){ alert('Choisis au moins une image'); return; }
+
         startUpload(files.length);
+
         els.extraSend.disabled = true; els.extraSend.textContent='Téléverser…';
         for(const f of files){
           const { url } = await uploadOne(f, (els.f_title.value||'image-sup'));
@@ -755,6 +767,7 @@
       img.src = url;
       els.mainPreview.appendChild(img);
     }
+
     function previewExtraLocal(){
       if(!els.extraPreview) return;
       els.extraPreview.innerHTML = '';
@@ -777,15 +790,18 @@
       });
     }
 
+    // ====== publish produits ======
     function showModal(m){ m.classList.add('show'); m.setAttribute('aria-hidden','false'); }
     function hideModal(m){ m.classList.remove('show'); m.setAttribute('aria-hidden','true'); }
 
     async function publishToBackend(){
       const secret=getAdminSecret(); if(!secret){ changeAdminSecret(); return; }
+
       if (activeUploads > 0){
         alert('Attends la fin du téléversement des images avant de publier.');
         return;
       }
+
       try{
         setBtnLoading(els.publishBtn, els.pubLabel, 'Publication…');
         const resp = await fetch('/api/admin/save-products',{
@@ -805,7 +821,7 @@
       }
     }
 
-    // TÉMOIGNAGES
+    // ====== TÉMOIGNAGES ======
     async function refreshTestimonials(){
       try{
         ensureAdminSecret();
@@ -820,6 +836,7 @@
       }
       renderTestimonials();
     }
+
     function renderTestimonials(){
       if(!els.t_tbody || !els.t_empty) return;
       if(!testimonials.length){
@@ -830,16 +847,18 @@
       els.t_empty.style.display = 'none';
       els.t_tbody.innerHTML = testimonials.map((t,i)=>testimonialRowTpl(t,i)).join('');
     }
+
     function testimonialRowTpl(t,i){
       const name = t.authorName || t.author_name || '';
       const city = t.city || '';
       const rating = (t.rating != null) ? `${t.rating}/5` : '—';
-      const msg = (t.message || '').slice(0,80) + ((t.message||'').length>80?'…':'');
+      const msgFull = t.message || '';
+      const msg = msgFull.length > 80 ? msgFull.slice(0,80)+'…' : msgFull;
       const active = (t.active!==false) ? '<span class="pill">Actif</span>' : '<span class="muted">Masqué</span>';
       const hasPhoto = !!(t.photoUrl || t.photo_url);
-      const photoLabel = hasPhoto ? '📷' : '';
+      const photoLabel = hasPhoto ? ' 📷' : '';
       return `<tr>
-        <td>${escapeHtml(name || '—')} ${photoLabel}</td>
+        <td>${escapeHtml(name || '—')}${photoLabel}</td>
         <td>${escapeHtml(city || '—')}</td>
         <td>${escapeHtml(rating)}</td>
         <td>${escapeHtml(msg || '')}</td>
@@ -850,58 +869,66 @@
         </td>
       </tr>`;
     }
+
     function resetTestimonialForm(clear=true){
       tEditing = null;
       if(els.t_formTitle) els.t_formTitle.textContent = 'Nouveau témoignage';
       if(els.t_del) els.t_del.style.display = 'none';
-      if (clear){
-        if (els.t_name) els.t_name.value = '';
-        if (els.t_city) els.t_city.value = '';
-        if (els.t_rating) els.t_rating.value = '';
-        if (els.t_message) els.t_message.value = '';
-        if (els.t_active) els.t_active.checked = true;
-        if (els.t_photoUrl) els.t_photoUrl.value = '';
-        if (els.t_photoPreview) els.t_photoPreview.innerHTML = '';
-        if (els.t_photoUploader) els.t_photoUploader.value = '';
+      if(clear){
+        if(els.t_name) els.t_name.value = '';
+        if(els.t_city) els.t_city.value = '';
+        if(els.t_rating) els.t_rating.value = '';
+        if(els.t_message) els.t_message.value = '';
+        if(els.t_active) els.t_active.checked = true;
+        if(els.t_photoUrl) els.t_photoUrl.value = '';
+        if(els.t_photoPreview) els.t_photoPreview.innerHTML = '';
+        if(els.t_photoUploader) els.t_photoUploader.value = '';
       }
     }
+
     function editTestimonial(idx){
       const t = testimonials[idx];
       if(!t) return;
       tEditing = idx;
       if(els.t_formTitle) els.t_formTitle.textContent = 'Modifier le témoignage';
       if(els.t_del) els.t_del.style.display = '';
-      if (els.t_name) els.t_name.value = t.authorName || t.author_name || '';
-      if (els.t_city) els.t_city.value = t.city || '';
-      if (els.t_rating) els.t_rating.value = (t.rating != null ? t.rating : '');
-      if (els.t_message) els.t_message.value = t.message || '';
-      if (els.t_active) els.t_active.checked = (t.active !== false);
+
+      if(els.t_name) els.t_name.value = t.authorName || t.author_name || '';
+      if(els.t_city) els.t_city.value = t.city || '';
+      if(els.t_rating) els.t_rating.value = (t.rating != null ? t.rating : '');
+      if(els.t_message) els.t_message.value = t.message || '';
+      if(els.t_active) els.t_active.checked = (t.active !== false);
+
       const photo = t.photoUrl || t.photo_url || '';
-      if (els.t_photoUrl) els.t_photoUrl.value = photo;
-      if (els.t_photoPreview){
+      if(els.t_photoUrl) els.t_photoUrl.value = photo;
+      if(els.t_photoPreview){
         els.t_photoPreview.innerHTML = photo
           ? `<img src="${escapeHtml(photo)}" alt="" style="width:56px;height:56px;object-fit:cover;border:1px solid #eee;border-radius:8px">`
           : '';
       }
       window.scrollTo({top:document.body.scrollHeight, behavior:'smooth'});
     }
+
     async function saveTestimonial(){
       const name = (els.t_name?.value || '').trim();
       const city = (els.t_city?.value || '').trim();
       const message = (els.t_message?.value || '').trim();
       const ratingRaw = (els.t_rating?.value || '').trim();
       const active = !!(els.t_active?.checked);
-      if (!name){ alert('Nom requis'); return; }
-      if (!message){ alert('Message requis'); return; }
+
+      if(!name){ alert('Nom requis'); return; }
+      if(!message){ alert('Message requis'); return; }
+
       let rating = null;
-      if (ratingRaw){
+      if(ratingRaw){
         const n = parseInt(ratingRaw,10);
-        if (isNaN(n) || n<1 || n>5){
+        if(isNaN(n) || n<1 || n>5){
           alert('La note doit être entre 1 et 5');
           return;
         }
         rating = n;
       }
+
       const existing = (tEditing!=null) ? testimonials[tEditing] : null;
       const payload = {
         id: existing?.id,
@@ -912,6 +939,7 @@
         active,
         photoUrl: els.t_photoUrl ? (els.t_photoUrl.value || '').trim() : undefined
       };
+
       try{
         ensureAdminSecret();
         const secret = getAdminSecret();
@@ -922,12 +950,14 @@
         });
         const out = await readResp(resp);
         if(!resp.ok) throw new Error(out?.error || out?.__text || resp.statusText);
-        if (out.item){
-          if (tEditing!=null) testimonials[tEditing] = out.item;
+
+        if(out.item){
+          if(tEditing!=null) testimonials[tEditing] = out.item;
           else testimonials.unshift(out.item);
         }else{
           await refreshTestimonials();
         }
+
         show('Témoignage enregistré ✅');
         resetTestimonialForm(false);
         renderTestimonials();
@@ -935,11 +965,13 @@
         alert('Erreur enregistrement témoignage: ' + e.message);
       }
     }
+
     async function deleteTestimonial(){
-      if (tEditing==null) return;
+      if(tEditing==null) return;
       const t = testimonials[tEditing];
-      if (!t || !t.id){ alert('ID témoignage manquant'); return; }
-      if (!confirm('Supprimer ce témoignage ?')) return;
+      if(!t || !t.id){ alert('ID témoignage manquant'); return; }
+      if(!confirm('Supprimer ce témoignage ?')) return;
+
       try{
         ensureAdminSecret();
         const secret = getAdminSecret();
@@ -950,6 +982,7 @@
         });
         const out = await readResp(resp);
         if(!resp.ok) throw new Error(out?.error || out?.__text || resp.statusText);
+
         testimonials.splice(tEditing,1);
         show('Témoignage supprimé ✅');
         resetTestimonialForm(true);
@@ -958,27 +991,31 @@
         alert('Erreur suppression témoignage: ' + e.message);
       }
     }
+
     async function uploadTestimonialPhoto(){
       try{
         const f = els.t_photoUploader?.files?.[0];
         if(!f){ alert('Choisis une photo pour le témoignage'); return; }
+
         startUpload(1);
-        if (els.t_photoSend){
+        if(els.t_photoSend){
           els.t_photoSend.disabled = true;
           els.t_photoSend.textContent = 'Téléverser…';
         }
+
         const { url } = await uploadOne(f, (els.t_name?.value || 'temoignage'));
-        if (els.t_photoUrl) els.t_photoUrl.value = url;
-        if (els.t_photoPreview){
+        if(els.t_photoUrl) els.t_photoUrl.value = url;
+        if(els.t_photoPreview){
           els.t_photoPreview.innerHTML = `<img src="${escapeHtml(url)}" alt="" style="width:56px;height:56px;object-fit:cover;border:1px solid #eee;border-radius:8px">`;
         }
-        if (els.t_photoSend){
+
+        if(els.t_photoSend){
           els.t_photoSend.textContent = 'Téléversé ✅';
           setTimeout(()=>{ els.t_photoSend.textContent = 'Téléverser'; els.t_photoSend.disabled = false; }, 1000);
         }
         show('Photo de témoignage envoyée ✅');
       }catch(e){
-        if (els.t_photoSend){
+        if(els.t_photoSend){
           els.t_photoSend.disabled = false;
           els.t_photoSend.textContent = 'Téléverser';
         }
@@ -987,8 +1024,9 @@
         endUpload();
       }
     }
+
     function bindTestimonialPhotoPreview(){
-      if (!els.t_photoUploader || !els.t_photoPreview) return;
+      if(!els.t_photoUploader || !els.t_photoPreview) return;
       els.t_photoUploader.addEventListener('change', ()=>{
         els.t_photoPreview.innerHTML = '';
         const f = els.t_photoUploader.files?.[0];
@@ -1006,26 +1044,12 @@
       });
     }
 
-    // onglets
-    function bindTabs(){
-      els.tabs.forEach(btn=>{
-        btn.addEventListener('click', ()=>{
-          const tab = btn.dataset.tab;
-          els.tabs.forEach(b=>b.classList.toggle('tab-active', b===btn));
-          $$('.tab-panel').forEach(p=>{
-            p.classList.toggle('tab-panel-active', p.id === 'tab-' + tab);
-          });
-        });
-      });
-    }
-
-    // events
+    // ====== events ======
     function bind(){
       // table produits
       $('#tbl').addEventListener('click', (e)=>{
         const b=e.target.closest('button'); if(!b) return;
         const idx = parseInt(b.dataset.idx,10);
-        if(Number.isNaN(idx)) return;
         if(b.dataset.act==='edit') edit(idx);
         if(b.dataset.act==='del') removeItem(idx);
       });
@@ -1035,13 +1059,14 @@
         const b = e.target.closest('button'); if(!b) return;
         const idx = parseInt(b.dataset.tidx,10);
         if(Number.isNaN(idx)) return;
-        if (b.dataset.tact === 'edit') editTestimonial(idx);
-        if (b.dataset.tact === 'del') {
+        if(b.dataset.tact === 'edit') editTestimonial(idx);
+        if(b.dataset.tact === 'del'){
           tEditing = idx;
           deleteTestimonial();
         }
       });
 
+      // recherche / filtre produits
       els.q.oninput = ()=>{ page=1; render(); };
       els.cat.onchange = ()=>{ page=1; render(); };
 
@@ -1064,6 +1089,7 @@
         extraUrls.splice(i,1);
         renderExtraThumbs();
       });
+
       els.extraPreview.addEventListener('click', (e)=>{
         const starBtn = e.target.closest('button[data-star]');
         if(!starBtn) return;
@@ -1078,11 +1104,13 @@
       if (els.mainUploader) els.mainUploader.addEventListener('change', previewMainLocal);
       if (els.extraUploader) els.extraUploader.addEventListener('change', previewExtraLocal);
 
+      // top buttons
       els.refreshBtn.onclick = () => {
         Promise.all([refreshList(), refreshTestimonials()]).then(()=>show('Données mises à jour'));
       };
       els.publishBtn.onclick = publishToBackend;
 
+      // pager
       if(els.prevPage) els.prevPage.onclick = ()=>{ if(page>1){ page--; render(); } };
       if(els.nextPage) els.nextPage.onclick = ()=>{ page++; render(); };
       if(els.pageSize) els.pageSize.onchange = ()=>{
@@ -1091,28 +1119,31 @@
         render();
       };
 
+      // menu ⋯
       const openMenu=()=>{ els.menu.classList.add('open'); els.menuBtn.setAttribute('aria-expanded','true'); els.menu.setAttribute('aria-hidden','false'); };
       const closeMenu=()=>{ els.menu.classList.remove('open'); els.menuBtn.setAttribute('aria-expanded','false'); els.menu.setAttribute('aria-hidden','true'); };
       const toggleMenu=()=> els.menu.classList.contains('open')?closeMenu():openMenu();
       els.menuBtn.addEventListener('click', e=>{ e.stopPropagation(); toggleMenu(); });
       document.addEventListener('click', e=>{ if(!els.menu.contains(e.target) && e.target!==els.menuBtn) closeMenu(); });
       document.addEventListener('keydown', e=>{ if(e.key==='Escape') closeMenu(); });
+
       $('#miChangeSecret').onclick = ()=>{ closeMenu(); changeAdminSecret(); };
       $('#miLogout').onclick = ()=>{ closeMenu(); logoutAdmin(); };
 
+      // modal
       els.pubClose.onclick = ()=> hideModal(els.pubModal);
       els.pubModal.addEventListener('click', e=>{ if(e.target===els.pubModal) hideModal(els.pubModal); });
       document.addEventListener('keydown', e=>{ if(e.key==='Escape') hideModal(els.pubModal); });
 
-      if (els.t_save) els.t_save.addEventListener('click', saveTestimonial);
-      if (els.t_reset) els.t_reset.addEventListener('click', ()=>resetTestimonialForm(true));
-      if (els.t_del) els.t_del.addEventListener('click', deleteTestimonial);
-      if (els.t_photoSend) els.t_photoSend.addEventListener('click', uploadTestimonialPhoto);
+      // témoignages
+      if(els.t_save) els.t_save.addEventListener('click', saveTestimonial);
+      if(els.t_reset) els.t_reset.addEventListener('click', ()=>resetTestimonialForm(true));
+      if(els.t_del) els.t_del.addEventListener('click', deleteTestimonial);
+      if(els.t_photoSend) els.t_photoSend.addEventListener('click', uploadTestimonialPhoto);
       bindTestimonialPhotoPreview();
-
-      bindTabs();
     }
 
+    // ====== start ======
     function start(){
       if(els.pageSize) perPage = parseInt(els.pageSize.value||'10',10) || 10;
       bind();
@@ -1121,6 +1152,7 @@
       refreshList();
       refreshTestimonials();
     }
+
     if(document.readyState!=='loading') start();
     else document.addEventListener('DOMContentLoaded', start);
   })();
