@@ -1,71 +1,54 @@
 // netlify/functions/admin-list-products.js
 
-const json = (code, body) => ({
+const json = (body, code = 200) => ({
   statusCode: code,
   headers: {
     "content-type": "application/json; charset=utf-8",
     "access-control-allow-origin": "*",
     "access-control-allow-headers": "content-type,x-admin-secret",
-    "access-control-allow-methods": "OPTIONS,GET",
   },
   body: JSON.stringify(body),
 });
 
-exports.handler = async (event) => {
-  // CORS
+export async function handler(event) {
   if (event.httpMethod === "OPTIONS") {
-    return json(204, {});
+    return { statusCode: 204, headers: json({}).headers };
   }
-
   if (event.httpMethod !== "GET") {
-    return json(405, { error: "Method Not Allowed" });
+    return json({ error: "Method Not Allowed" }, 405);
   }
 
-  try {
-    const {
-      SUPABASE_URL,
-      SUPABASE_SERVICE_ROLE_KEY,
-      ADMIN_SECRET,
-    } = process.env;
-
-    if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY || !ADMIN_SECRET) {
-      return json(500, { error: "env_missing" });
-    }
-
-    const headerSecret =
-      event.headers["x-admin-secret"] || event.headers["X-Admin-Secret"] || "";
-    if (headerSecret !== ADMIN_SECRET) {
-      return json(401, { error: "unauthorized" });
-    }
-
-    const url = new URL(`${SUPABASE_URL}/rest/v1/products`);
-    url.searchParams.set(
-      "select",
-      "id,title,price,currency,category,cities,image,images,short_description,active,created_at,expires_after_days"
-    );
-
-    const r = await fetch(url.toString(), {
-      headers: {
-        apikey: SUPABASE_SERVICE_ROLE_KEY,
-        Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
-        "Accept-Profile": "public",
-      },
-    });
-
-    const text = await r.text();
-    let data;
-    try {
-      data = text ? JSON.parse(text) : [];
-    } catch {
-      return json(r.status, { error: "invalid_json_from_supabase", raw: text });
-    }
-
-    if (!r.ok) {
-      return json(r.status, { error: "supabase_error", details: data });
-    }
-
-    return json(200, { items: Array.isArray(data) ? data : [] });
-  } catch (e) {
-    return json(500, { error: "Function crashed", details: String(e) });
+  const { ADMIN_SECRET, SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY } =
+    process.env;
+  if (!ADMIN_SECRET || !SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
+    return json({ error: "env_missing" }, 500);
   }
-};
+
+  const headerSecret =
+    event.headers["x-admin-secret"] || event.headers["X-Admin-Secret"] || "";
+  if (headerSecret !== ADMIN_SECRET) {
+    return json({ error: "unauthorized" }, 401);
+  }
+
+  const url = new URL(`${SUPABASE_URL}/rest/v1/products`);
+  url.searchParams.set(
+    "select",
+    "id,title,price,currency,category,cities,image,images,short_description,active,created_at,expires_after_days"
+  );
+
+  const r = await fetch(url, {
+    headers: {
+      apikey: SUPABASE_SERVICE_ROLE_KEY,
+      Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+      "Accept-Profile": "public",
+    },
+  });
+
+  if (!r.ok) {
+    const txt = await r.text();
+    return json({ error: txt }, r.status);
+  }
+
+  const items = await r.json();
+  return json({ items });
+}
