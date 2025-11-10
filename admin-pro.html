@@ -95,198 +95,209 @@
   </div>
 
   <div class="wrap">
-    <div class="grid">
-      <!-- LISTE PRODUITS -->
-      <div class="panel">
-        <h2>Catalogue</h2>
-        <div class="filters">
-          <input type="text" id="q" placeholder="Recherche (titre, catégorie)…"/>
-          <select id="catFilter"></select>
+    <!-- Onglets -->
+    <div style="margin-bottom:16px;display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn green tab-btn" data-tab="products">Catalogue</button>
+      <button class="btn secondary tab-btn" data-tab="testimonials">Témoignages</button>
+    </div>
+
+    <!-- ========== SECTION CATALOGUE ========== -->
+    <div id="sectionProducts">
+      <div class="grid">
+        <!-- LISTE PRODUITS -->
+        <div class="panel">
+          <h2>Catalogue</h2>
+          <div class="filters">
+            <input type="text" id="q" placeholder="Recherche (titre, catégorie)…"/>
+            <select id="catFilter"></select>
+          </div>
+          <div class="note">Astuce : clique sur une ligne pour l’éditer. Téléverse une image (ou des images supplémentaires), puis « Publier » pour enregistrer en base.</div>
+          <div style="overflow:auto;max-height:520px;margin-top:10px;border:1px solid var(--border);border-radius:12px">
+            <table id="tbl" aria-describedby="tableau-produits">
+              <thead>
+                <tr>
+                  <th style="min-width:200px">Titre</th>
+                  <th style="min-width:100px">Prix</th>
+                  <th style="min-width:140px">Catégorie</th>
+                  <th>Villes</th>
+                  <th style="min-width:120px">Aperçu</th>
+                  <th style="min-width:150px"></th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+
+          <!-- Pagination -->
+          <div id="pager" style="display:flex;align-items:center;gap:8px;justify-content:flex-end;margin-top:8px">
+            <button class="iconbtn" id="prevPage" aria-label="Page précédente">◀</button>
+            <span id="pageInfo" class="muted">—</span>
+            <button class="iconbtn" id="nextPage" aria-label="Page suivante">▶</button>
+            <select id="pageSize" title="Par page">
+              <option value="10" selected>10</option>
+              <option value="25">25</option>
+              <option value="50">50</option>
+            </select>
+          </div>
+          <!-- /Pagination -->
+
+          <div class="empty" id="empty" style="display:none">Aucun produit</div>
         </div>
-        <div class="note">Astuce : clique sur une ligne pour l’éditer. Téléverse une image (ou des images supplémentaires), puis « Publier » pour enregistrer en base.</div>
-        <div style="overflow:auto;max-height:520px;margin-top:10px;border:1px solid var(--border);border-radius:12px">
-          <table id="tbl" aria-describedby="tableau-produits">
+
+        <!-- FORM PRODUIT -->
+        <div class="panel">
+          <h2 id="formTitle">Nouveau produit</h2>
+          <div class="note" style="margin-bottom:10px">Champs requis : <strong>Titre</strong>, <strong>Prix</strong>. L’ID (slug) est auto-généré si vide.</div>
+
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+            <div><label>Titre<br/><input id="f_title"></label></div>
+            <div><label>Prix XAF<br/><input id="f_price" type="number" min="0" step="100"></label></div>
+            <div><label>Catégorie<br/><input id="f_category" placeholder="Shampoings, Soins cheveux, Services"></label></div>
+            <div><label>ID (slug)<br/><input id="f_id" placeholder="auto si vide"></label></div>
+            <div style="grid-column:1 / -1"><label>Description courte<br/><textarea id="f_desc" placeholder="Texte court…"></textarea></label></div>
+
+            <!-- Image principale -->
+            <div style="grid-column:1 / -1">
+              <label>Image principale<br/>
+                <input type="hidden" id="f_image">
+                <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+                  <input type="file" id="main_uploader" accept="image/*">
+                  <button type="button" class="btn secondary" id="main_send">Téléverser</button>
+                  <small class="muted">JPG/PNG — <strong>compression auto</strong> (envoi ~4&nbsp;Mo max).</small>
+                </div>
+                <div id="mainPreview" class="thumbs"></div>
+              </label>
+            </div>
+
+            <!-- Photos supplémentaires -->
+            <div style="grid-column:1 / -1">
+              <label>Photos supplémentaires (optionnel)<br/>
+                <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+                  <input type="file" id="extra_uploader" accept="image/*" multiple>
+                  <button type="button" class="btn secondary" id="extra_send">Téléverser</button>
+                  <small class="muted">Plusieurs images — <strong>compression auto</strong>.</small>
+                </div>
+                <div id="extraPreview" class="thumbs"></div>
+              </label>
+            </div>
+
+            <!-- Progression upload (COMMUNE) -->
+            <div id="uploadProgress" style="grid-column:1 / -1; margin-top:8px; display:none">
+              <div style="height:6px;border-radius:999px;background:#eee;overflow:hidden">
+                <div id="uploadBar" style="height:100%;width:0%;background:#0A0A0A;transition:width .2s"></div>
+              </div>
+              <div id="uploadText" class="muted" style="margin-top:4px;font-size:12px">
+                Téléversement des images…
+              </div>
+            </div>
+
+            <!-- Expiration & Actif -->
+            <div>
+              <label>Expire dans (jours) — optionnel<br/>
+                <input id="f_expDays" type="number" min="0" placeholder="ex: 14">
+              </label>
+              <small class="muted">Laisser vide pour “pas d’expiration”.</small>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;margin-top:6px">
+              <input id="f_active" type="checkbox" checked>
+              <label for="f_active">Activer l’affichage</label>
+            </div>
+
+            <div><label>Villes (liste)<br/>
+              <select id="f_cities" multiple size="6" style="height:140px">
+                <option>N’Djamena</option><option>Moundou</option><option>Sarh</option><option>Abéché</option><option>Bongor</option>
+                <option>Kélo</option><option>Pala</option><option>Koumra</option><option>Faya-Largeau</option>
+              </select>
+              <small class="muted">Maintenir Ctrl/Cmd pour multisélection</small>
+            </div>
+          </div>
+
+          <div style="display:flex;gap:10px;margin-top:12px">
+            <button class="btn" id="save">Enregistrer</button>
+            <button class="btn secondary" id="reset">Annuler</button>
+            <button class="btn" id="del" style="display:none;background:#b42318">Supprimer</button>
+          </div>
+
+          <div style="margin-top:14px">
+            <div class="note">Aperçu WhatsApp :</div>
+            <div id="waPreview" class="muted" style="margin-top:6px;font-family:ui-monospace,Menlo,monospace;font-size:12px;background:#fff;border:1px solid var(--border);padding:8px;border-radius:8px;white-space:pre-wrap"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========== SECTION TÉMOIGNAGES (ONGLET 2) ========== -->
+    <div id="sectionTestimonials" style="display:none">
+      <div class="panel">
+        <h2>Gestion des témoignages</h2>
+        <div class="note" style="margin-bottom:10px">
+          Ajoute ici les témoignages de tes clientes. Ils s’afficheront ensuite sur la vitrine (partie publique).
+        </div>
+
+        <div style="overflow:auto;max-height:360px;margin-top:6px;border:1px solid var(--border);border-radius:12px">
+          <table id="tblTesti" aria-describedby="tableau-temoignages">
             <thead>
               <tr>
-                <th style="min-width:200px">Titre</th>
-                <th style="min-width:100px">Prix</th>
-                <th style="min-width:140px">Catégorie</th>
-                <th>Villes</th>
-                <th style="min-width:120px">Aperçu</th>
+                <th style="min-width:160px">Client</th>
+                <th style="min-width:120px">Ville</th>
+                <th style="min-width:80px">Note</th>
+                <th>Extrait</th>
+                <th style="min-width:80px">Actif</th>
                 <th style="min-width:150px"></th>
               </tr>
             </thead>
             <tbody></tbody>
           </table>
         </div>
-
-        <!-- Pagination -->
-        <div id="pager" style="display:flex;align-items:center;gap:8px;justify-content:flex-end;margin-top:8px">
-          <button class="iconbtn" id="prevPage" aria-label="Page précédente">◀</button>
-          <span id="pageInfo" class="muted">—</span>
-          <button class="iconbtn" id="nextPage" aria-label="Page suivante">▶</button>
-          <select id="pageSize" title="Par page">
-            <option value="10" selected>10</option>
-            <option value="25">25</option>
-            <option value="50">50</option>
-          </select>
-        </div>
-        <!-- /Pagination -->
-
-        <div class="empty" id="empty" style="display:none">Aucun produit</div>
+        <div class="empty" id="emptyTesti" style="display:none;margin-top:6px">Aucun témoignage pour l’instant.</div>
       </div>
 
-      <!-- FORM PRODUIT -->
       <div class="panel">
-        <h2 id="formTitle">Nouveau produit</h2>
-        <div class="note" style="margin-bottom:10px">Champs requis : <strong>Titre</strong>, <strong>Prix</strong>. L’ID (slug) est auto-généré si vide.</div>
+        <h2 id="t_formTitle">Nouveau témoignage</h2>
+        <div class="note" style="margin-bottom:10px">
+          Champs requis : <strong>Nom</strong>, <strong>Message</strong>. La note et la photo sont facultatives.
+        </div>
 
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-          <div><label>Titre<br/><input id="f_title"></label></div>
-          <div><label>Prix XAF<br/><input id="f_price" type="number" min="0" step="100"></label></div>
-          <div><label>Catégorie<br/><input id="f_category" placeholder="Shampoings, Soins cheveux, Services"></label></div>
-          <div><label>ID (slug)<br/><input id="f_id" placeholder="auto si vide"></label></div>
-          <div style="grid-column:1 / -1"><label>Description courte<br/><textarea id="f_desc" placeholder="Texte court…"></textarea></label></div>
+          <div><label>Nom du client<br/><input id="t_name" placeholder="Ex : Amina D."></label></div>
+          <div><label>Ville<br/><input id="t_city" placeholder="N’Djamena"></label></div>
 
-          <!-- Image principale -->
-          <div style="grid-column:1 / -1">
-            <label>Image principale<br/>
-              <input type="hidden" id="f_image">
-              <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-                <input type="file" id="main_uploader" accept="image/*">
-                <button type="button" class="btn secondary" id="main_send">Téléverser</button>
-                <small class="muted">JPG/PNG — <strong>compression auto</strong> (envoi ~4&nbsp;Mo max).</small>
-              </div>
-              <div id="mainPreview" class="thumbs"></div>
-            </label>
-          </div>
-
-          <!-- Photos supplémentaires -->
-          <div style="grid-column:1 / -1">
-            <label>Photos supplémentaires (optionnel)<br/>
-              <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-                <input type="file" id="extra_uploader" accept="image/*" multiple>
-                <button type="button" class="btn secondary" id="extra_send">Téléverser</button>
-                <small class="muted">Plusieurs images — <strong>compression auto</strong>.</small>
-              </div>
-              <div id="extraPreview" class="thumbs"></div>
-            </label>
-          </div>
-
-          <!-- Progression upload (COMMUNE) -->
-          <div id="uploadProgress" style="grid-column:1 / -1; margin-top:8px; display:none">
-            <div style="height:6px;border-radius:999px;background:#eee;overflow:hidden">
-              <div id="uploadBar" style="height:100%;width:0%;background:#0A0A0A;transition:width .2s"></div>
-            </div>
-            <div id="uploadText" class="muted" style="margin-top:4px;font-size:12px">
-              Téléversement des images…
-            </div>
-          </div>
-
-          <!-- Expiration & Actif -->
           <div>
-            <label>Expire dans (jours) — optionnel<br/>
-              <input id="f_expDays" type="number" min="0" placeholder="ex: 14">
+            <label>Note (1 à 5) — optionnel<br/>
+              <input id="t_rating" type="number" min="1" max="5" placeholder="5">
             </label>
-            <small class="muted">Laisser vide pour “pas d’expiration”.</small>
+            <small class="muted">Laisser vide pour « sans note ».</small>
           </div>
           <div style="display:flex;align-items:center;gap:8px;margin-top:6px">
-            <input id="f_active" type="checkbox" checked>
-            <label for="f_active">Activer l’affichage</label>
+            <input id="t_active" type="checkbox" checked>
+            <label for="t_active">Actif (visible sur le site)</label>
           </div>
 
-          <div><label>Villes (liste)<br/>
-            <select id="f_cities" multiple size="6" style="height:140px">
-              <option>N’Djamena</option><option>Moundou</option><option>Sarh</option><option>Abéché</option><option>Bongor</option>
-              <option>Kélo</option><option>Pala</option><option>Koumra</option><option>Faya-Largeau</option>
-            </select>
-            <small class="muted">Maintenir Ctrl/Cmd pour multisélection</small>
+          <!-- Photo de preuve (optionnelle) -->
+          <div style="grid-column:1 / -1">
+            <label>Photo (optionnel)<br/>
+              <input type="hidden" id="t_photoUrl">
+              <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+                <input type="file" id="t_photoUploader" accept="image/*">
+                <button type="button" class="btn secondary" id="t_photoSend">Téléverser</button>
+                <small class="muted">JPG/PNG — compression auto (comme les produits).</small>
+              </div>
+              <div id="t_photoPreview" class="thumbs"></div>
+            </label>
+          </div>
+
+          <div style="grid-column:1 / -1">
+            <label>Message<br/>
+              <textarea id="t_message" placeholder="Ex : J’ai adoré l’accompagnement, mes cheveux revivent…"></textarea>
+            </label>
           </div>
         </div>
 
         <div style="display:flex;gap:10px;margin-top:12px">
-          <button class="btn" id="save">Enregistrer</button>
-          <button class="btn secondary" id="reset">Annuler</button>
-          <button class="btn" id="del" style="display:none;background:#b42318">Supprimer</button>
+          <button class="btn" id="t_save">Enregistrer le témoignage</button>
+          <button class="btn secondary" id="t_reset">Annuler</button>
+          <button class="btn" id="t_del" style="display:none;background:#b42318">Supprimer</button>
         </div>
-
-        <div style="margin-top:14px">
-          <div class="note">Aperçu WhatsApp :</div>
-          <div id="waPreview" class="muted" style="margin-top:6px;font-family:ui-monospace,Menlo,monospace;font-size:12px;background:#fff;border:1px solid var(--border);padding:8px;border-radius:8px;white-space:pre-wrap"></div>
-        </div>
-      </div>
-    </div>
-
-    <!-- ========== TÉMOIGNAGES EN DESSOUS ========== -->
-    <div class="panel">
-      <h2>Gestion des témoignages</h2>
-      <div class="note" style="margin-bottom:10px">
-        Ajoute ici les témoignages de tes clientes. Ils s’afficheront ensuite sur la vitrine (partie publique).
-      </div>
-
-      <div style="overflow:auto;max-height:360px;margin-top:6px;border:1px solid var(--border);border-radius:12px">
-        <table id="tblTesti" aria-describedby="tableau-temoignages">
-          <thead>
-            <tr>
-              <th style="min-width:160px">Client</th>
-              <th style="min-width:120px">Ville</th>
-              <th style="min-width:80px">Note</th>
-              <th>Extrait</th>
-              <th style="min-width:80px">Actif</th>
-              <th style="min-width:150px"></th>
-            </tr>
-          </thead>
-          <tbody></tbody>
-        </table>
-      </div>
-      <div class="empty" id="emptyTesti" style="display:none;margin-top:6px">Aucun témoignage pour l’instant.</div>
-    </div>
-
-    <div class="panel">
-      <h2 id="t_formTitle">Nouveau témoignage</h2>
-      <div class="note" style="margin-bottom:10px">
-        Champs requis : <strong>Nom</strong>, <strong>Message</strong>. La note et la photo sont facultatives.
-      </div>
-
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-        <div><label>Nom du client<br/><input id="t_name" placeholder="Ex : Amina D."></label></div>
-        <div><label>Ville<br/><input id="t_city" placeholder="N’Djamena"></label></div>
-
-        <div>
-          <label>Note (1 à 5) — optionnel<br/>
-            <input id="t_rating" type="number" min="1" max="5" placeholder="5">
-          </label>
-          <small class="muted">Laisser vide pour « sans note ».</small>
-        </div>
-        <div style="display:flex;align-items:center;gap:8px;margin-top:6px">
-          <input id="t_active" type="checkbox" checked>
-          <label for="t_active">Actif (visible sur le site)</label>
-        </div>
-
-        <!-- Photo de preuve (optionnelle) -->
-        <div style="grid-column:1 / -1">
-          <label>Photo (optionnel)<br/>
-            <input type="hidden" id="t_photoUrl">
-            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-              <input type="file" id="t_photoUploader" accept="image/*">
-              <button type="button" class="btn secondary" id="t_photoSend">Téléverser</button>
-              <small class="muted">JPG/PNG — compression auto (comme les produits).</small>
-            </div>
-            <div id="t_photoPreview" class="thumbs"></div>
-          </label>
-        </div>
-
-        <div style="grid-column:1 / -1">
-          <label>Message<br/>
-            <textarea id="t_message" placeholder="Ex : J’ai adoré l’accompagnement, mes cheveux revivent…"></textarea>
-          </label>
-        </div>
-      </div>
-
-      <div style="display:flex;gap:10px;margin-top:12px">
-        <button class="btn" id="t_save">Enregistrer le témoignage</button>
-        <button class="btn secondary" id="t_reset">Annuler</button>
-        <button class="btn" id="t_del" style="display:none;background:#b42318">Supprimer</button>
       </div>
     </div>
 
@@ -510,7 +521,6 @@
       </tr>`;
     }
 
-    // ====== edit / save produits ======
     function selectedCities(){ return Array.from(els.f_cities.selectedOptions).map(o=>o.value); }
 
     function reset(clear=true){
@@ -683,7 +693,6 @@
       }
     }
 
-    // vignettes produits
     function renderExtraThumbs(){
       const main = (els.f_image.value||'').trim();
       els.extraPreview.innerHTML = extraUrls.map((u,i)=>
@@ -1044,8 +1053,32 @@
       });
     }
 
+    // ========== Onglets Catalogue / Témoignages ==========
+    function switchTab(tab){
+      const sectionProducts = $('#sectionProducts');
+      const sectionTestimonials = $('#sectionTestimonials');
+      if(sectionProducts) sectionProducts.style.display = (tab==='products'?'block':'none');
+      if(sectionTestimonials) sectionTestimonials.style.display = (tab==='testimonials'?'block':'none');
+
+      $$('.tab-btn').forEach(btn=>{
+        const t = btn.dataset.tab;
+        if(t===tab){
+          btn.classList.add('green');
+          btn.classList.remove('secondary');
+        }else{
+          btn.classList.remove('green');
+          btn.classList.add('secondary');
+        }
+      });
+    }
+
     // ====== events ======
     function bind(){
+      // Tabs
+      $$('.tab-btn').forEach(btn=>{
+        btn.addEventListener('click', ()=>switchTab(btn.dataset.tab || 'products'));
+      });
+
       // table produits
       $('#tbl').addEventListener('click', (e)=>{
         const b=e.target.closest('button'); if(!b) return;
@@ -1149,6 +1182,7 @@
       bind();
       reset(true);
       resetTestimonialForm(true);
+      switchTab('products');      // on démarre sur Catalogue
       refreshList();
       refreshTestimonials();
     }
