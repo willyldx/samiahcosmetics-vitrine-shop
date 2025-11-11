@@ -618,7 +618,7 @@ window.addEventListener("popstate", () => {
 });
 
 // =======================
-// Témoignages (vitrine)
+// Témoignages (vitrine) — CLEAN
 // =======================
 async function loadTestimonials(){
   if (!testiGrid) return; // au cas où ancienne version du HTML
@@ -626,9 +626,10 @@ async function loadTestimonials(){
   try{
     const { data, error } = await sb
       .from("testimonials")
-      .select("*")
+      .select("id, client_name, city, rating, message, photos, created_at, active")
       .eq("active", true)
-      .order("created_at", { ascending:false });
+      .order("created_at", { ascending:false })
+      .limit(5);
 
     if (error) throw error;
     renderTestimonials(data || []);
@@ -646,20 +647,19 @@ function renderTestimonials(list, errText = ""){
     testiGrid.innerHTML = "";
     if (testiEmpty){
       testiEmpty.style.display = "block";
-      if (errText){
-        testiEmpty.textContent = "Les premiers témoignages arrivent bientôt ("+errText+")";
-      }
+      testiEmpty.textContent = errText
+        ? "Les premiers témoignages arrivent bientôt ("+errText+")"
+        : "Les premiers témoignages arrivent bientôt.";
     }
     return;
   }
 
   const html = rows.map(t => {
-    const name  = escapeHtml(t.client_name || t.name || "");
-    const city  = escapeHtml(t.city || t.location || "");
-    const quote = escapeHtml(t.quote || t.message || t.text || "");
-    const photosRaw = t.photos || t.photo_urls || t.images || t.image || "";
-    const gallery = uniq(toArray(photosRaw));
-    const img = gallery[0] || "/assets/images/placeholder-testimonial.png";
+    const name  = escapeHtml(t.client_name || "");
+    const city  = escapeHtml(t.city || "");
+    const quote = escapeHtml(t.message || "");
+    const photos = Array.isArray(t.photos) ? t.photos.filter(Boolean) : [];
+    const img = photos[0] || "/assets/images/placeholder-testimonial.png";
 
     const date = t.created_at ? new Date(t.created_at) : null;
     const dateStr = date
