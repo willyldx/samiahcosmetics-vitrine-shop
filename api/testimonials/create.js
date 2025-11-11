@@ -1,4 +1,4 @@
-// /api/testimonials/create.ts  (Node runtime)
+// api/testimonials/create.js  (Node.js Function – pas de TypeScript)
 import { createClient } from '@supabase/supabase-js';
 
 export default async function handler(req, res) {
@@ -12,14 +12,14 @@ export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).send('Method Not Allowed');
 
   try {
-    const body = typeof req.body === 'string' ? JSON.parse(req.body || '{}') : (req.body || {});
+    const body = typeof req.body === 'string' ? JSON.parse(req.body  '{}') : (req.body  {});
     const {
       client_name,
       city = null,
       message,
-      rating = null,          // 1..5 ou null
-      photos = [],            // tableau d’URLs ou vide
-      active = false          // on laisse false par défaut; tu actives via le bouton Publier
+      rating = null,
+      photos = [],
+      active = false
     } = body;
 
     if (!client_name || !message) {
@@ -27,46 +27,37 @@ export default async function handler(req, res) {
     }
 
     const supabase = createClient(
-      process.env.SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!  // service-role : bypass RLS pour insert contrôlé
+      process.env.SUPABASE_URL,
+      process.env.SUPABASE_SERVICE_ROLE_KEY
     );
 
-    // Normalisation types
-    const ratingInt =
-      typeof rating === 'number' ? Math.round(rating) :
-      typeof rating === 'string' ? parseInt(rating, 10) : null;
-    const ratingSafe = (ratingInt && ratingInt >= 1 && ratingInt <= 5) ? ratingInt : null;
+    const r = (typeof rating === 'number') ? Math.round(rating)
+            : (typeof rating === 'string') ? parseInt(rating, 10)
+            : null;
+    const ratingSafe = (r && r >= 1 && r <= 5) ? r : null;
 
     const photosArr = Array.isArray(photos)
       ? photos.filter(Boolean)
-      : typeof photos === 'string'
+      : (typeof photos === 'string'
         ? photos.split(/[,\n;|]+/g).map(s => s.trim()).filter(Boolean)
-        : [];
+        : []);
 
-    const row = {
-      client_name,
-      city,
-      message,
-      rating: ratingSafe,
-      photos: photosArr,
-      active: !!active
-    };
+    const row = { client_name, city, message, rating: ratingSafe, photos: photosArr, active: !!active };
 
     const { data, error } = await supabase
       .from('testimonials')
       .insert(row)
-      .select('id, client_name, active')
+      .select('id')
       .single();
 
     if (error) {
-      // Log lisible dans Vercel
-      console.error('[insert testimonials] ', error);
+      console.error('[insert testimonials]', error);
       return res.status(500).json({ error: error.message });
     }
 
     return res.status(200).json({ ok: true, id: data.id });
-  } catch (e: any) {
-    console.error('[create.ts fatal] ', e);
+  } catch (e) {
+    console.error('[create.js fatal]', e);
     return res.status(500).json({ error: e?.message || 'server error' });
   }
 }
