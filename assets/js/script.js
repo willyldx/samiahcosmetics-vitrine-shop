@@ -105,7 +105,7 @@ function ensureShareButton(){
     btn.className = "btn secondary";
     btn.type = "button";
     btn.textContent = "Partager le lien";
-    // l’insérer avant les boutons Préc/Suiv si possibles
+    // l'insérer avant les boutons Préc/Suiv si possibles
     if (mPrev) mActions.insertBefore(btn, mPrev);
     else mActions.appendChild(btn);
   }
@@ -309,7 +309,7 @@ function render(list, errorText=""){
   if (filtered.length === 0) {
     if (emptyEl){
       emptyEl.style.display = "block";
-      emptyEl.textContent = "Aucun produit pour l’instant" + (errorText ? ` (${errorText})` : ".");
+      emptyEl.textContent = "Aucun produit pour l'instant" + (errorText ? ` (${errorText})` : ".");
     }
   } else {
     if (emptyEl) emptyEl.style.display = "none";
@@ -547,7 +547,7 @@ function closeModal(){
   modal.style.display = "none";
   overlay.style.display = "none";
 
-  // retire ?p de l’URL sans recharger
+  // retire ?p de l'URL sans recharger
   try {
     const u = new URL(location.href);
     u.searchParams.delete("p");
@@ -590,7 +590,7 @@ if (fsOverlay){
 }
 
 // =======================
-// Deep-link : ouvrir/fermer selon l’URL
+// Deep-link : ouvrir/fermer selon l'URL
 // =======================
 function maybeOpenFromURL(){
   const pid = getPidFromURL();
@@ -618,23 +618,30 @@ window.addEventListener("popstate", () => {
 });
 
 // =======================
-// Témoignages (vitrine) — CLEAN
+// Témoignages (vitrine) — CORRIGÉ ✅
 // =======================
 async function loadTestimonials(){
-  if (!testiGrid) return; // au cas où ancienne version du HTML
+  if (!testiGrid) return;
 
   try{
+    console.log("[loadTestimonials] Fetching...");
+    
     const { data, error } = await sb
       .from("testimonials")
-      .select("id, client_name, city, rating, message, photos, created_at, active")
+      .select("id, client_name, city, rating, message, photo_url, created_at, active")
       .eq("active", true)
       .order("created_at", { ascending:false })
       .limit(5);
 
-    if (error) throw error;
+    if (error) {
+      console.error("[loadTestimonials] Supabase error:", error);
+      throw error;
+    }
+
+    console.log("[loadTestimonials] Success:", data);
     renderTestimonials(data || []);
   }catch(e){
-    console.warn("[testimonials]", e);
+    console.error("[loadTestimonials] Error:", e);
     renderTestimonials([], e.message || "Erreur");
   }
 }
@@ -643,6 +650,9 @@ function renderTestimonials(list, errText = ""){
   if (!testiGrid) return;
 
   const rows = Array.isArray(list) ? list : [];
+  
+  console.log("[renderTestimonials]", { count: rows.length, rows });
+
   if (!rows.length){
     testiGrid.innerHTML = "";
     if (testiEmpty){
@@ -655,11 +665,13 @@ function renderTestimonials(list, errText = ""){
   }
 
   const html = rows.map(t => {
+    // ✅ CORRECTION : utilise client_name, pas author_name
     const name  = escapeHtml(t.client_name || "");
     const city  = escapeHtml(t.city || "");
     const quote = escapeHtml(t.message || "");
-    const photos = Array.isArray(t.photos) ? t.photos.filter(Boolean) : [];
-    const img = photos[0] || "/assets/images/placeholder-testimonial.png";
+    
+    // ✅ CORRECTION : photo_url est une STRING, pas un array
+    const img = t.photo_url || "/assets/images/placeholder-testimonial.png";
 
     const date = t.created_at ? new Date(t.created_at) : null;
     const dateStr = date
@@ -677,7 +689,7 @@ function renderTestimonials(list, errText = ""){
           >
         </div>
         <div class="p">
-          <p style="font-size:13px;line-height:1.5">“${quote || "Témoignage en attente de texte."}”</p>
+          <p style="font-size:13px;line-height:1.5">"${quote || "Témoignage en attente de texte."}"</p>
           <div class="muted" style="margin-top:6px;font-size:12px">
             ${name || "Cliente Samiah"}${city ? " • " + city : ""}${dateStr ? " • " + dateStr : ""}
           </div>
