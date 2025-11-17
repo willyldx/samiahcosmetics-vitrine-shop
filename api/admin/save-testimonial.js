@@ -44,13 +44,19 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: "message is required" });
   }
 
-  // Normalisation : on mappe authorName -> client_name
+  // ✅ CORRECTION : Adapté pour ta structure existante
+  // On convertit photoUrl (string) → photos (array)
+  let photosArray = null;
+  if (testimonial.photoUrl) {
+    photosArray = [testimonial.photoUrl]; // Met l'URL dans un array
+  }
+
   const row = {
     client_name: testimonial.authorName || testimonial.client_name,
     city: testimonial.city || null,
     rating: typeof testimonial.rating === "number" ? testimonial.rating : null,
     message: testimonial.message,
-    photo_url: testimonial.photoUrl || null,  // ✅ String, pas array
+    photos: photosArray,  // ✅ Array au lieu de string
     active: testimonial.active !== false
   };
 
@@ -86,5 +92,15 @@ export default async function handler(req, res) {
   }
 
   console.log("[save-testimonial] Success", data);
-  return res.status(200).json({ item: data });
+  
+  // ✅ On renvoie les données normalisées pour l'admin
+  const normalized = {
+    ...data,
+    authorName: data.client_name,
+    photoUrl: Array.isArray(data.photos) && data.photos.length > 0 
+      ? data.photos[0] 
+      : null
+  };
+  
+  return res.status(200).json({ item: normalized });
 }
