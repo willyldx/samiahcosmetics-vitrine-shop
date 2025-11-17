@@ -20,7 +20,7 @@ export default async function handler(req, res) {
 
   const { data, error } = await sb
     .from("testimonials")
-    .select("id, client_name, city, rating, message, photo_url, active, created_at")
+    .select("id, client_name, city, rating, message, photos, active, created_at")
     .order("created_at", { ascending: false });
 
   if (error) {
@@ -28,14 +28,16 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: error.message });
   }
 
-  // ✅ On retourne avec les noms normalisés pour l'admin
+  // ✅ On normalise pour l'admin : photos[0] → photoUrl
   const items = (data || []).map(t => ({
     id: t.id,
-    authorName: t.client_name,  // ← Mappé pour l'admin
+    authorName: t.client_name,
     city: t.city,
     rating: t.rating,
     message: t.message,
-    photoUrl: t.photo_url,      // ← Mappé
+    photoUrl: Array.isArray(t.photos) && t.photos.length > 0 
+      ? t.photos[0] 
+      : null,
     active: t.active,
     createdAt: t.created_at
   }));
