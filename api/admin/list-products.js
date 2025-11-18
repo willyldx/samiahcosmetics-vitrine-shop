@@ -1,23 +1,29 @@
-// /api/admin/list-products.js
-// FORMAT MODERNE (ESM)
+// api/admin/list-products.js
+// ========================================
 import { createClient } from '@supabase/supabase-js';
 
 export default async function handler(req, res) {
-  if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
-
-  const { SUPABASE_URL, SUPABASE_SERVICE_ROLE, ADMIN_SECRET } = process.env;
-  if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE) {
-    return res.status(500).json({ error: 'Missing Supabase env vars' });
-  }
-  if (req.headers['x-admin-secret'] !== (ADMIN_SECRET || '')) {
-    return res.status(401).json({ error: 'Unauthorized' });
-  }
-
   try {
-    const sb = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE);
+    if (req.method !== 'GET') {
+      return res.status(405).json({ error: 'Method not allowed' });
+    }
+
+    const { SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, ADMIN_SECRET } = process.env;
+    
+    if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
+      return res.status(500).json({ error: 'Missing Supabase env vars' });
+    }
+
+    const headerSecret = req.headers['x-admin-secret'] || req.headers['X-Admin-Secret'] || '';
+    if (ADMIN_SECRET && headerSecret !== ADMIN_SECRET) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    const sb = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+
     const select =
       'id,title,price,currency,category,short_description,image,images,cities,active,expires_after_days,published_at,created_at,' +
-      'product_images(url,sort)'; // On s'assure de lire 'images'
+      'product_images(url,sort)';
 
     const { data, error } = await sb
       .from('products')
@@ -43,14 +49,12 @@ export default async function handler(req, res) {
       active: row.active !== false,
       expiresAfterDays: row.expires_after_days ?? null,
       publishedAt: row.published_at || null,
-      // L'admin lit 'images' (pour la compatibilité)
       images: row.images || (Array.isArray(row.product_images) ? row.product_images.map(x => x.url) : []),
     }));
     
     return res.status(200).json({ items });
-
   } catch (e) {
     console.error('List-products handler error:', e);
-    return res.status(500).json({ error: 'Function crashed', details: String(e) });
+    return res.status(500).json({ error: 'Function crashed', details: e.message });
   }
-};
+}
