@@ -618,7 +618,7 @@ window.addEventListener("popstate", () => {
 });
 
 // =======================
-// Témoignages (vitrine) — CORRIGÉ ✅
+// Témoignages (vitrine) — VERSION FINALE ✅✅✅
 // =======================
 async function loadTestimonials(){
   if (!testiGrid) return;
@@ -626,9 +626,10 @@ async function loadTestimonials(){
   try{
     console.log("[loadTestimonials] Fetching...");
     
+    // ✅ On récupère TOUTES les colonnes possibles
     const { data, error } = await sb
       .from("testimonials")
-      .select("id, client_name, city, rating, message, photo_url, created_at, active")
+      .select("id, client_name, city, rating, message, photos, photo_url, created_at, active")
       .eq("active", true)
       .order("created_at", { ascending:false })
       .limit(5);
@@ -665,13 +666,30 @@ function renderTestimonials(list, errText = ""){
   }
 
   const html = rows.map(t => {
-    // ✅ CORRECTION : utilise client_name, pas author_name
     const name  = escapeHtml(t.client_name || "");
     const city  = escapeHtml(t.city || "");
     const quote = escapeHtml(t.message || "");
     
-    // ✅ CORRECTION : photo_url est une STRING, pas un array
-    const img = t.photo_url || "/assets/images/placeholder-testimonial.png";
+    // ✅ CORRECTION ULTIME : Gère photos (array) OU photo_url (string)
+    let imgUrl = "/assets/images/placeholder-testimonial.png";
+    
+    if (t.photo_url && typeof t.photo_url === "string") {
+      // Cas 1 : photo_url existe (string)
+      imgUrl = t.photo_url;
+    } else if (Array.isArray(t.photos) && t.photos.length > 0) {
+      // Cas 2 : photos existe (array)
+      imgUrl = t.photos[0];
+    }
+    
+    console.log("[renderTestimonials] Image pour", name, ":", imgUrl);
+
+    // ✅ Affichage du rating avec étoiles
+    let starsHtml = "";
+    if (t.rating && typeof t.rating === "number" && t.rating >= 1 && t.rating <= 5) {
+      const fullStars = "★".repeat(t.rating);
+      const emptyStars = "☆".repeat(5 - t.rating);
+      starsHtml = `<div style="color:#D9B56C;font-size:14px;margin-bottom:4px">${fullStars}${emptyStars}</div>`;
+    }
 
     const date = t.created_at ? new Date(t.created_at) : null;
     const dateStr = date
@@ -682,14 +700,16 @@ function renderTestimonials(list, errText = ""){
       <article class="card" style="overflow:hidden">
         <div style="border-radius:12px;overflow:hidden;border:1px solid #eee;margin-bottom:8px">
           <img
-            src="${escapeAttr(img)}"
+            src="${escapeAttr(imgUrl)}"
             alt="${name ? "Résultat de " + name : "Témoignage cliente"}"
             loading="lazy"
+            onerror="this.onerror=null;this.src='/assets/images/placeholder-testimonial.png';console.error('Image failed:',this.src)"
             style="width:100%;height:220px;object-fit:cover;display:block"
           >
         </div>
         <div class="p">
-          <p style="font-size:13px;line-height:1.5">"${quote || "Témoignage en attente de texte."}"</p>
+          ${starsHtml}
+          <p style="font-size:13px;line-height:1.5;margin:0">"${quote || "Témoignage en attente de texte."}"</p>
           <div class="muted" style="margin-top:6px;font-size:12px">
             ${name || "Cliente Samiah"}${city ? " • " + city : ""}${dateStr ? " • " + dateStr : ""}
           </div>
