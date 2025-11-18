@@ -3,72 +3,77 @@
 
 [functions]
   node_bundler = "esbuild"
-  directory    = "netlify/functions"
+  directory = "netlify/functions"
 
 # --- Routes API (fonctions Netlify) ---
 [[redirects]]
   from = "/api/ping"
-  to   = "/.netlify/functions/ping"
+  to = "/.netlify/functions/ping"
   status = 200
 
 [[redirects]]
   from = "/api/upload-image"
-  to   = "/.netlify/functions/upload-image"
+  to = "/.netlify/functions/upload-image"
   status = 200
 
 [[redirects]]
   from = "/api/admin/list-products"
-  to   = "/.netlify/functions/admin-list-products"
+  to = "/.netlify/functions/admin-list-products"
   status = 200
 
 [[redirects]]
   from = "/api/admin/save-products"
-  to   = "/.netlify/functions/admin-save-products"
+  to = "/.netlify/functions/admin-save-products"
   status = 200
 
 [[redirects]]
   from = "/api/admin/delete-product"
-  to   = "/.netlify/functions/admin-delete-product"
+  to = "/.netlify/functions/admin-delete-product"
   status = 200
 
 [[redirects]]
   from = "/api/admin/list-testimonials"
-  to   = "/.netlify/functions/admin-list-testimonials"
+  to = "/.netlify/functions/admin-list-testimonials"
+  status = 200
+
+# ✅ CORRECTION : Singulier + Pluriel supportés
+[[redirects]]
+  from = "/api/admin/save-testimonial"
+  to = "/.netlify/functions/admin-save-testimonials"
   status = 200
 
 [[redirects]]
   from = "/api/admin/save-testimonials"
-  to   = "/.netlify/functions/admin-save-testimonials"
+  to = "/.netlify/functions/admin-save-testimonials"
   status = 200
 
-  [[redirects]]
+[[redirects]]
   from = "/api/admin/delete-testimonial"
-  to   = "/.netlify/functions/admin-delete-testimonial"
+  to = "/.netlify/functions/admin-delete-testimonial"
   status = 200
-
 
 # Catch-all pour les autres routes API
 [[redirects]]
   from = "/api/*"
-  to   = "/.netlify/functions/:splat"
+  to = "/.netlify/functions/:splat"
   status = 200
 
 # SPA fallback pour le site (index.html)
 [[redirects]]
   from = "/p/*"
-  to   = "/index.html"
+  to = "/index.html"
   status = 200
 
 [[redirects]]
   from = "/*"
-  to   = "/index.html"
+  to = "/index.html"
   status = 200
 
 # --- Headers pour les fonctions (CORS) ---
 [[headers]]
   for = "/.netlify/functions/*"
   [headers.values]
-    Access-Control-Allow-Origin  = "*"
+    Access-Control-Allow-Origin = "*"
     Access-Control-Allow-Methods = "GET, POST, OPTIONS"
     Access-Control-Allow-Headers = "Content-Type, x-admin-secret"
 
@@ -77,11 +82,11 @@
   for = "/*"
   [headers.values]
     Strict-Transport-Security = "max-age=31536000; includeSubDomains; preload"
-    X-Frame-Options           = "DENY"
-    X-Content-Type-Options    = "nosniff"
-    Referrer-Policy           = "strict-origin-when-cross-origin"
-    Permissions-Policy        = "camera=(), microphone=(), geolocation=()"
-    Content-Security-Policy   = "default-src 'self'; connect-src 'self' https://dzzblqlteirtzyegplgu.supabase.co https://*.supabase.co https://*.supabase.in; script-src 'self' https://cdn.jsdelivr.net 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self' data: https:; frame-ancestors 'none'; base-uri 'self'"
+    X-Frame-Options = "DENY"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Permissions-Policy = "camera=(), microphone=(), geolocation=()"
+    Content-Security-Policy = "default-src 'self'; connect-src 'self' https://dzzblqlteirtzyegplgu.supabase.co https://*.supabase.co https://*.supabase.in; script-src 'self' https://cdn.jsdelivr.net 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self' data: https:; frame-ancestors 'none'; base-uri 'self'"
 
 [build.environment]
   NODE_VERSION = "20"
