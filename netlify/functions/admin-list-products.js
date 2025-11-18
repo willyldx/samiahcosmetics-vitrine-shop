@@ -1,6 +1,5 @@
-// netlify/functions/admin-list-products.js
-// ========================================
-const json3 = (body, code = 200) => ({
+// netlify/functions/admin-list-testimonials.js
+const json = (body, code = 200) => ({
   statusCode: code,
   headers: {
     "content-type": "application/json; charset=utf-8",
@@ -13,28 +12,29 @@ const json3 = (body, code = 200) => ({
 export async function handler(event) {
   try {
     if (event.httpMethod === "OPTIONS") {
-      return { statusCode: 204, headers: json3({}).headers };
+      return { statusCode: 204, headers: json({}).headers };
     }
     if (event.httpMethod !== "GET") {
-      return json3({ error: "Method Not Allowed" }, 405);
+      return json({ error: "Method Not Allowed" }, 405);
     }
 
     const { ADMIN_SECRET, SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY } = process.env;
+    
     if (!ADMIN_SECRET || !SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
-      return json3({ error: "env_missing" }, 500);
+      return json({ error: "env_missing" }, 500);
     }
 
     const headerSecret = event.headers["x-admin-secret"] || event.headers["x-Admin-Secret"] || "";
-    if (headerSecret !== ADMIN_SECRET) {
-      return json3({ error: "unauthorized" }, 401);
+    if (ADMIN_SECRET && headerSecret !== ADMIN_SECRET) {
+      return json({ error: "unauthorized" }, 401);
     }
 
-    // ✅ CORRECTION
-    const url = new URL(`${SUPABASE_URL}/rest/v1/products`);
+    const url = new URL(`${SUPABASE_URL}/rest/v1/testimonials`);
     url.searchParams.set(
       "select",
-      "id,title,price,currency,category,cities,image,images,short_description,active,created_at,expires_after_days"
+      "id,client_name,message,city,rating,photos,photo_url,active,created_at"
     );
+    url.searchParams.set("order", "created_at.desc");
 
     const r = await fetch(url, {
       headers: {
@@ -46,13 +46,26 @@ export async function handler(event) {
 
     if (!r.ok) {
       const txt = await r.text();
-      return json3({ error: txt }, r.status);
+      return json({ error: "supabase_error", details: txt }, r.status);
     }
 
-    const items = await r.json();
-    return json3({ items });
+    const data = await r.json();
+
+    // ✅ CORRECTION : Normalise les données pour l'admin
+    const items = (data || []).map(t => ({
+      id: t.id,
+      authorName: t.client_name,  // ← client_name → authorName
+      city: t.city,
+      rating: t.rating,
+      message: t.message,
+      photoUrl: t.photo_url || (Array.isArray(t.photos) && t.photos[0]) || null,
+      active: t.active,
+      createdAt: t.created_at
+    }));
+
+    return json({ items });
   } catch (e) {
-    console.error("[admin-list-products] Crash:", e);
-    return json3({ error: "server_error", details: e.message }, 500);
+    console.error('[admin-list-testimonials] Crash:', e);
+    return json({ error: 'server_error', details: e.message }, 500);
   }
 }
