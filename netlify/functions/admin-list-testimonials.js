@@ -1,70 +1,59 @@
 // netlify/functions/admin-list-testimonials.js
+// ========================================
+const json4 = (body, code = 200) => ({
+  statusCode: code,
+  headers: {
+    "content-type": "application/json; charset=utf-8",
+    "access-control-allow-origin": "*",
+    "access-control-allow-headers": "content-type,x-admin-secret",
+  },
+  body: JSON.stringify(body),
+});
 
-const json = (status, body) =>
-  new Response(JSON.stringify(body), {
-    status,
-    headers: {
-      "content-type": "application/json; charset=utf-8",
-    },
-  });
-
-export default async (req) => {
+export async function handler(event) {
   try {
-    const ADMIN_SECRET = process.env.ADMIN_SECRET;
-    const SUPABASE_URL = process.env.SUPABASE_URL;
-    const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-    if (!ADMIN_SECRET || !SUPABASE_URL || !SERVICE_KEY) {
-      return json(500, { ok: false, error: "env_missing" });
+    if (event.httpMethod === "OPTIONS") {
+      return { statusCode: 204, headers: json4({}).headers };
+    }
+    if (event.httpMethod !== "GET") {
+      return json4({ error: "Method Not Allowed" }, 405);
     }
 
-    const headerSecret = req.headers.get("x-admin-secret") || "";
+    const { ADMIN_SECRET, SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY } = process.env;
+    if (!ADMIN_SECRET || !SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
+      return json4({ error: "env_missing" }, 500);
+    }
+
+    const headerSecret = event.headers["x-admin-secret"] || event.headers["x-Admin-Secret"] || "";
     if (headerSecret !== ADMIN_SECRET) {
-      return json(401, { ok: false, error: "unauthorized" });
+      return json4({ error: "unauthorized" }, 401);
     }
 
+    // ✅ CORRECTION : client_name au lieu de author
     const url = new URL(`${SUPABASE_URL}/rest/v1/testimonials`);
-    // adapte les colonnes à ton schéma réel si besoin
     url.searchParams.set(
       "select",
-      "id,author,message,city,rating,active,created_at"
+      "id,client_name,message,city,rating,photos,photo_url,active,created_at"
     );
     url.searchParams.set("order", "created_at.desc");
 
     const r = await fetch(url, {
       headers: {
-        apikey: SERVICE_KEY,
-        Authorization: `Bearer ${SERVICE_KEY}`,
+        apikey: SUPABASE_SERVICE_ROLE_KEY,
+        Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
         "Accept-Profile": "public",
       },
     });
 
-    const text = await r.text();
-    let data = [];
-    if (text) {
-      try {
-        data = JSON.parse(text);
-      } catch {
-        data = [];
-      }
-    }
-
     if (!r.ok) {
-      console.error("Supabase list testimonials error", r.status, text);
-      return json(r.status, {
-        ok: false,
-        error: "supabase_error",
-        details: text,
-      });
+      const txt = await r.text();
+      return json4({ error: "supabase_error", details: txt }, r.status);
     }
 
-    return json(200, { ok: true, items: data });
+    const items = await r.json();
+    return json4({ items });
   } catch (e) {
-    console.error("admin-list-testimonials error", e);
-    return json(500, {
-      ok: false,
-      error: "server_error",
-      details: e.message || String(e),
-    });
+    console.error("[admin-list-testimonials] Crash:", e);
+    return json4({ error: "server_error", details: e.message }, 500);
   }
-};
+}
