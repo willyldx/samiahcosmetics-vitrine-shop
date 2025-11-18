@@ -1,6 +1,6 @@
 // netlify/functions/admin-save-products.js
-
-const json = (body, code = 200) => ({
+// ========================================
+const json5 = (body, code = 200) => ({
   statusCode: code,
   headers: {
     "content-type": "application/json; charset=utf-8",
@@ -28,9 +28,7 @@ async function sbFetch(endpoint, options = {}) {
   if (txt) {
     try {
       data = JSON.parse(txt);
-    } catch {
-      data = null;
-    }
+    } catch {}
   }
   if (!r.ok) {
     throw new Error(
@@ -47,89 +45,94 @@ async function sbFetch(endpoint, options = {}) {
 }
 
 export async function handler(event) {
-  if (event.httpMethod === "OPTIONS") {
-    return { statusCode: 204, headers: json({}).headers };
-  }
-  if (event.httpMethod !== "POST") {
-    return json({ error: "Method Not Allowed" }, 405);
-  }
-
-  const { ADMIN_SECRET } = process.env;
-  const headerSecret =
-    event.headers["x-admin-secret"] || event.headers["X-Admin-Secret"] || "";
-
-  if (ADMIN_SECRET && headerSecret !== ADMIN_SECRET) {
-    return json({ error: "Unauthorized" }, 401);
-  }
-
-  let body;
   try {
-    body = JSON.parse(event.body || "{}");
-  } catch {
-    return json({ error: "Invalid JSON body" }, 400);
-  }
-
-  const products = Array.isArray(body.products) ? body.products : [];
-  if (!products.length) {
-    return json({ error: "No products payload" }, 400);
-  }
-
-  let updatedCount = 0;
-
-  for (const p of products) {
-    const galleryUrls = Array.isArray(p.images)
-      ? p.images.filter(Boolean)
-      : [];
-
-    const productRow = {
-      id: p.id,
-      title: p.title ?? "",
-      price: Number.isFinite(p.price) ? p.price : 0,
-      currency: p.currency ?? "XAF",
-      category: p.category ?? null,
-      cities: Array.isArray(p.cities) ? p.cities : [],
-      image: p.image ?? null,
-      images: galleryUrls,
-      short_description: p.shortDescription ?? "",
-      active: p.active !== false,
-      expires_after_days:
-        typeof p.expiresAfterDays === "number" ? p.expiresAfterDays : null,
-      published_at: p.publishedAt ?? new Date().toISOString(),
-    };
-
-    // upsert produit
-    await sbFetch("products?on_conflict=id", {
-      method: "POST",
-      headers: {
-        Prefer: "resolution=merge-duplicates,return=minimal",
-      },
-      body: JSON.stringify([productRow]),
-    });
-
-    // reset galerie liée
-    await sbFetch(
-      `product_images?product_id=eq.${encodeURIComponent(p.id)}`,
-      {
-        method: "DELETE",
-        headers: { Prefer: "return=minimal" },
-      }
-    );
-
-    if (galleryUrls.length) {
-      const galleryRows = galleryUrls.map((url, index) => ({
-        product_id: p.id,
-        url,
-        sort: index,
-      }));
-
-      await sbFetch("product_images", {
-        method: "POST",
-        headers: { Prefer: "return=minimal" },
-        body: JSON.stringify(galleryRows),
-      });
+    if (event.httpMethod === "OPTIONS") {
+      return { statusCode: 204, headers: json5({}).headers };
     }
-    updatedCount++;
-  }
+    if (event.httpMethod !== "POST") {
+      return json5({ error: "Method Not Allowed" }, 405);
+    }
 
-  return json({ ok: true, count: updatedCount });
+    const { ADMIN_SECRET } = process.env;
+    const headerSecret = event.headers["x-admin-secret"] || event.headers["x-Admin-Secret"] || "";
+    if (ADMIN_SECRET && headerSecret !== ADMIN_SECRET) {
+      return json5({ error: "Unauthorized" }, 401);
+    }
+
+    let body;
+    try {
+      body = JSON.parse(event.body || "{}");
+    } catch {
+      return json5({ error: "Invalid JSON body" }, 400);
+    }
+
+    const products = Array.isArray(body.products) ? body.products : [];
+    if (!products.length) {
+      return json5({ error: "No products payload" }, 400);
+    }
+
+    let updatedCount = 0;
+
+    for (const p of products) {
+      const galleryUrls = Array.isArray(p.images) ? p.images.filter(Boolean) : [];
+      
+      // ✅ AMÉLIORATION : Ville par défaut
+      const cities = Array.isArray(p.cities) && p.cities.length 
+        ? p.cities 
+        : ["N'Djamena"];
+
+      const productRow = {
+        id: p.id,
+        title: p.title ?? "",
+        price: Number.isFinite(p.price) ? p.price : 0,
+        currency: p.currency ?? "XAF",
+        category: p.category ?? null,
+        cities,
+        image: p.image ?? null,
+        images: galleryUrls,
+        short_description: p.shortDescription ?? "",
+        active: p.active !== false,
+        expires_after_days:
+          typeof p.expiresAfterDays === "number" ? p.expiresAfterDays : null,
+        published_at: p.publishedAt ?? new Date().toISOString(),
+      };
+
+      await sbFetch("products?on_conflict=id", {
+        method: "POST",
+        headers: {
+          Prefer: "resolution=merge-duplicates,return=minimal",
+        },
+        body: JSON.stringify([productRow]),
+      });
+
+      await sbFetch(
+        `product_images?product_id=eq.${encodeURIComponent(p.id)}`,
+        {
+          method: "DELETE",
+          headers: { Prefer: "return=minimal" },
+        }
+      );
+
+      if (galleryUrls.length) {
+        const galleryRows = galleryUrls.map((url, index) => ({
+          product_id: p.id,
+          url,
+          sort: index,
+        }));
+
+        await sbFetch("product_images", {
+          method: "POST",
+          headers: { Prefer: "return=minimal" },
+          body: JSON.stringify(galleryRows),
+        });
+      }
+
+      updatedCount++;
+    }
+
+    return json5({ ok: true, count: updatedCount });
+  } catch (e) {
+    console.error("[admin-save-products] Crash:", e);
+    return json5({ error: "server_error", details: e.message }, 500);
+  }
 }
