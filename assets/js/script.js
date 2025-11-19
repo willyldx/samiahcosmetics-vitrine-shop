@@ -328,7 +328,7 @@ function render(list, errorText=""){
   bindCardSwipe();
 }
 
-/* === Nouvelle carte produit : double image + effet Jumia (hover + swipe) === */
+/* === Nouvelle carte produit : AVEC BOUTON SURVOL (card-action) === */
 function cardTpl(p){
   const gallery = buildGalleryLocal(p);
   const first  = escapeHtml(gallery[0] || "/assets/images/placeholder.png");
@@ -358,12 +358,13 @@ function cardTpl(p){
                >`
             : ""
         }
+        <div class="card-action">Voir le produit</div>
       </div>
       <div class="p">
         <div style="font-weight:700">${title}</div>
         <div class="muted" style="margin:4px 0">${cat || "&nbsp;"}</div>
         <div class="muted" style="min-height:28px">${desc}</div>
-        <div style="margin-top:6px;font-weight:800">${price}</div>
+        <div class="price">${price}</div>
       </div>
     </div>
   `;
@@ -618,7 +619,7 @@ window.addEventListener("popstate", () => {
 });
 
 // =======================
-// Témoignages (vitrine) — VERSION FINALE ✅✅✅
+// Témoignages (vitrine) — VERSION CLEAN (MASONRY COMPATIBLE)
 // =======================
 async function loadTestimonials(){
   if (!testiGrid) return;
@@ -696,17 +697,16 @@ function renderTestimonials(list, errText = ""){
       ? date.toLocaleDateString("fr-FR",{year:"numeric",month:"short",day:"2-digit"})
       : "";
 
+    // MODIF ICI : Structure simplifiée pour Masonry (plus de bordures inline)
     return `
-      <article class="card" style="overflow:hidden">
-        <div style="border-radius:12px;overflow:hidden;border:1px solid #eee;margin-bottom:8px">
-          <img
+      <article class="card">
+        <img
             src="${escapeAttr(imgUrl)}"
             alt="${name ? "Résultat de " + name : "Témoignage cliente"}"
             loading="lazy"
             onerror="this.onerror=null;this.src='/assets/images/placeholder-testimonial.png';console.error('Image failed:',this.src)"
-            style="width:100%;height:220px;object-fit:cover;display:block"
+            style="width:100%;display:block;background:#f9f9f9"
           >
-        </div>
         <div class="p">
           ${starsHtml}
           <p style="font-size:13px;line-height:1.5;margin:0">"${quote || "Témoignage en attente de texte."}"</p>
@@ -770,12 +770,12 @@ function __injectNewBadgeIntoCard(cardEl, p){
   // éviter les doublons
   if (cardEl.querySelector('.badge.badge-new')) return;
 
-  const slot = cardEl.querySelector('.p') || cardEl;
+  // MODIF ICI : Insertion dans .card-thumb pour coller à l'image
+  const slot = cardEl.querySelector('.card-thumb') || cardEl;
   const span = document.createElement('span');
   span.className = 'badge badge-new';
   span.textContent = 'Nouveau';
-  // insertion en tête du bloc texte
-  slot.insertBefore(span, slot.firstChild);
+  slot.appendChild(span);
 }
 
 function markNewCards(){
