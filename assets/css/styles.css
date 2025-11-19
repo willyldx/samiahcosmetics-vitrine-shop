@@ -1,6 +1,6 @@
 /* ===========================
    Samiah Cosmetics — styles
-   (nettoyé + responsive pack)
+   (Mise à jour : Design Moderne + Masonry + Responsive)
    =========================== */
 
 :root{
@@ -40,7 +40,7 @@ small.muted{opacity:.75}
 .hero h1{margin:0 0 8px;font-size:38px;letter-spacing:.02em}
 .hero p{margin:0 0 16px;font-size:18px;opacity:.85}
 
-/* Image Hero “propre” (option) */
+/* Image Hero “propre” */
 .hero-photo{
   border:1px solid #eee;border-radius:var(--radius);
   box-shadow:0 10px 30px rgba(0,0,0,.08);background:#fff;
@@ -57,25 +57,46 @@ small.muted{opacity:.75}
 .filters{display:flex;gap:10px;flex-wrap:wrap;margin:12px 0 18px}
 select,.search{padding:10px;border-radius:10px;border:1px solid #ddd;min-width:160px}
 
-/* Grilles (catalogue & autres cartes) */
+/* Grille standard (Produits) */
 .grid{
   display:grid;
   grid-template-columns:repeat(auto-fill,minmax(220px,1fr));
   gap:16px;
 }
 
-/* Carte produit */
-.card{
-  background:#fff;border:1px solid #eee;border-radius:14px;overflow:hidden;
-  box-shadow:0 6px 20px rgba(0,0,0,.05);
-  transition:transform .12s ease, box-shadow .12s ease;
+/* === CARTE PRODUIT MODERNE === */
+.card {
+  position: relative;
+  background: #fff;
+  border: 0; /* Plus de bordure grise brute */
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.04); /* Ombre douce par défaut */
+  transition: all 0.3s ease;
 }
-.card:hover{transform:translateY(-2px);box-shadow:0 10px 30px rgba(0,0,0,.08)}
-.card>img{width:100%;height:180px;object-fit:cover}
-.card .p{padding:10px 12px}
+.card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 32px rgba(0,0,0,0.08);
+}
 
-/* Badge générique (si besoin) */
+/* Typographie interne carte */
+.card .p { padding: 16px; }
+.card .p div:first-child { font-size: 1.05rem; margin-bottom: 4px; font-weight: 700; } /* Titre */
+.card .price { color: #D9B56C; font-size: 1.1rem; margin-top: 8px; font-weight: 800; }
+
+/* Badge générique */
 .badge{display:inline-block;background:#111;color:#fff;border-radius:999px;font-size:12px;padding:6px 10px;margin-right:6px;opacity:.9}
+
+/* Badge "Nouveau" */
+.badge.badge-new {
+  position: absolute;
+  top: 8px; left: 8px;
+  background: #D9B56C; color: #111;
+  font-size: 12px; font-weight: 700;
+  border-radius: 999px; padding: 4px 8px;
+  box-shadow: 0 2px 6px rgba(0,0,0,.15);
+  z-index: 2;
+}
 
 /* Message vide */
 .empty{padding:20px;text-align:center;color:var(--muted)}
@@ -93,7 +114,72 @@ select,.search{padding:10px;border-radius:10px;border:1px solid #ddd;min-width:1
 }
 
 /* =========================
-   Modale fiche produit (index)
+   Effet "Jumia" + Bouton survol
+   ========================= */
+.card-thumb{
+  position:relative;
+  overflow:hidden;
+  background:#fff;
+}
+.card-img{
+  width:100%; height:240px; /* Hauteur augmentée pour modernité */
+  object-fit:cover; display:block;
+  transition:transform .25s ease, opacity .25s ease;
+}
+.card-img-secondary{ position:absolute; inset:0; opacity:0; }
+
+/* Hover Desktop : Zoom + Swap image */
+.card:hover .card-img-primary{ transform:scale(1.06); }
+.card:hover .card-img-secondary{ opacity:1; }
+
+/* Mobile Swipe : classes JS */
+.card.card-swiped .card-img-primary{ opacity:0; transform:scale(1.06); }
+.card.card-swiped .card-img-secondary{ opacity:1; transform:scale(1.06); }
+
+/* Bouton "Voir" au survol */
+.card-action {
+  position: absolute;
+  bottom: 10px; left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  background: #fff; color: #000;
+  padding: 8px 16px; border-radius: 20px;
+  font-weight: 600; font-size: 13px;
+  opacity: 0; transition: all 0.2s ease;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  pointer-events: none; /* Laisse le clic traverser vers la carte */
+}
+.card:hover .card-action {
+  opacity: 1; transform: translateX(-50%) translateY(0);
+}
+
+/* Responsive images */
+@media (max-width:1100px){ .hero h1{font-size:34px} .card-img{height:220px} }
+@media (max-width:900px){ .hero .wrap{grid-template-columns:1fr} }
+@media (max-width:620px){ .card-img{height:180px} .grid{gap:14px} }
+
+/* =========================
+   TÉMOIGNAGES : MASONRY
+   ========================= */
+#testiGrid {
+  display: block; /* On désactive grid classique */
+  column-count: 3; /* 3 colonnes */
+  column-gap: 20px;
+}
+#testiGrid .card {
+  break-inside: avoid; /* Empêche de couper une carte */
+  margin-bottom: 20px;
+}
+@media(max-width: 900px) { #testiGrid { column-count: 2; } }
+@media(max-width: 600px) { #testiGrid { column-count: 1; } }
+
+/* =========================
+   SKELETON LOADING
+   ========================= */
+.skeleton { animation: pulse 1.5s infinite; }
+@keyframes pulse { 0%{opacity:1} 50%{opacity:.5} 100%{opacity:1} }
+
+/* =========================
+   Modale fiche produit
    ========================= */
 .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);display:none;z-index:1000}
 .modal{position:fixed;inset:0;display:none;align-items:center;justify-content:center;z-index:1001}
@@ -106,49 +192,17 @@ select,.search{padding:10px;border-radius:10px;border:1px solid #ddd;min-width:1
 .modal-body{display:grid;grid-template-columns:1.1fr .9fr;gap:16px;padding:14px}
 @media (max-width:900px){ .modal-body{grid-template-columns:1fr} }
 
-/* Galerie dans la modale */
 .gal-main{border:1px solid #eee;border-radius:12px;overflow:hidden;display:flex;align-items:center;justify-content:center;background:#fff;aspect-ratio:4/3}
 .gal-main img{max-width:100%;max-height:100%}
 .gal-thumbs{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
 .gal-thumbs img{width:72px;height:72px;object-fit:cover;border:1px solid #eee;border-radius:8px;cursor:pointer}
 
-/* =========================
-   Responsive tweaks
-   ========================= */
-@media (max-width:1100px){
-  .hero h1{font-size:34px}
-  .card>img{height:200px}
-}
-@media (max-width:900px){
-  .hero .wrap{grid-template-columns:1fr}
-}
-@media (max-width:620px){
-  .card>img{height:180px}
-  .grid{gap:14px}
-}
-
-/* === Badge "Nouveau" en overlay sur l'image === */
-.card {
-  position: relative;
-}
-.badge.badge-new {
-  position: absolute;
-  top: 8px;
-  left: 8px;
-  background: #D9B56C;
-  color: #111;
-  font-size: 12px;
-  font-weight: 700;
-  border-radius: 999px;
-  padding: 4px 8px;
-  box-shadow: 0 2px 6px rgba(0,0,0,.15);
-}
-
-/* Accessibilité: réduit les animations si demandé */
+/* Accessibilité */
 @media (prefers-reduced-motion: reduce){
   *{transition:none !important; animation:none !important}
 }
-/* === Gestion des vignettes (drag + star) === */
+
+/* Outils Admin (Thumbs drag & drop etc) */
 .thumbs{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
 .thumbs .thumb{position:relative;display:inline-block}
 .thumbs .thumb img{width:56px;height:56px;object-fit:cover;border:1px solid #eee;border-radius:8px}
@@ -161,80 +215,9 @@ select,.search{padding:10px;border-radius:10px;border:1px solid #ddd;min-width:1
 .thumb-btn.star{right:18px;top:-6px;background:#111}
 .thumb-btn.star.on{background:#f59e0b;color:#111}
 .thumb-btn.drag{left:-6px;top:-6px;background:#6b7280}
-
 .thumb.dragging{opacity:.6;outline:2px dashed #bbb}
 
+/* Contrôles liste (Pagination/Tri) */
 #listControls{display:flex;align-items:center;flex-wrap:wrap;gap:10px;justify-content:space-between;margin:10px 0 12px}
 #listControls select{padding:10px;border:1px solid var(--border);border-radius:10px}
 #pageInfo{color:var(--muted)}
-
-/* --- Cards produits: swap au survol + micro-zoom --- */
-.card .img-wrap{
-  position:relative;
-  aspect-ratio:1/1;          /* carré façon Jumia (change en 4/5 si tu préfères) */
-  overflow:hidden;
-  background:#fff;
-}
-.card .img-wrap .img-layer{
-  position:absolute; inset:0;
-  width:100%; height:100%;
-  object-fit:cover;
-  transition:transform .2s ease, opacity .2s ease;
-}
-.card .img-wrap .layer1{ opacity:1; }
-.card .img-wrap .layer2{ opacity:0; }
-.card:hover .img-wrap .layer2{ opacity:1; }              /* swap */
-.card:hover .img-wrap .layer1{ transform:scale(1.06); }  /* micro-zoom */
-
-
-/* Effet "Jumia" – hover desktop + swipe mobile */
-.card-thumb{
-  position:relative;
-  overflow:hidden;
-  background:#fff;
-}
-
-.card-img{
-  width:100%;
-  height:180px;
-  object-fit:cover;
-  display:block;
-  transition:transform .25s ease, opacity .25s ease;
-}
-
-/* 2e image empilée au-dessus, invisible au départ */
-.card-img-secondary{
-  position:absolute;
-  inset:0;
-  opacity:0;
-}
-
-/* Desktop : au survol, on montre la 2e image si dispo */
-.card:hover .card-img-primary{
-  transform:scale(1.06);
-}
-.card:hover .card-img-secondary{
-  opacity:1;
-}
-
-/* Mobile / swipe : classe ajoutée en JS */
-.card.card-swiped .card-img-primary{
-  opacity:0;
-  transform:scale(1.06);
-}
-.card.card-swiped .card-img-secondary{
-  opacity:1;
-  transform:scale(1.06);
-}
-
-/* Hauteur responsive comme avant */
-@media (max-width:1100px){
-  .card-img{
-    height:200px;
-  }
-}
-@media (max-width:620px){
-  .card-img{
-    height:180px;
-  }
-}
