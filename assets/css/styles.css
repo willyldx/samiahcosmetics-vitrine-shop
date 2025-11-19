@@ -1,6 +1,6 @@
 /* ===========================
    Samiah Cosmetics — styles
-   (Mise à jour : Retour Grille Témoignages + Design Moderne)
+   (Mise à jour : Design Moderne + Grille Fixe + Responsive)
    =========================== */
 
 :root{
@@ -64,24 +64,24 @@ select,.search{padding:10px;border-radius:10px;border:1px solid #ddd;min-width:1
   gap:16px;
 }
 
-/* === CARTE PRODUIT MODERNE (Style épuré) === */
+/* === CARTE MODERNE (Produits & Témoignages) === */
 .card {
   position: relative;
   background: #fff;
-  border: 0; /* Pas de bordure */
+  border: 0; /* Pas de bordure grise */
   border-radius: 16px;
   overflow: hidden;
   box-shadow: 0 4px 12px rgba(0,0,0,0.04); /* Ombre douce */
   transition: all 0.3s ease;
 }
 .card:hover {
-  transform: translateY(-4px);
+  transform: translateY(-4px); /* Légère montée */
   box-shadow: 0 12px 32px rgba(0,0,0,0.08);
 }
 
 /* Typographie interne carte */
 .card .p { padding: 16px; }
-.card .p div:first-child { font-size: 1.05rem; margin-bottom: 4px; font-weight: 700; } /* Titre */
+.card .p div:first-child { font-size: 1.05rem; margin-bottom: 4px; font-weight: 700; }
 .card .price { color: #D9B56C; font-size: 1.1rem; margin-top: 8px; font-weight: 800; }
 
 /* Badge générique */
@@ -114,17 +114,18 @@ select,.search{padding:10px;border-radius:10px;border:1px solid #ddd;min-width:1
 }
 
 /* =========================
-   Effet "Jumia" + Bouton survol (Produits)
+   Images Produits : Effet "Jumia" + Bouton survol
    ========================= */
 .card-thumb{ position:relative; overflow:hidden; background:#fff; }
 
 .card-img{
-  width:100%; height:240px; /* Hauteur produits */
+  width:100%; height:240px; /* Hauteur fixe produits */
   object-fit:cover; display:block;
   transition:transform .25s ease, opacity .25s ease;
 }
 .card-img-secondary{ position:absolute; inset:0; opacity:0; }
 
+/* Hover & Swipe */
 .card:hover .card-img-primary{ transform:scale(1.06); }
 .card:hover .card-img-secondary{ opacity:1; }
 .card.card-swiped .card-img-primary{ opacity:0; transform:scale(1.06); }
@@ -146,25 +147,22 @@ select,.search{padding:10px;border-radius:10px;border:1px solid #ddd;min-width:1
   opacity: 1; transform: translateX(-50%) translateY(0);
 }
 
-/* Responsive images */
-@media (max-width:1100px){ .hero h1{font-size:34px} .card-img{height:220px} }
-@media (max-width:900px){ .hero .wrap{grid-template-columns:1fr} }
-@media (max-width:620px){ .card-img{height:180px} .grid{gap:14px} }
-
-
 /* =========================
-   TÉMOIGNAGES : CORRECTION (Retour Grille Uniforme)
+   TÉMOIGNAGES : GRID FIXE (Comme avant)
    ========================= */
-/* On utilise la grille standard .grid définie plus haut */
-
-/* On force la taille des images témoignages pour éviter qu'elles soient géantes */
+/* Force la hauteur des images témoignages pour éviter l'effet géant */
 #testiGrid .card img {
   width: 100%;
-  height: 220px;      /* Hauteur fixe comme avant */
-  object-fit: cover;  /* Coupe l'image proprement pour remplir le cadre */
+  height: 220px;     /* Hauteur contrainte */
+  object-fit: cover; /* Coupe proprement */
   display: block;
   background: #f9f9f9;
 }
+
+/* Responsive images générales */
+@media (max-width:1100px){ .hero h1{font-size:34px} .card-img{height:220px} }
+@media (max-width:900px){ .hero .wrap{grid-template-columns:1fr} }
+@media (max-width:620px){ .card-img{height:180px} .grid{gap:14px} }
 
 /* =========================
    SKELETON LOADING
@@ -173,7 +171,7 @@ select,.search{padding:10px;border-radius:10px;border:1px solid #ddd;min-width:1
 @keyframes pulse { 0%{opacity:1} 50%{opacity:.5} 100%{opacity:1} }
 
 /* =========================
-   Modale fiche produit
+   Modale
    ========================= */
 .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);display:none;z-index:1000}
 .modal{position:fixed;inset:0;display:none;align-items:center;justify-content:center;z-index:1001}
