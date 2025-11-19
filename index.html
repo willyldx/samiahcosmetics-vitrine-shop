@@ -23,24 +23,20 @@
 
   <title>Samiah Cosmetics — Consultation capillaire & produits</title>
 
-  <!-- SEO -->
   <meta name="description" content="Consultation capillaire en ligne et produits cosmétiques. Réservez via WhatsApp.">
   <meta property="og:title" content="Samiah Cosmetics — Consultation capillaire & produits">
   <meta property="og:description" content="Réservez votre consultation capillaire (10 000 F) et découvrez nos shampoings & soins.">
   <meta property="og:image" content="/assets/images/samiah-C-final-transparent.svg">
 
-  <!-- Favicons -->
   <link rel="icon" href="/favicon.svg" type="image/svg+xml" sizes="any">
   <link rel="mask-icon" href="/safari-pinned-tab.svg" color="#0A0A0A">
   <link rel="apple-touch-icon" href="/apple-touch-icon.png">
   <meta name="theme-color" content="#0A0A0A">
 
-  <!-- Styles globaux -->
   <link rel="stylesheet" href="/assets/css/styles.css" />
 </head>
 <body>
 
-  <!-- Header -->
   <header class="container header">
     <div class="logo">
       <img
@@ -51,7 +47,6 @@
     <div class="brand">SAMIAH COSMETICS</div>
   </header>
 
-  <!-- Hero -->
   <section class="hero">
     <div class="container wrap">
       <div>
@@ -73,7 +68,6 @@
     </div>
   </section>
 
-  <!-- Catalogue -->
   <main class="container">
     <h2 class="section-title">Catalogue</h2>
     <div class="filters">
@@ -86,28 +80,27 @@
         <option>N’Djamena</option><option>Moundou</option><option>Sarh</option><option>Abéché</option>
         <option>Bongor</option><option>Kélo</option><option>Pala</option><option>Koumra</option><option>Faya-Largeau</option>
       </select>
-      <!-- ▼ AJOUT: tri -->
       <select id="sortBy" title="Trier par">
         <option value="newest">Plus récents</option>
         <option value="price-asc">Prix : croissant</option>
         <option value="price-desc">Prix : décroissant</option>
         <option value="title-asc">Nom : A → Z</option>
       </select>
-      <!-- ▲ FIN AJOUT -->
+      </div>
+
+    <div id="products-grid" class="grid">
+      <div class="card skeleton" style="height:340px;background:#f9f9f9;border-radius:16px"></div>
+      <div class="card skeleton" style="height:340px;background:#f9f9f9;border-radius:16px"></div>
+      <div class="card skeleton" style="height:340px;background:#f9f9f9;border-radius:16px"></div>
+      <div class="card skeleton" style="height:340px;background:#f9f9f9;border-radius:16px"></div>
     </div>
 
-    <div id="products-grid" class="grid"></div>
-
-    <!-- ▼ AJOUT: sentinel pour scroll infini + bouton fallback -->
     <div id="ioSentinel" aria-hidden="true" style="height:1px"></div>
     <div style="text-align:center;margin:12px 0">
       <button id="loadMore" class="btn secondary" style="display:none">Voir plus</button>
     </div>
-    <!-- ▲ FIN AJOUT -->
-
     <div id="emptyMsg" class="empty" style="display:none">Aucun produit pour l’instant.</div>
 
-    <!-- Témoignages (nouvelle version) -->
     <section id="testimonials" aria-labelledby="testiTitle" style="margin-top:32px">
       <h2 id="testiTitle" class="section-title">Témoignages</h2>
       <p id="testiIntro" class="muted" style="margin-bottom:10px">
@@ -119,22 +112,18 @@
       </div>
     </section>
 
-    <!-- (Section Contact supprimée, le bouton WhatsApp flottant suffit) -->
-  </main>
+    </main>
 
-  <!-- Footer -->
   <footer class="footer">
     <div class="container">© 2025 Samiah Cosmetics — N’Djamena, Tchad</div>
   </footer>
 
-  <!-- Bouton WhatsApp flottant -->
   <a class="wa-float" href="https://wa.me/23562752105" target="_blank" rel="noopener" aria-label="WhatsApp" style="position:fixed;right:18px;bottom:18px;z-index:999;display:inline-flex;align-items:center;justify-content:center;width:56px;height:56px;border-radius:999px;background:#25D366;color:#fff;box-shadow:0 10px 30px rgba(0,0,0,.2);text-decoration:none">
     <svg viewBox="0 0 32 32" aria-hidden="true" style="width:28px;height:28px;fill:currentColor">
       <path d="M19.11 17.31c-.28-.14-1.64-.81-1.89-.9-.25-.09-.43-.14-.62.14-.18.28-.71.9-.86 1.08-.16.18-.32.2-.6.07-.28-.14-1.18-.43-2.25-1.37-.83-.74-1.39-1.65-1.55-1.93-.16-.28-.02-.43.12-.57.12-.12.28-.32.41-.49.14-.16.18-.28.28-.46.09-.18.05-.35-.02-.49-.07-.14-.62-1.49-.85-2.04-.22-.53-.45-.46-.62-.46h-.53c-.18 0-.46.07-.7.35-.25.28-.96.94-.96 2.29s.98 2.66 1.12 2.85c.14.18 1.93 2.95 4.67 4.02.65.28 1.16.45 1.56.58.65.2 1.25.17 1.72.1.53-.08 1.64-.67 1.87-1.31.23-.64.23-1.19.16-1.31-.07-.12-.25-.2-.53-.34zM16 3C9.38 3 4 8.38 4 15c0 2.12.55 4.1 1.52 5.83L4 29l8.35-1.49A11.9 11.9 0 0 0 16 27c6.62 0 12-5.38 12-12S22.62 3 16 3z"/>
     </svg>
   </a>
 
-  <!-- === MODALE PRODUIT (déjà en place) === -->
   <div id="overlay" class="modal-overlay" aria-hidden="true" style="position:fixed;inset:0;background:rgba(0,0,0,.5);display:none;z-index:1000"></div>
   <div id="productModal" class="modal" aria-hidden="true" role="dialog" aria-label="Fiche produit"
        style="position:fixed;inset:0;display:none;align-items:center;justify-content:center;z-index:1001">
@@ -172,7 +161,6 @@
   </div>
   <style>.gal-thumbs img{width:72px;height:72px;object-fit:cover;border:1px solid #eee;border-radius:8px;cursor:pointer}</style>
 
-  <!-- === OVERLAY PLEIN ÉCRAN (lightbox) === -->
   <div id="fsOverlay" class="fs-overlay" aria-hidden="true">
     <button id="fsClose" class="fs-close" aria-label="Fermer">×</button>
     <img id="fsImg" alt="Agrandissement" />
@@ -189,9 +177,6 @@
     .fs-close:hover,.fs-nav:hover{background:#ffffff33}
     @media (max-width: 900px){.fs-nav{width:40px;height:40px;line-height:40px}}
   </style>
-  <!-- === FIN OVERLAY === -->
-
-  <!-- Script -->
   <script type="module" src="/assets/js/script.js"></script>
 </body>
 </html>
