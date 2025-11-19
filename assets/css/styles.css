@@ -57,32 +57,32 @@ small.muted{opacity:.75}
 .filters{display:flex;gap:10px;flex-wrap:wrap;margin:12px 0 18px}
 select,.search{padding:10px;border-radius:10px;border:1px solid #ddd;min-width:160px}
 
-/* Grille standard (Produits) */
+/* Grilles standard (Catalogue) */
 .grid{
   display:grid;
   grid-template-columns:repeat(auto-fill,minmax(220px,1fr));
   gap:16px;
 }
 
-/* === CARTE PRODUIT MODERNE === */
+/* === CARTE PRODUIT MODERNE (Nouveau style) === */
 .card {
   position: relative;
   background: #fff;
-  border: 0; /* Plus de bordure grise brute */
+  border: 0; /* On enlève la bordure grise */
   border-radius: 16px;
   overflow: hidden;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.04); /* Ombre douce par défaut */
+  box-shadow: 0 4px 12px rgba(0,0,0,0.04); /* Ombre douce */
   transition: all 0.3s ease;
 }
 .card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 12px 32px rgba(0,0,0,0.08);
+  transform: translateY(-4px); /* Légère montée */
+  box-shadow: 0 12px 32px rgba(0,0,0,0.08); /* Ombre accentuée */
 }
 
 /* Typographie interne carte */
 .card .p { padding: 16px; }
 .card .p div:first-child { font-size: 1.05rem; margin-bottom: 4px; font-weight: 700; } /* Titre */
-.card .price { color: #D9B56C; font-size: 1.1rem; margin-top: 8px; font-weight: 800; }
+.card .price { color: #D9B56C; font-size: 1.1rem; margin-top: 8px; font-weight: 800; } /* Prix */
 
 /* Badge générique */
 .badge{display:inline-block;background:#111;color:#fff;border-radius:999px;font-size:12px;padding:6px 10px;margin-right:6px;opacity:.9}
@@ -95,7 +95,7 @@ select,.search{padding:10px;border-radius:10px;border:1px solid #ddd;min-width:1
   font-size: 12px; font-weight: 700;
   border-radius: 999px; padding: 4px 8px;
   box-shadow: 0 2px 6px rgba(0,0,0,.15);
-  z-index: 2;
+  z-index: 5; /* Au-dessus de l'image */
 }
 
 /* Message vide */
@@ -114,7 +114,7 @@ select,.search{padding:10px;border-radius:10px;border:1px solid #ddd;min-width:1
 }
 
 /* =========================
-   Effet "Jumia" + Bouton survol
+   Effet "Jumia" + Bouton survol (card-action)
    ========================= */
 .card-thumb{
   position:relative;
@@ -122,7 +122,7 @@ select,.search{padding:10px;border-radius:10px;border:1px solid #ddd;min-width:1
   background:#fff;
 }
 .card-img{
-  width:100%; height:240px; /* Hauteur augmentée pour modernité */
+  width:100%; height:240px; /* Hauteur augmentée pour look moderne */
   object-fit:cover; display:block;
   transition:transform .25s ease, opacity .25s ease;
 }
@@ -136,7 +136,7 @@ select,.search{padding:10px;border-radius:10px;border:1px solid #ddd;min-width:1
 .card.card-swiped .card-img-primary{ opacity:0; transform:scale(1.06); }
 .card.card-swiped .card-img-secondary{ opacity:1; transform:scale(1.06); }
 
-/* Bouton "Voir" au survol */
+/* Bouton "Voir le produit" qui apparaît au survol */
 .card-action {
   position: absolute;
   bottom: 10px; left: 50%;
@@ -146,7 +146,7 @@ select,.search{padding:10px;border-radius:10px;border:1px solid #ddd;min-width:1
   font-weight: 600; font-size: 13px;
   opacity: 0; transition: all 0.2s ease;
   box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-  pointer-events: none; /* Laisse le clic traverser vers la carte */
+  pointer-events: none;
 }
 .card:hover .card-action {
   opacity: 1; transform: translateX(-50%) translateY(0);
@@ -158,22 +158,22 @@ select,.search{padding:10px;border-radius:10px;border:1px solid #ddd;min-width:1
 @media (max-width:620px){ .card-img{height:180px} .grid{gap:14px} }
 
 /* =========================
-   TÉMOIGNAGES : MASONRY
+   TÉMOIGNAGES : MASONRY (Style Pinterest)
    ========================= */
 #testiGrid {
-  display: block; /* On désactive grid classique */
-  column-count: 3; /* 3 colonnes */
+  display: block; /* Désactive grid pour utiliser les colonnes */
+  column-count: 3; 
   column-gap: 20px;
 }
 #testiGrid .card {
-  break-inside: avoid; /* Empêche de couper une carte */
+  break-inside: avoid; /* Empêche de couper une carte en deux */
   margin-bottom: 20px;
 }
 @media(max-width: 900px) { #testiGrid { column-count: 2; } }
 @media(max-width: 600px) { #testiGrid { column-count: 1; } }
 
 /* =========================
-   SKELETON LOADING
+   SKELETON LOADING (Animation de chargement)
    ========================= */
 .skeleton { animation: pulse 1.5s infinite; }
 @keyframes pulse { 0%{opacity:1} 50%{opacity:.5} 100%{opacity:1} }
@@ -197,16 +197,15 @@ select,.search{padding:10px;border-radius:10px;border:1px solid #ddd;min-width:1
 .gal-thumbs{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
 .gal-thumbs img{width:72px;height:72px;object-fit:cover;border:1px solid #eee;border-radius:8px;cursor:pointer}
 
-/* Accessibilité */
-@media (prefers-reduced-motion: reduce){
-  *{transition:none !important; animation:none !important}
-}
+/* Outils Admin / UI Controls (Pagination, Tri, Drag&Drop) */
+#listControls{display:flex;align-items:center;flex-wrap:wrap;gap:10px;justify-content:space-between;margin:10px 0 12px}
+#listControls select{padding:10px;border:1px solid var(--border);border-radius:10px}
+#pageInfo{color:var(--muted)}
 
-/* Outils Admin (Thumbs drag & drop etc) */
+/* Vignettes Admin */
 .thumbs{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
 .thumbs .thumb{position:relative;display:inline-block}
 .thumbs .thumb img{width:56px;height:56px;object-fit:cover;border:1px solid #eee;border-radius:8px}
-
 .thumb-btn{
   position:absolute;border:0;cursor:pointer;font-size:12px;line-height:20px;
   width:20px;height:20px;border-radius:999px;color:#fff;
@@ -217,7 +216,7 @@ select,.search{padding:10px;border-radius:10px;border:1px solid #ddd;min-width:1
 .thumb-btn.drag{left:-6px;top:-6px;background:#6b7280}
 .thumb.dragging{opacity:.6;outline:2px dashed #bbb}
 
-/* Contrôles liste (Pagination/Tri) */
-#listControls{display:flex;align-items:center;flex-wrap:wrap;gap:10px;justify-content:space-between;margin:10px 0 12px}
-#listControls select{padding:10px;border:1px solid var(--border);border-radius:10px}
-#pageInfo{color:var(--muted)}
+/* Accessibilité */
+@media (prefers-reduced-motion: reduce){
+  *{transition:none !important; animation:none !important}
+}
