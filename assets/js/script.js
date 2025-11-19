@@ -757,7 +757,7 @@ init().catch(console.error);
    - Sans modifier render() / cardTpl() : post-traitement du DOM
    =========================================================== */
 
-const NEW_DAYS = 14; // ajuste si besoin
+const NEW_DAYS = 2; // ajuste si besoin
 function __isNewProduct(p){
   if (!p || !p.created_at) return false;
   const created = Date.parse(p.created_at);
