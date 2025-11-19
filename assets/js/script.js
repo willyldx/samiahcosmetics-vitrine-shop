@@ -619,7 +619,7 @@ window.addEventListener("popstate", () => {
 });
 
 // =======================
-// Témoignages (vitrine) — VERSION CLEAN (MASONRY COMPATIBLE)
+// Témoignages (vitrine) — VERSION CLEAN (GRID)
 // =======================
 async function loadTestimonials(){
   if (!testiGrid) return;
@@ -697,16 +697,17 @@ function renderTestimonials(list, errText = ""){
       ? date.toLocaleDateString("fr-FR",{year:"numeric",month:"short",day:"2-digit"})
       : "";
 
-    // MODIF ICI : Structure simplifiée pour Masonry (plus de bordures inline)
+    // MODIF ICI : Structure carte standard (pour Grille)
     return `
       <article class="card">
-        <img
-            src="${escapeAttr(imgUrl)}"
-            alt="${name ? "Résultat de " + name : "Témoignage cliente"}"
-            loading="lazy"
-            onerror="this.onerror=null;this.src='/assets/images/placeholder-testimonial.png';console.error('Image failed:',this.src)"
-            style="width:100%;display:block;background:#f9f9f9"
-          >
+        <div class="card-thumb">
+          <img
+              src="${escapeAttr(imgUrl)}"
+              alt="${name ? "Résultat de " + name : "Témoignage cliente"}"
+              loading="lazy"
+              onerror="this.onerror=null;this.src='/assets/images/placeholder-testimonial.png';console.error('Image failed:',this.src)"
+            >
+        </div>
         <div class="p">
           ${starsHtml}
           <p style="font-size:13px;line-height:1.5;margin:0">"${quote || "Témoignage en attente de texte."}"</p>
