@@ -1,6 +1,6 @@
 /* ===========================
    Samiah Cosmetics — styles
-   (Mise à jour : Design Moderne + Masonry + Responsive)
+   (Mise à jour : Retour Grille Témoignages + Design Moderne)
    =========================== */
 
 :root{
@@ -57,32 +57,32 @@ small.muted{opacity:.75}
 .filters{display:flex;gap:10px;flex-wrap:wrap;margin:12px 0 18px}
 select,.search{padding:10px;border-radius:10px;border:1px solid #ddd;min-width:160px}
 
-/* Grilles standard (Catalogue) */
+/* Grilles standard (Catalogue + Témoignages) */
 .grid{
   display:grid;
   grid-template-columns:repeat(auto-fill,minmax(220px,1fr));
   gap:16px;
 }
 
-/* === CARTE PRODUIT MODERNE (Nouveau style) === */
+/* === CARTE PRODUIT MODERNE (Style épuré) === */
 .card {
   position: relative;
   background: #fff;
-  border: 0; /* On enlève la bordure grise */
+  border: 0; /* Pas de bordure */
   border-radius: 16px;
   overflow: hidden;
   box-shadow: 0 4px 12px rgba(0,0,0,0.04); /* Ombre douce */
   transition: all 0.3s ease;
 }
 .card:hover {
-  transform: translateY(-4px); /* Légère montée */
-  box-shadow: 0 12px 32px rgba(0,0,0,0.08); /* Ombre accentuée */
+  transform: translateY(-4px);
+  box-shadow: 0 12px 32px rgba(0,0,0,0.08);
 }
 
 /* Typographie interne carte */
 .card .p { padding: 16px; }
 .card .p div:first-child { font-size: 1.05rem; margin-bottom: 4px; font-weight: 700; } /* Titre */
-.card .price { color: #D9B56C; font-size: 1.1rem; margin-top: 8px; font-weight: 800; } /* Prix */
+.card .price { color: #D9B56C; font-size: 1.1rem; margin-top: 8px; font-weight: 800; }
 
 /* Badge générique */
 .badge{display:inline-block;background:#111;color:#fff;border-radius:999px;font-size:12px;padding:6px 10px;margin-right:6px;opacity:.9}
@@ -95,7 +95,7 @@ select,.search{padding:10px;border-radius:10px;border:1px solid #ddd;min-width:1
   font-size: 12px; font-weight: 700;
   border-radius: 999px; padding: 4px 8px;
   box-shadow: 0 2px 6px rgba(0,0,0,.15);
-  z-index: 5; /* Au-dessus de l'image */
+  z-index: 5;
 }
 
 /* Message vide */
@@ -114,29 +114,23 @@ select,.search{padding:10px;border-radius:10px;border:1px solid #ddd;min-width:1
 }
 
 /* =========================
-   Effet "Jumia" + Bouton survol (card-action)
+   Effet "Jumia" + Bouton survol (Produits)
    ========================= */
-.card-thumb{
-  position:relative;
-  overflow:hidden;
-  background:#fff;
-}
+.card-thumb{ position:relative; overflow:hidden; background:#fff; }
+
 .card-img{
-  width:100%; height:240px; /* Hauteur augmentée pour look moderne */
+  width:100%; height:240px; /* Hauteur produits */
   object-fit:cover; display:block;
   transition:transform .25s ease, opacity .25s ease;
 }
 .card-img-secondary{ position:absolute; inset:0; opacity:0; }
 
-/* Hover Desktop : Zoom + Swap image */
 .card:hover .card-img-primary{ transform:scale(1.06); }
 .card:hover .card-img-secondary{ opacity:1; }
-
-/* Mobile Swipe : classes JS */
 .card.card-swiped .card-img-primary{ opacity:0; transform:scale(1.06); }
 .card.card-swiped .card-img-secondary{ opacity:1; transform:scale(1.06); }
 
-/* Bouton "Voir le produit" qui apparaît au survol */
+/* Bouton "Voir le produit" */
 .card-action {
   position: absolute;
   bottom: 10px; left: 50%;
@@ -157,23 +151,23 @@ select,.search{padding:10px;border-radius:10px;border:1px solid #ddd;min-width:1
 @media (max-width:900px){ .hero .wrap{grid-template-columns:1fr} }
 @media (max-width:620px){ .card-img{height:180px} .grid{gap:14px} }
 
-/* =========================
-   TÉMOIGNAGES : MASONRY (Style Pinterest)
-   ========================= */
-#testiGrid {
-  display: block; /* Désactive grid pour utiliser les colonnes */
-  column-count: 3; 
-  column-gap: 20px;
-}
-#testiGrid .card {
-  break-inside: avoid; /* Empêche de couper une carte en deux */
-  margin-bottom: 20px;
-}
-@media(max-width: 900px) { #testiGrid { column-count: 2; } }
-@media(max-width: 600px) { #testiGrid { column-count: 1; } }
 
 /* =========================
-   SKELETON LOADING (Animation de chargement)
+   TÉMOIGNAGES : CORRECTION (Retour Grille Uniforme)
+   ========================= */
+/* On utilise la grille standard .grid définie plus haut */
+
+/* On force la taille des images témoignages pour éviter qu'elles soient géantes */
+#testiGrid .card img {
+  width: 100%;
+  height: 220px;      /* Hauteur fixe comme avant */
+  object-fit: cover;  /* Coupe l'image proprement pour remplir le cadre */
+  display: block;
+  background: #f9f9f9;
+}
+
+/* =========================
+   SKELETON LOADING
    ========================= */
 .skeleton { animation: pulse 1.5s infinite; }
 @keyframes pulse { 0%{opacity:1} 50%{opacity:.5} 100%{opacity:1} }
@@ -197,12 +191,11 @@ select,.search{padding:10px;border-radius:10px;border:1px solid #ddd;min-width:1
 .gal-thumbs{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
 .gal-thumbs img{width:72px;height:72px;object-fit:cover;border:1px solid #eee;border-radius:8px;cursor:pointer}
 
-/* Outils Admin / UI Controls (Pagination, Tri, Drag&Drop) */
+/* Outils Admin */
 #listControls{display:flex;align-items:center;flex-wrap:wrap;gap:10px;justify-content:space-between;margin:10px 0 12px}
 #listControls select{padding:10px;border:1px solid var(--border);border-radius:10px}
 #pageInfo{color:var(--muted)}
 
-/* Vignettes Admin */
 .thumbs{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
 .thumbs .thumb{position:relative;display:inline-block}
 .thumbs .thumb img{width:56px;height:56px;object-fit:cover;border:1px solid #eee;border-radius:8px}
@@ -216,7 +209,4 @@ select,.search{padding:10px;border-radius:10px;border:1px solid #ddd;min-width:1
 .thumb-btn.drag{left:-6px;top:-6px;background:#6b7280}
 .thumb.dragging{opacity:.6;outline:2px dashed #bbb}
 
-/* Accessibilité */
-@media (prefers-reduced-motion: reduce){
-  *{transition:none !important; animation:none !important}
-}
+@media (prefers-reduced-motion: reduce){ *{transition:none !important; animation:none !important} }
