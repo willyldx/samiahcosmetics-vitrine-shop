@@ -171,23 +171,211 @@ select,.search{padding:10px;border-radius:10px;border:1px solid #ddd;min-width:1
 @keyframes pulse { 0%{opacity:1} 50%{opacity:.5} 100%{opacity:1} }
 
 /* =========================
-   Modale
+   Modale (Style Amazon-like)
    ========================= */
-.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);display:none;z-index:1000}
-.modal{position:fixed;inset:0;display:none;align-items:center;justify-content:center;z-index:1001}
-.modal-card{
-  background:#fff;border:1px solid var(--border);border-radius:var(--radius);
-  box-shadow:0 20px 60px rgba(0,0,0,.25);
-  width:min(980px,96vw);overflow:hidden;
-}
-.modal-head{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-bottom:1px solid var(--border)}
-.modal-body{display:grid;grid-template-columns:1.1fr .9fr;gap:16px;padding:14px}
-@media (max-width:900px){ .modal-body{grid-template-columns:1fr} }
 
-.gal-main{border:1px solid #eee;border-radius:12px;overflow:hidden;display:flex;align-items:center;justify-content:center;background:#fff;aspect-ratio:4/3}
-.gal-main img{max-width:100%;max-height:100%}
-.gal-thumbs{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
-.gal-thumbs img{width:72px;height:72px;object-fit:cover;border:1px solid #eee;border-radius:8px;cursor:pointer}
+/* Fond sombre derrière la modale (plus opaque pour le focus) */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.75);
+  display: none;
+  z-index: 1000;
+  backdrop-filter: blur(2px);
+}
+
+/* La carte produit elle-même */
+.modal-card {
+  position: relative; /* Pour positionner le header sticky si besoin */
+  background: #fff;
+  border-radius: 8px; /* Coins moins arrondis, plus "pro" */
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  width: min(1100px, 96vw); /* Plus large pour l'effet catalogue */
+  height: auto;
+  max-height: 95vh;
+  overflow-y: auto; /* Scroll si l'écran est petit */
+  display: flex;
+  flex-direction: column;
+}
+
+/* En-tête (Titre + Fermer) */
+.modal-head {
+  position: sticky;
+  top: 0;
+  background: #fff;
+  z-index: 10;
+  padding: 14px 24px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+#mTitle {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #111;
+  font-family: inherit;
+}
+
+/* Corps (Grille 2 colonnes) */
+.modal-body {
+  display: grid;
+  grid-template-columns: 55% 45%; /* Plus d'espace pour l'image */
+  gap: 32px;
+  padding: 24px;
+  align-items: start;
+}
+
+/* --- COLONNE GAUCHE : IMAGES --- */
+.gallery-col {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.gal-main {
+  background: #fff;
+  height: 450px; /* Hauteur fixe pour alignement propre */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  /* Pas de border ni d'aspect-ratio forcé ici */
+}
+
+.gal-main img {
+  max-height: 100%;
+  max-width: 100%;
+  object-fit: contain; /* L'image s'affiche en entier */
+  transition: transform 0.3s ease;
+  cursor: zoom-in;
+}
+
+/* Effet zoom au survol */
+.gal-main img:hover {
+  transform: scale(1.05);
+}
+
+/* Vignettes */
+.gal-thumbs {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.gal-thumbs img {
+  width: 50px;
+  height: 50px;
+  object-fit: contain;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  padding: 2px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+/* Vignette active ou survolée */
+.gal-thumbs img:hover,
+.gal-thumbs img.active-thumb {
+  border-color: #e77600; /* Orange type Amazon */
+  box-shadow: 0 0 3px rgba(231, 118, 0, 0.5);
+}
+
+/* --- COLONNE DROITE : INFOS --- */
+.meta-col {
+  padding-right: 8px;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Marque / Petit texte au dessus */
+.brand-label {
+  color: #007185; /* Bleu lien Amazon */
+  font-size: 14px;
+  margin-bottom: 4px;
+  font-weight: 500;
+}
+
+/* Prix */
+#mPrice {
+  color: #B12704; /* Rouge prix */
+  font-size: 26px;
+  font-weight: 500;
+  margin-bottom: 4px;
+}
+
+/* Villes */
+#mCities {
+  margin-top: 10px;
+  font-size: 13px;
+  color: #007600; /* Vert "En stock" */
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+/* Description */
+#mDesc {
+  font-size: 15px;
+  line-height: 1.6;
+  color: #333;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+
+/* Zone actions (Boutons) */
+.modal-actions {
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Bouton "Commander" (Jaune) */
+#mWhatsApp {
+  background: #FFD814;
+  color: #111;
+  border: 1px solid #FCD200;
+  border-radius: 20px;
+  padding: 12px 20px;
+  text-align: center;
+  font-size: 15px;
+  font-weight: 600;
+  width: 100%;
+  box-shadow: 0 2px 5px rgba(213, 217, 217, 0.5);
+  text-decoration: none;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+#mWhatsApp:hover {
+  background: #F7CA00;
+}
+
+/* RESPONSIVE (Mobile) */
+@media (max-width: 900px) {
+  .modal-body {
+    grid-template-columns: 1fr;
+    gap: 20px;
+    padding: 16px;
+  }
+  .gal-main {
+    height: 300px; /* Moins haut sur mobile */
+  }
+  .modal-card {
+    width: 100%;
+    height: 100%;
+    max-height: 100vh;
+    border-radius: 0;
+  }
+  #mClose {
+    padding: 8px; /* Zone de clic plus large */
+  }
+}
 
 /* Outils Admin */
 #listControls{display:flex;align-items:center;flex-wrap:wrap;gap:10px;justify-content:space-between;margin:10px 0 12px}
