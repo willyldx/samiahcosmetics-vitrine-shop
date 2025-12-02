@@ -418,10 +418,15 @@ async function fetchExtraImages(productId){
 function renderGallery(){
   if (!mMain || !mThumbs) return;
 
-  // image principale
-  mMain.src = currentGallery.length ? currentGallery[currentIndex] : "/assets/images/placeholder.png";
+  // CORRECTION : Si pas d'image, on utilise une image existante comme fallback
+  // J'utilise 'shampoos.png' temporairement car je sais qu'elle existe.
+  // Idéalement, uploade une image blanche nommée 'placeholder.png'.
+  const fallbackImage = "/assets/images/shampoos.png"; 
 
-  // vignettes (SANS STYLE INLINE pour laisser le CSS Amazon gérer la classe .active-thumb)
+  // Image principale
+  mMain.src = (currentGallery.length > 0) ? currentGallery[currentIndex] : fallbackImage;
+
+  // Vignettes (SANS STYLE INLINE pour laisser le CSS Amazon gérer la classe .active-thumb)
   mThumbs.innerHTML = currentGallery.map((url, i) => {
     // Si c'est l'image courante, on ajoute la classe pour la bordure orange
     const activeClass = (i === currentIndex) ? "active-thumb" : "";
