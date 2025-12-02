@@ -60,7 +60,7 @@ const escapeHtml = s => (s ?? "").toString().replace(/[&<>"']/g, c => ({
 const escapeAttr = s => escapeHtml(s).replace(/"/g,"&quot;");
 const uniq = arr => { const seen=new Set(), out=[]; for (const u of arr) if (u && !seen.has(u)) { seen.add(u); out.push(u); } return out; };
 
-// toArray robuste : Array natif, JSON string, objet {urls:[]}, {0:"url",1:"url"}, CSV (virgule/; / | / retour-ligne)
+// toArray robuste
 const toArray = (v) => {
   if (!v) return [];
   if (Array.isArray(v)) return v.filter(Boolean);
@@ -104,10 +104,11 @@ function ensureShareButton(){
     btn.id = "mShare";
     btn.className = "btn secondary";
     btn.type = "button";
-    btn.textContent = "Partager le lien";
-    // l'insérer avant les boutons Préc/Suiv si possibles
-    if (mPrev) mActions.insertBefore(btn, mPrev);
-    else mActions.appendChild(btn);
+    btn.textContent = "Partager"; // Texte court
+    btn.style.marginTop = "10px";
+    btn.style.width = "100%";
+    // l'insérer après les boutons
+    mActions.appendChild(btn);
   }
   return btn;
 }
@@ -158,7 +159,7 @@ async function loadProducts() {
   }
 
   fillCategories(PRODUCTS);
-  ensureControls();            // <— crée la barre de tri/pagination si besoin
+  ensureControls();
   render(PRODUCTS);
 
   // Ouvre automatiquement si lien direct ?p=...
@@ -177,7 +178,6 @@ function fillCategories(list){
     .join("");
 }
 
-/* ===== Barre de contrôle (UI) : tri + pagination ===== */
 function ensureControls(){
   if (!gridEl) return;
   if (document.getElementById("listControls")) return;
@@ -207,10 +207,8 @@ function ensureControls(){
       </div>
     </div>
   `;
-  // Insérer AVANT la grille
   gridEl.insertAdjacentHTML("beforebegin", html);
 
-  // valeurs initiales + bindings
   const sortSel = document.getElementById("sortSel");
   const sizeSel = document.getElementById("pageSizeSel");
   const prevBtn = document.getElementById("prevPage");
@@ -238,17 +236,11 @@ function ensureControls(){
 function sortList(arr){
   const out = arr.slice();
   switch (SORT) {
-    case "price_asc":
-      out.sort((a,b) => (a.price||0) - (b.price||0)); break;
-    case "price_desc":
-      out.sort((a,b) => (b.price||0) - (a.price||0)); break;
-    case "title_az":
-      out.sort((a,b) => (a.title||"").localeCompare(b.title||"")); break;
-    case "title_za":
-      out.sort((a,b) => (b.title||"").localeCompare(a.title||"")); break;
-    case "newest":
-    default:
-      out.sort((a,b) => new Date(b.created_at||0) - new Date(a.created_at||0));
+    case "price_asc": out.sort((a,b) => (a.price||0) - (b.price||0)); break;
+    case "price_desc": out.sort((a,b) => (b.price||0) - (a.price||0)); break;
+    case "title_az": out.sort((a,b) => (a.title||"").localeCompare(b.title||"")); break;
+    case "title_za": out.sort((a,b) => (b.title||"").localeCompare(a.title||"")); break;
+    case "newest": default: out.sort((a,b) => new Date(b.created_at||0) - new Date(a.created_at||0));
   }
   return out;
 }
@@ -263,7 +255,6 @@ function paginate(arr){
   const start = (PAGE - 1) * PAGE_SIZE;
   const items = arr.slice(start, start + PAGE_SIZE);
 
-  // MAJ UI
   const pageInfo = document.getElementById("pageInfo");
   const prevBtn  = document.getElementById("prevPage");
   const nextBtn  = document.getElementById("nextPage");
@@ -290,7 +281,6 @@ function render(list, errorText=""){
   const cat = (catEl?.value || "Toutes");
   const city = (cityEl?.value || "Toutes");
 
-  // filtre
   const filtered = list.filter(p => {
     const okQ   = !q || (p.title + " " + (p.category || "") + " " + (p.shortDescription || "")).toLowerCase().includes(q);
     const okC   = (cat === "Toutes") || (p.category === cat);
@@ -298,14 +288,11 @@ function render(list, errorText=""){
     return okQ && okC && okCit;
   });
 
-  // tri + pagination
   const sorted   = sortList(filtered);
   const pageData = paginate(sorted);
 
-  // rendu
   gridEl.innerHTML = pageData.map(cardTpl).join("");
 
-  // vide ?
   if (filtered.length === 0) {
     if (emptyEl){
       emptyEl.style.display = "block";
@@ -315,7 +302,6 @@ function render(list, errorText=""){
     if (emptyEl) emptyEl.style.display = "none";
   }
 
-  // click -> modale
   gridEl.querySelectorAll(".card").forEach(card => {
     card.addEventListener("click", () => {
       const id = card.getAttribute("data-id");
@@ -324,11 +310,9 @@ function render(list, errorText=""){
     });
   });
 
-  // swipe mobile -> alterner les images (effet Jumia)
   bindCardSwipe();
 }
 
-/* === Nouvelle carte produit : AVEC BOUTON SURVOL (card-action) === */
 function cardTpl(p){
   const gallery = buildGalleryLocal(p);
   const first  = escapeHtml(gallery[0] || "/assets/images/placeholder.png");
@@ -370,56 +354,40 @@ function cardTpl(p){
   `;
 }
 
-// Effet swipe mobile type "Jumia"
 function bindCardSwipe(){
   if (!gridEl) return;
-
   gridEl.querySelectorAll(".card").forEach(card => {
     const thumb = card.querySelector(".card-thumb");
     if (!thumb) return;
-
     let startX = null;
     let moved  = false;
-
     thumb.addEventListener("touchstart", (e) => {
       const t = e.changedTouches && e.changedTouches[0];
       if (!t) return;
       startX = t.clientX;
       moved = false;
     }, { passive: true });
-
     thumb.addEventListener("touchmove", (e) => {
       const t = e.changedTouches && e.changedTouches[0];
       if (!t || startX == null) return;
-      if (Math.abs(t.clientX - startX) > 10) {
-        moved = true;
-      }
+      if (Math.abs(t.clientX - startX) > 10) { moved = true; }
     }, { passive: true });
-
     thumb.addEventListener("touchend", (e) => {
       const t = e.changedTouches && e.changedTouches[0];
       if (!t || startX == null) return;
       const dx = t.clientX - startX;
-
-      // Swipe horizontal significatif
       if (Math.abs(dx) > 40) {
         card.classList.toggle("card-swiped");
-        e.stopPropagation(); // évite l'ouverture de la modale
+        e.stopPropagation();
       }
       startX = null;
     });
-
-    // Si on a glissé, on annule le clic
     thumb.addEventListener("click", (e) => {
-      if (moved) {
-        e.stopPropagation();
-        moved = false;
-      }
+      if (moved) { e.stopPropagation(); moved = false; }
     });
   });
 }
 
-// Construit la galerie : image principale + products.images + product_images
 function buildGalleryLocal(p){
   const arr = [];
   if (p.image) arr.push(p.image);
@@ -429,7 +397,7 @@ function buildGalleryLocal(p){
 }
 
 // =======================
-// Modale / Galerie
+// Modale / Galerie (CORRIGÉE POUR STYLE AMAZON)
 // =======================
 async function fetchExtraImages(productId){
   try{
@@ -453,11 +421,12 @@ function renderGallery(){
   // image principale
   mMain.src = currentGallery.length ? currentGallery[currentIndex] : "/assets/images/placeholder.png";
 
-  // vignettes
-  mThumbs.innerHTML = currentGallery.map((url, i) =>
-    `<img src="${escapeAttr(url)}" data-i="${i}"
-      style="border:${i===currentIndex?'2px solid #111':'1px solid #eee'};border-radius:8px;width:72px;height:72px;object-fit:cover;cursor:pointer">`
-  ).join("");
+  // vignettes (SANS STYLE INLINE pour laisser le CSS Amazon gérer la classe .active-thumb)
+  mThumbs.innerHTML = currentGallery.map((url, i) => {
+    // Si c'est l'image courante, on ajoute la classe pour la bordure orange
+    const activeClass = (i === currentIndex) ? "active-thumb" : "";
+    return `<img src="${escapeAttr(url)}" class="${activeClass}" data-i="${i}" alt="Vue ${i+1}">`;
+  }).join("");
 
   mThumbs.querySelectorAll("img").forEach(img => {
     img.addEventListener("click", () => {
@@ -480,21 +449,12 @@ async function openModal(p){
     return;
   }
 
-  // DIAGNOSTIC
-  console.log("[OPEN PRODUCT]", {
-    id: p.id,
-    image: p.image,
-    images_raw: p.images,
-    images_parsed: toArray(p.images),
-    extra_from_table: IMAGES_MAP[p.id] || []
-  });
-
-  // Texte
-  mTitle.textContent = p.title || "";
-  mPrice.textContent = fmtXAF(p.price || 0);
-  mCat.textContent   = p.category || "";
-  mDesc.textContent  = p.shortDescription || "";
-  mCities.textContent = (p.cities && p.cities.length) ? `Villes : ${p.cities.join(", ")}` : "";
+  // Remplissage avec sécurité (vérifie si les éléments existent)
+  if (mTitle) mTitle.textContent = p.title || "";
+  if (mPrice) mPrice.textContent = fmtXAF(p.price || 0);
+  if (mCat) mCat.textContent   = p.category || "";
+  if (mDesc) mDesc.textContent  = p.shortDescription || "";
+  if (mCities) mCities.textContent = (p.cities && p.cities.length) ? `Disponible à : ${p.cities.join(", ")}` : "Disponible partout";
 
   // WhatsApp
   const msg = encodeURIComponent(`Bonjour Samiah Cosmetics, je suis intéressé(e) par ${p.title} (${fmtXAF(p.price||0)}).`);
@@ -530,7 +490,7 @@ async function openModal(p){
   // Ouvrir
   overlay.style.display = "block";
   modal.style.display = "flex";
-  modal.classList.add("open");
+  // on ne met plus la classe 'open' si on gère le display directement
 
   // Pousse l'état dans l'historique pour lien direct
   try { history.pushState({ pid: p.id }, "", buildShareUrl(p.id)); } catch {}
@@ -544,9 +504,8 @@ async function openModal(p){
 }
 
 function closeModal(){
-  modal?.classList.remove("open");
-  modal.style.display = "none";
-  overlay.style.display = "none";
+  if (modal) modal.style.display = "none";
+  if (overlay) overlay.style.display = "none";
 
   // retire ?p de l'URL sans recharger
   try {
@@ -558,7 +517,7 @@ function closeModal(){
 }
 
 // =======================
-// Plein écran (lightbox) — optionnel si les éléments existent
+// Plein écran (lightbox)
 // =======================
 function openFs(){
   if (!fsOverlay || !fsImg || !currentGallery.length) return;
@@ -605,7 +564,7 @@ window.addEventListener("popstate", () => {
     const p = PRODUCTS.find(x => (""+x.id) === (""+pid));
     if (p) openModal(p);
   } else {
-    if (modal?.classList.contains("open")) closeModal();
+    if (modal && modal.style.display === "flex") closeModal();
   }
 });
 
@@ -619,15 +578,12 @@ window.addEventListener("popstate", () => {
 });
 
 // =======================
-// Témoignages (vitrine) — VERSION CLEAN (GRID)
+// Témoignages (vitrine)
 // =======================
 async function loadTestimonials(){
   if (!testiGrid) return;
 
   try{
-    console.log("[loadTestimonials] Fetching...");
-    
-    // ✅ On récupère TOUTES les colonnes possibles
     const { data, error } = await sb
       .from("testimonials")
       .select("id, client_name, city, rating, message, photos, photo_url, created_at, active")
@@ -635,12 +591,7 @@ async function loadTestimonials(){
       .order("created_at", { ascending:false })
       .limit(5);
 
-    if (error) {
-      console.error("[loadTestimonials] Supabase error:", error);
-      throw error;
-    }
-
-    console.log("[loadTestimonials] Success:", data);
+    if (error) throw error;
     renderTestimonials(data || []);
   }catch(e){
     console.error("[loadTestimonials] Error:", e);
@@ -650,18 +601,13 @@ async function loadTestimonials(){
 
 function renderTestimonials(list, errText = ""){
   if (!testiGrid) return;
-
   const rows = Array.isArray(list) ? list : [];
   
-  console.log("[renderTestimonials]", { count: rows.length, rows });
-
   if (!rows.length){
     testiGrid.innerHTML = "";
     if (testiEmpty){
       testiEmpty.style.display = "block";
-      testiEmpty.textContent = errText
-        ? "Les premiers témoignages arrivent bientôt ("+errText+")"
-        : "Les premiers témoignages arrivent bientôt.";
+      testiEmpty.textContent = errText ? "Les premiers témoignages arrivent bientôt ("+errText+")" : "Les premiers témoignages arrivent bientôt.";
     }
     return;
   }
@@ -671,20 +617,10 @@ function renderTestimonials(list, errText = ""){
     const city  = escapeHtml(t.city || "");
     const quote = escapeHtml(t.message || "");
     
-    // ✅ CORRECTION ULTIME : Gère photos (array) OU photo_url (string)
     let imgUrl = "/assets/images/placeholder-testimonial.png";
+    if (t.photo_url && typeof t.photo_url === "string") imgUrl = t.photo_url;
+    else if (Array.isArray(t.photos) && t.photos.length > 0) imgUrl = t.photos[0];
     
-    if (t.photo_url && typeof t.photo_url === "string") {
-      // Cas 1 : photo_url existe (string)
-      imgUrl = t.photo_url;
-    } else if (Array.isArray(t.photos) && t.photos.length > 0) {
-      // Cas 2 : photos existe (array)
-      imgUrl = t.photos[0];
-    }
-    
-    console.log("[renderTestimonials] Image pour", name, ":", imgUrl);
-
-    // ✅ Affichage du rating avec étoiles
     let starsHtml = "";
     if (t.rating && typeof t.rating === "number" && t.rating >= 1 && t.rating <= 5) {
       const fullStars = "★".repeat(t.rating);
@@ -693,24 +629,16 @@ function renderTestimonials(list, errText = ""){
     }
 
     const date = t.created_at ? new Date(t.created_at) : null;
-    const dateStr = date
-      ? date.toLocaleDateString("fr-FR",{year:"numeric",month:"short",day:"2-digit"})
-      : "";
+    const dateStr = date ? date.toLocaleDateString("fr-FR",{year:"numeric",month:"short",day:"2-digit"}) : "";
 
-    // MODIF ICI : Structure carte standard (pour Grille)
     return `
       <article class="card">
         <div class="card-thumb">
-          <img
-              src="${escapeAttr(imgUrl)}"
-              alt="${name ? "Résultat de " + name : "Témoignage cliente"}"
-              loading="lazy"
-              onerror="this.onerror=null;this.src='/assets/images/placeholder-testimonial.png';console.error('Image failed:',this.src)"
-            >
+          <img src="${escapeAttr(imgUrl)}" alt="${name ? "Résultat de " + name : "Témoignage cliente"}" loading="lazy" onerror="this.onerror=null;this.src='/assets/images/placeholder-testimonial.png';">
         </div>
         <div class="p">
           ${starsHtml}
-          <p style="font-size:13px;line-height:1.5;margin:0">"${quote || "Témoignage en attente de texte."}"</p>
+          <p style="font-size:13px;line-height:1.5;margin:0">"${quote || "Témoignage en attente."}"</p>
           <div class="muted" style="margin-top:6px;font-size:12px">
             ${name || "Cliente Samiah"}${city ? " • " + city : ""}${dateStr ? " • " + dateStr : ""}
           </div>
@@ -724,26 +652,14 @@ function renderTestimonials(list, errText = ""){
 }
 
 // =======================
-// Realtime
+// Realtime & Init
 // =======================
 function subscribeRealtime(){
-  sb.channel("realtime:products")
-    .on("postgres_changes", { event:"*", schema:"public", table:"products" }, () => loadProducts().catch(console.error))
-    .subscribe();
-
-  sb.channel("realtime:product_images")
-    .on("postgres_changes", { event:"*", schema:"public", table:"product_images" }, () => loadProducts().catch(console.error))
-    .subscribe();
-
-  // Realtime pour les témoignages (optionnel mais pratique)
-  sb.channel("realtime:testimonials")
-    .on("postgres_changes", { event:"*", schema:"public", table:"testimonials" }, () => loadTestimonials().catch(console.error))
-    .subscribe();
+  sb.channel("realtime:products").on("postgres_changes", { event:"*", schema:"public", table:"products" }, () => loadProducts().catch(console.error)).subscribe();
+  sb.channel("realtime:product_images").on("postgres_changes", { event:"*", schema:"public", table:"product_images" }, () => loadProducts().catch(console.error)).subscribe();
+  sb.channel("realtime:testimonials").on("postgres_changes", { event:"*", schema:"public", table:"testimonials" }, () => loadTestimonials().catch(console.error)).subscribe();
 }
 
-// =======================
-// Init
-// =======================
 async function init(){
   await loadProducts();
   await loadTestimonials();
@@ -753,11 +669,8 @@ init().catch(console.error);
 
 /* ===========================================================
    BADGE "Nouveau" (append-only)
-   - Ajoute un badge sur les cartes produits récents (≤ NEW_DAYS)
-   - Sans modifier render() / cardTpl() : post-traitement du DOM
    =========================================================== */
-
-const NEW_DAYS = 2; // ajuste si besoin
+const NEW_DAYS = 2; 
 function __isNewProduct(p){
   if (!p || !p.created_at) return false;
   const created = Date.parse(p.created_at);
@@ -768,10 +681,7 @@ function __isNewProduct(p){
 
 function __injectNewBadgeIntoCard(cardEl, p){
   if (!cardEl || !p) return;
-  // éviter les doublons
   if (cardEl.querySelector('.badge.badge-new')) return;
-
-  // MODIF ICI : Insertion dans .card-thumb pour coller à l'image
   const slot = cardEl.querySelector('.card-thumb') || cardEl;
   const span = document.createElement('span');
   span.className = 'badge badge-new';
@@ -789,16 +699,7 @@ function markNewCards(){
   });
 }
 
-// 1) Marque immédiatement si déjà rendu
 markNewCards();
-
-// 2) Observe la grille : à chaque changement (render), on remet les badges
 const __newBadgeObserver = new MutationObserver(() => markNewCards());
-if (gridEl) {
-  __newBadgeObserver.observe(gridEl, { childList: true, subtree: false });
-}
-
-// 3) Sécurité : recalcule aussi après chargement des produits
-document.addEventListener('readystatechange', () => {
-  if (document.readyState === 'complete') markNewCards();
-});
+if (gridEl) __newBadgeObserver.observe(gridEl, { childList: true, subtree: false });
+document.addEventListener('readystatechange', () => { if (document.readyState === 'complete') markNewCards(); });
