@@ -1,6 +1,6 @@
 /* ===========================
    Samiah Cosmetics — styles
-   (Mise à jour : Design Moderne + Grille Fixe + Responsive)
+   (Mise à jour : Style Amazon Centré)
    =========================== */
 
 :root{
@@ -64,7 +64,7 @@ select,.search{padding:10px;border-radius:10px;border:1px solid #ddd;min-width:1
   gap:16px;
 }
 
-/* === CARTE MODERNE (Produits & Témoignages) === */
+/* === CARTE LISTE (Catalogue) === */
 .card {
   position: relative;
   background: #fff;
@@ -148,13 +148,12 @@ select,.search{padding:10px;border-radius:10px;border:1px solid #ddd;min-width:1
 }
 
 /* =========================
-   TÉMOIGNAGES : GRID FIXE (Comme avant)
+   TÉMOIGNAGES : GRID FIXE
    ========================= */
-/* Force la hauteur des images témoignages pour éviter l'effet géant */
 #testiGrid .card img {
   width: 100%;
-  height: 220px;     /* Hauteur contrainte */
-  object-fit: cover; /* Coupe proprement */
+  height: 220px;
+  object-fit: cover;
   display: block;
   background: #f9f9f9;
 }
@@ -170,177 +169,103 @@ select,.search{padding:10px;border-radius:10px;border:1px solid #ddd;min-width:1
 .skeleton { animation: pulse 1.5s infinite; }
 @keyframes pulse { 0%{opacity:1} 50%{opacity:.5} 100%{opacity:1} }
 
-/* =========================
-   PAGE PRODUIT (Style Plein Écran)
-   ========================= */
+/* ======================================================
+   MODALE STYLE AMAZON (Fenêtre centrée)
+   ====================================================== */
 
-/* Fond blanc opaque (couvre tout le site) */
+/* Fond sombre derrière la fenêtre */
 .modal-overlay {
-  position: fixed;
-  inset: 0;
-  background: #fff; /* Fond blanc comme une page */
+  position: fixed; inset: 0;
+  background: rgba(0, 0, 0, 0.6);
   display: none;
-  z-index: 2000; /* Au-dessus de tout le reste */
+  z-index: 1000;
+  align-items: center; justify-content: center; /* Important pour le centrage */
+  padding: 10px; /* Marge pour éviter de coller aux bords sur mobile */
+  backdrop-filter: blur(2px);
 }
 
-/* La carte produit prend 100% de la largeur et hauteur */
+/* La fenêtre elle-même */
 .modal-card {
-  position: relative;
   background: #fff;
   width: 100%;
-  height: 100%;
-  max-height: none; /* On enlève la limite */
-  border-radius: 0; /* Plus de bords arrondis */
-  box-shadow: none; /* Plus d'ombre */
+  max-width: 1100px; /* Largeur max comme Amazon */
+  max-height: 90vh; /* Ne dépasse pas 90% de la hauteur de l'écran */
+  border-radius: 8px; /* Coins Amazon */
   display: flex;
   flex-direction: column;
-  overflow-y: auto; /* Scroll normal de page */
+  overflow: hidden;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.3);
+  position: relative;
 }
 
-/* En-tête (Sticky en haut) */
+/* Header */
 .modal-head {
-  position: sticky;
-  top: 0;
+  padding: 10px 20px;
+  border-bottom: 1px solid #ddd;
+  display: flex; justify-content: flex-end; /* Juste la croix à droite */
   background: #fff;
-  z-index: 100;
-  padding: 16px 24px;
-  border-bottom: 1px solid #eee;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+  z-index: 10;
 }
-
-#mTitle {
-  font-size: 1.2rem;
-  font-weight: 700;
-  color: #111;
-  font-family: inherit;
-}
-
-/* Bouton "Fermer" devient un bouton "Retour" plus gros */
 #mClose {
-  font-size: 28px;
-  padding: 0 10px;
-  color: #333;
-  transition: color 0.2s;
-  background: none;
-  border: none;
-  cursor: pointer;
+  background: none; border: none; font-size: 28px; cursor: pointer; color: #555; line-height: 1; padding: 0;
 }
-#mClose:hover {
-  color: #B12704;
-}
+#mClose:hover { color: #000; }
 
-/* Conteneur centré pour le contenu (limite la largeur sur grands écrans) */
+/* Body avec scroll */
 .modal-body {
-  width: 100%;
-  max-width: 1200px;
-  margin: 0 auto; /* Centre le contenu */
+  overflow-y: auto; /* Scroll à l'intérieur de la fenêtre si trop long */
+  padding: 20px 30px;
   display: grid;
-  grid-template-columns: 55% 45%;
+  grid-template-columns: 45% 55%; /* Image | Infos */
   gap: 40px;
-  padding: 40px 20px;
-  align-items: start;
 }
 
-/* --- Colonne Gauche : Images --- */
-.gallery-col {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
+/* Images */
+.gallery-col { display: flex; flex-direction: column; gap: 15px; }
 .gal-main {
-  background: #fff;
-  height: 500px; /* Grande image */
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  position: relative;
+  height: 400px;
+  display: flex; align-items: center; justify-content: center;
+  border: 1px solid #eee; border-radius: 4px; padding: 10px;
 }
-
-.gal-main img {
-  max-height: 100%;
-  max-width: 100%;
-  object-fit: contain;
-  cursor: zoom-in;
-  transition: transform 0.3s ease;
-}
-.gal-main img:hover {
-  transform: scale(1.05);
-}
-
-/* Vignettes */
-.gal-thumbs {
-  display: flex;
-  justify-content: center;
-  flex-wrap: wrap;
-  gap: 10px;
-}
+.gal-main img { max-height: 100%; max-width: 100%; object-fit: contain; cursor: zoom-in; }
+.gal-thumbs { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
 .gal-thumbs img {
-  width: 60px;
-  height: 60px;
-  object-fit: contain;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  padding: 2px;
-  cursor: pointer;
-  transition: all 0.2s;
+  width: 50px; height: 50px; object-fit: contain;
+  border: 1px solid #aaa; border-radius: 4px; cursor: pointer;
 }
-.gal-thumbs img:hover, .gal-thumbs img.active-thumb {
-  border-color: #e77600;
-  box-shadow: 0 0 4px rgba(231, 118, 0, 0.4);
-}
+.gal-thumbs img.active-thumb, .gal-thumbs img:hover { border-color: #e77600; box-shadow: 0 0 3px #e77600; }
 
-/* --- Colonne Droite : Infos --- */
-.meta-col {
-  padding-top: 10px;
-  display: flex;
-  flex-direction: column;
-}
-.brand-label { color: #007185; font-size: 14px; margin-bottom: 6px; font-weight: 500; }
-#mPrice { color: #B12704; font-size: 28px; font-weight: 500; margin-bottom: 8px; }
-#mCities { margin-top: 12px; font-size: 14px; color: #007600; font-weight: 700; }
-#mDesc { font-size: 16px; line-height: 1.6; color: #333; margin-top: 20px; padding-top: 20px; border-top: 1px solid #eee; }
+/* Infos */
+.meta-col { display: flex; flex-direction: column; }
+#mTitle { font-size: 22px; font-weight: 500; line-height: 1.3; color: #0F1111; margin-bottom: 4px; }
+.brand-label { font-size: 14px; color: #007185; margin-bottom: 8px; text-decoration: underline; }
+#mPrice { font-size: 28px; color: #B12704; font-weight: 500; margin: 8px 0; }
+#mCities { font-size: 14px; color: #007600; font-weight: 700; margin-bottom: 10px; }
+#mDesc { font-size: 14px; line-height: 1.5; color: #333; margin-bottom: 20px; }
 
-/* Boutons Actions */
+/* Boite d'achat (Buy Box) */
 .modal-actions {
-  margin-top: 30px;
-  padding-top: 20px;
-  border-top: 1px solid #eee;
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
+  border: 1px solid #d5d9d9; border-radius: 8px; padding: 18px; background: #fff;
 }
 #mWhatsApp {
-  background: #FFD814;
-  color: #111;
-  border: 1px solid #FCD200;
-  border-radius: 20px;
-  padding: 14px 20px;
-  text-align: center;
-  font-size: 16px;
-  font-weight: 600;
-  width: 100%;
-  box-shadow: 0 2px 5px rgba(213, 217, 217, 0.5);
-  text-decoration: none;
-  cursor: pointer;
-  transition: background 0.2s;
+  display: block; width: 100%;
+  background: #FFD814; border: 1px solid #FCD200; border-radius: 20px;
+  padding: 10px; text-align: center;
+  font-size: 14px; font-weight: 600; color: #0F1111;
+  box-shadow: 0 2px 5px rgba(213,217,217,.5); margin-bottom: 12px; cursor: pointer; text-decoration: none;
 }
 #mWhatsApp:hover { background: #F7CA00; }
 
-/* RESPONSIVE MOBILE */
-@media (max-width: 900px) {
-  .modal-body {
-    grid-template-columns: 1fr;
-    gap: 24px;
-    padding: 20px 16px;
-  }
-  .gal-main { height: 350px; }
-  .modal-head { padding: 12px 16px; }
-  #mTitle { font-size: 1rem; }
-  #mClose { font-size: 24px; }
+.modal-actions button {
+  font-size: 13px; padding: 6px 12px; background: transparent; border: 1px solid #d5d9d9; border-radius: 8px; cursor: pointer;
+}
+.modal-actions button:hover { background: #f7fafa; }
+
+/* Mobile */
+@media (max-width: 800px) {
+  .modal-card { height: 100%; max-height: 100%; border-radius: 0; }
+  .modal-body { grid-template-columns: 1fr; gap: 20px; padding: 16px; }
+  .gal-main { height: 280px; }
 }
 
 /* Outils Admin */
