@@ -1,6 +1,6 @@
 /* ===========================
    Samiah Cosmetics — styles
-   (Mise à jour : Style Amazon Centré)
+   (Mise à jour : Design Moderne + Grille Fixe + Responsive)
    =========================== */
 
 :root{
@@ -64,7 +64,7 @@ select,.search{padding:10px;border-radius:10px;border:1px solid #ddd;min-width:1
   gap:16px;
 }
 
-/* === CARTE LISTE (Catalogue) === */
+/* === CARTE MODERNE (Produits & Témoignages) === */
 .card {
   position: relative;
   background: #fff;
@@ -148,12 +148,13 @@ select,.search{padding:10px;border-radius:10px;border:1px solid #ddd;min-width:1
 }
 
 /* =========================
-   TÉMOIGNAGES : GRID FIXE
+   TÉMOIGNAGES : GRID FIXE (Comme avant)
    ========================= */
+/* Force la hauteur des images témoignages pour éviter l'effet géant */
 #testiGrid .card img {
   width: 100%;
-  height: 220px;
-  object-fit: cover;
+  height: 220px;     /* Hauteur contrainte */
+  object-fit: cover; /* Coupe proprement */
   display: block;
   background: #f9f9f9;
 }
@@ -169,104 +170,24 @@ select,.search{padding:10px;border-radius:10px;border:1px solid #ddd;min-width:1
 .skeleton { animation: pulse 1.5s infinite; }
 @keyframes pulse { 0%{opacity:1} 50%{opacity:.5} 100%{opacity:1} }
 
-/* ======================================================
-   MODALE STYLE AMAZON (Fenêtre centrée)
-   ====================================================== */
+/* =========================
+   Modale
+   ========================= */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);display:none;z-index:1000}
+.modal{position:fixed;inset:0;display:none;align-items:center;justify-content:center;z-index:1001}
+.modal-card{
+  background:#fff;border:1px solid var(--border);border-radius:var(--radius);
+  box-shadow:0 20px 60px rgba(0,0,0,.25);
+  width:min(980px,96vw);overflow:hidden;
+}
+.modal-head{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-bottom:1px solid var(--border)}
+.modal-body{display:grid;grid-template-columns:1.1fr .9fr;gap:16px;padding:14px}
+@media (max-width:900px){ .modal-body{grid-template-columns:1fr} }
 
-/* Fond sombre derrière la fenêtre */
-.modal-overlay {
-  position: fixed; inset: 0;
-  background: rgba(0, 0, 0, 0.6);
-  display: none;
-  z-index: 1000;
-  align-items: center; justify-content: center; /* Important pour le centrage */
-  padding: 10px; /* Marge pour éviter de coller aux bords sur mobile */
-  backdrop-filter: blur(2px);
-}
-
-/* La fenêtre elle-même */
-.modal-card {
-  background: #fff;
-  width: 100%;
-  max-width: 1100px; /* Largeur max comme Amazon */
-  max-height: 90vh; /* Ne dépasse pas 90% de la hauteur de l'écran */
-  border-radius: 8px; /* Coins Amazon */
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  box-shadow: 0 8px 30px rgba(0,0,0,0.3);
-  position: relative;
-}
-
-/* Header */
-.modal-head {
-  padding: 10px 20px;
-  border-bottom: 1px solid #ddd;
-  display: flex; justify-content: flex-end; /* Juste la croix à droite */
-  background: #fff;
-  z-index: 10;
-}
-#mClose {
-  background: none; border: none; font-size: 28px; cursor: pointer; color: #555; line-height: 1; padding: 0;
-}
-#mClose:hover { color: #000; }
-
-/* Body avec scroll */
-.modal-body {
-  overflow-y: auto; /* Scroll à l'intérieur de la fenêtre si trop long */
-  padding: 20px 30px;
-  display: grid;
-  grid-template-columns: 45% 55%; /* Image | Infos */
-  gap: 40px;
-}
-
-/* Images */
-.gallery-col { display: flex; flex-direction: column; gap: 15px; }
-.gal-main {
-  height: 400px;
-  display: flex; align-items: center; justify-content: center;
-  border: 1px solid #eee; border-radius: 4px; padding: 10px;
-}
-.gal-main img { max-height: 100%; max-width: 100%; object-fit: contain; cursor: zoom-in; }
-.gal-thumbs { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
-.gal-thumbs img {
-  width: 50px; height: 50px; object-fit: contain;
-  border: 1px solid #aaa; border-radius: 4px; cursor: pointer;
-}
-.gal-thumbs img.active-thumb, .gal-thumbs img:hover { border-color: #e77600; box-shadow: 0 0 3px #e77600; }
-
-/* Infos */
-.meta-col { display: flex; flex-direction: column; }
-#mTitle { font-size: 22px; font-weight: 500; line-height: 1.3; color: #0F1111; margin-bottom: 4px; }
-.brand-label { font-size: 14px; color: #007185; margin-bottom: 8px; text-decoration: underline; }
-#mPrice { font-size: 28px; color: #B12704; font-weight: 500; margin: 8px 0; }
-#mCities { font-size: 14px; color: #007600; font-weight: 700; margin-bottom: 10px; }
-#mDesc { font-size: 14px; line-height: 1.5; color: #333; margin-bottom: 20px; }
-
-/* Boite d'achat (Buy Box) */
-.modal-actions {
-  border: 1px solid #d5d9d9; border-radius: 8px; padding: 18px; background: #fff;
-}
-#mWhatsApp {
-  display: block; width: 100%;
-  background: #FFD814; border: 1px solid #FCD200; border-radius: 20px;
-  padding: 10px; text-align: center;
-  font-size: 14px; font-weight: 600; color: #0F1111;
-  box-shadow: 0 2px 5px rgba(213,217,217,.5); margin-bottom: 12px; cursor: pointer; text-decoration: none;
-}
-#mWhatsApp:hover { background: #F7CA00; }
-
-.modal-actions button {
-  font-size: 13px; padding: 6px 12px; background: transparent; border: 1px solid #d5d9d9; border-radius: 8px; cursor: pointer;
-}
-.modal-actions button:hover { background: #f7fafa; }
-
-/* Mobile */
-@media (max-width: 800px) {
-  .modal-card { height: 100%; max-height: 100%; border-radius: 0; }
-  .modal-body { grid-template-columns: 1fr; gap: 20px; padding: 16px; }
-  .gal-main { height: 280px; }
-}
+.gal-main{border:1px solid #eee;border-radius:12px;overflow:hidden;display:flex;align-items:center;justify-content:center;background:#fff;aspect-ratio:4/3}
+.gal-main img{max-width:100%;max-height:100%}
+.gal-thumbs{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.gal-thumbs img{width:72px;height:72px;object-fit:cover;border:1px solid #eee;border-radius:8px;cursor:pointer}
 
 /* Outils Admin */
 #listControls{display:flex;align-items:center;flex-wrap:wrap;gap:10px;justify-content:space-between;margin:10px 0 12px}
