@@ -104,7 +104,7 @@ function ensureShareButton(){
     btn.id = "mShare";
     btn.className = "btn secondary";
     btn.type = "button";
-    btn.textContent = "Partager le lien";
+    btn.textContent = "🔗 Partager";
     // l'insérer avant les boutons Préc/Suiv si possibles
     if (mPrev) mActions.insertBefore(btn, mPrev);
     else mActions.appendChild(btn);
@@ -453,10 +453,9 @@ function renderGallery(){
   // image principale
   mMain.src = currentGallery.length ? currentGallery[currentIndex] : "/assets/images/placeholder.png";
 
-  // vignettes
+  // vignettes avec classe active
   mThumbs.innerHTML = currentGallery.map((url, i) =>
-    `<img src="${escapeAttr(url)}" data-i="${i}"
-      style="border:${i===currentIndex?'2px solid #111':'1px solid #eee'};border-radius:8px;width:72px;height:72px;object-fit:cover;cursor:pointer">`
+    `<img src="${escapeAttr(url)}" data-i="${i}" class="${i===currentIndex ? 'active' : ''}">`
   ).join("");
 
   mThumbs.querySelectorAll("img").forEach(img => {
@@ -492,13 +491,21 @@ async function openModal(p){
   // Texte
   mTitle.textContent = p.title || "";
   mPrice.textContent = fmtXAF(p.price || 0);
-  mCat.textContent   = p.category || "";
+  mCat.textContent   = "📦 " + (p.category || "");
   mDesc.textContent  = p.shortDescription || "";
-  mCities.textContent = (p.cities && p.cities.length) ? `Villes : ${p.cities.join(", ")}` : "";
+  mCities.textContent = (p.cities && p.cities.length) ? `📍 Disponible à ${p.cities.join(", ")}` : "";
 
-  // WhatsApp
+  // WhatsApp avec icône SVG
   const msg = encodeURIComponent(`Bonjour Samiah Cosmetics, je suis intéressé(e) par ${p.title} (${fmtXAF(p.price||0)}).`);
-  if (mWhats) mWhats.href = `https://wa.me/23562752105?text=${msg}`;
+  if (mWhats) {
+    mWhats.innerHTML = `
+      <svg viewBox="0 0 24 24" style="width:22px;height:22px;fill:currentColor">
+        <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+      </svg>
+      Commander via WhatsApp
+    `;
+    mWhats.href = `https://wa.me/23562752105?text=${msg}`;
+  }
 
   // Galerie locale + compléments DB
   currentGallery = buildGalleryLocal(p);
@@ -527,10 +534,10 @@ async function openModal(p){
   // clic image principale → plein écran (si markup présent)
   if (mMain) mMain.onclick = () => openFs();
 
-  // Ouvrir
-  overlay.style.display = "block";
-  modal.style.display = "flex";
-  modal.classList.add("open");
+  // ✅ MODIFICATION ICI : Utilisation des classes .show au lieu de style.display
+  overlay.classList.add('show');
+  modal.classList.add('show');
+  document.body.style.overflow = 'hidden';
 
   // Pousse l'état dans l'historique pour lien direct
   try { history.pushState({ pid: p.id }, "", buildShareUrl(p.id)); } catch {}
@@ -538,15 +545,22 @@ async function openModal(p){
   // Bind fermeture / nav
   if (mClose) mClose.onclick = closeModal;
   overlay.onclick = (e) => { if (e.target === overlay) closeModal(); };
-  document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeModal(); }, { once:true });
+  document.addEventListener("keydown", handleModalKeydown, { once:true });
   if (mPrev) mPrev.onclick = prevImg;
   if (mNext) mNext.onclick = nextImg;
 }
 
+function handleModalKeydown(e){
+  if (e.key === "Escape") closeModal();
+  else if (e.key === "ArrowLeft") prevImg();
+  else if (e.key === "ArrowRight") nextImg();
+}
+
 function closeModal(){
-  modal?.classList.remove("open");
-  modal.style.display = "none";
-  overlay.style.display = "none";
+  // ✅ MODIFICATION ICI : Utilisation des classes .show
+  modal?.classList.remove('show');
+  overlay.classList.remove('show');
+  document.body.style.overflow = '';
 
   // retire ?p de l'URL sans recharger
   try {
@@ -605,7 +619,7 @@ window.addEventListener("popstate", () => {
     const p = PRODUCTS.find(x => (""+x.id) === (""+pid));
     if (p) openModal(p);
   } else {
-    if (modal?.classList.contains("open")) closeModal();
+    if (modal?.classList.contains("show")) closeModal();
   }
 });
 
