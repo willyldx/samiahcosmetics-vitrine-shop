@@ -1,6 +1,6 @@
 /* ===========================
-   Samiah Cosmetics — styles
-   (Mise à jour : Design Moderne + Grille Fixe + Responsive + DESCRIPTIONS TRONQUÉES)
+   Samiah Cosmetics — styles OPTIMISÉS
+   Ajouts : Animations modernes + Performance
    =========================== */
 
 :root{
@@ -23,12 +23,123 @@ img{max-width:100%;display:block}
 .muted{color:var(--muted)}
 small.muted{opacity:.75}
 
-/* Boutons */
-.btn{display:inline-block;background:var(--charcoal);color:#fff;padding:12px 18px;border-radius:10px;font-weight:600;cursor:pointer}
+/* ============================================
+   🎨 ANIMATIONS MODERNES (NOUVEAUTÉ)
+   ============================================ */
+
+/* Smooth scroll natif */
+html { scroll-behavior: smooth; }
+
+/* Animation d'ouverture modale (slideUp) */
+@keyframes slideUp {
+  from {
+    transform: translateY(100px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* Fade-in overlay */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* Animation cards au chargement */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Animation pulse pour badge "Nouveau" */
+@keyframes pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
+
+/* Skeleton loading amélioré */
+@keyframes shimmer {
+  0% { background-position: -468px 0; }
+  100% { background-position: 468px 0; }
+}
+
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    #f0f0f0 0%,
+    #e0e0e0 50%,
+    #f0f0f0 100%
+  ) !important;
+  background-size: 468px 100% !important;
+  animation: shimmer 1.5s infinite linear !important;
+}
+
+/* ============================================
+   🎯 BOUTONS (avec micro-interactions)
+   ============================================ */
+.btn{
+  display:inline-block;
+  background:var(--charcoal);
+  color:#fff;
+  padding:12px 18px;
+  border-radius:10px;
+  font-weight:600;
+  cursor:pointer;
+  border:0;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: transform;
+}
+.btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+}
+.btn:active {
+  transform: translateY(0);
+}
 .btn.gold{background:var(--gold);color:#222}
 .btn.secondary{background:#1111110d;color:#111;border:1px solid var(--border)}
 
-/* Layout généraux */
+/* ============================================
+   📦 CARTES PRODUITS (effet hover amélioré)
+   ============================================ */
+.card {
+  position: relative;
+  background: #fff;
+  border: 0;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.04);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  flex-direction: column;
+  will-change: transform;
+  /* Animation d'apparition au chargement */
+  animation: fadeInUp 0.6s ease-out backwards;
+}
+
+/* Délai progressif pour effet cascade */
+.card:nth-child(1) { animation-delay: 0.05s; }
+.card:nth-child(2) { animation-delay: 0.1s; }
+.card:nth-child(3) { animation-delay: 0.15s; }
+.card:nth-child(4) { animation-delay: 0.2s; }
+.card:nth-child(5) { animation-delay: 0.25s; }
+.card:nth-child(6) { animation-delay: 0.3s; }
+
+.card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 16px 40px rgba(0,0,0,0.12);
+}
+
+/* Layout interne */
 .container{max-width:var(--container);margin:0 auto;padding:0 16px}
 .header{display:flex;align-items:center;gap:18px;padding:16px 0}
 .logo img{height:64px;width:auto}
@@ -40,7 +151,7 @@ small.muted{opacity:.75}
 .hero h1{margin:0 0 8px;font-size:38px;letter-spacing:.02em}
 .hero p{margin:0 0 16px;font-size:18px;opacity:.85}
 
-/* Image Hero "propre" */
+/* Image Hero */
 .hero-photo{
   border:1px solid #eee;border-radius:var(--radius);
   box-shadow:0 10px 30px rgba(0,0,0,.08);background:#fff;
@@ -55,30 +166,24 @@ small.muted{opacity:.75}
 
 /* Filtres catalogue */
 .filters{display:flex;gap:10px;flex-wrap:wrap;margin:12px 0 18px}
-select,.search{padding:10px;border-radius:10px;border:1px solid #ddd;min-width:160px}
+select,.search{
+  padding:10px;
+  border-radius:10px;
+  border:1px solid #ddd;
+  min-width:160px;
+  transition: all 0.2s ease;
+}
+select:focus, .search:focus {
+  outline: 2px solid var(--gold);
+  outline-offset: 2px;
+  border-color: var(--gold);
+}
 
-/* Grilles standard (Catalogue + Témoignages) */
+/* Grilles standard */
 .grid{
   display:grid;
   grid-template-columns:repeat(auto-fill,minmax(220px,1fr));
   gap:16px;
-}
-
-/* === CARTE MODERNE (Produits & Témoignages) === */
-.card {
-  position: relative;
-  background: #fff;
-  border: 0; /* Pas de bordure grise */
-  border-radius: 16px;
-  overflow: hidden;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.04); /* Ombre douce */
-  transition: all 0.3s ease;
-  display: flex;
-  flex-direction: column;
-}
-.card:hover {
-  transform: translateY(-4px); /* Légère montée */
-  box-shadow: 0 12px 32px rgba(0,0,0,0.08);
 }
 
 /* Typographie interne carte */
@@ -87,16 +192,14 @@ select,.search{padding:10px;border-radius:10px;border:1px solid #ddd;min-width:1
   display: flex;
   flex-direction: column;
   gap: 4px;
-  flex: 1; /* Permet de pousser le prix en bas */
+  flex: 1;
 }
 
-/* Titre produit */
 .card .p > div:first-child { 
   font-size: 1.05rem; 
   margin-bottom: 4px; 
   font-weight: 700;
   line-height: 1.3;
-  /* Tronquer le titre si trop long (2 lignes max) */
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
@@ -104,36 +207,31 @@ select,.search{padding:10px;border-radius:10px;border:1px solid #ddd;min-width:1
   text-overflow: ellipsis;
 }
 
-/* Catégorie */
 .card .p .muted:nth-child(2) {
   margin: 4px 0;
   font-size: 0.9rem;
-  /* Tronquer catégorie si besoin (1 ligne) */
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-/* ✅ DESCRIPTION TRONQUÉE (2 lignes max avec ...) */
 .card .p .muted:nth-child(3) {
   min-height: 40px;
   max-height: 40px;
   line-height: 1.4;
   font-size: 0.875rem;
-  /* Tronquer avec ... */
   display: -webkit-box;
-  -webkit-line-clamp: 2; /* 2 lignes maximum */
+  -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
   text-overflow: ellipsis;
   word-break: break-word;
 }
 
-/* Prix */
 .card .price { 
   color: #D9B56C; 
   font-size: 1.1rem; 
-  margin-top: auto; /* Pousse le prix en bas */
+  margin-top: auto;
   padding-top: 8px;
   font-weight: 800; 
 }
@@ -141,7 +239,7 @@ select,.search{padding:10px;border-radius:10px;border:1px solid #ddd;min-width:1
 /* Badge générique */
 .badge{display:inline-block;background:#111;color:#fff;border-radius:999px;font-size:12px;padding:6px 10px;margin-right:6px;opacity:.9}
 
-/* Badge "Nouveau" */
+/* Badge "Nouveau" avec animation pulse */
 .badge.badge-new {
   position: absolute;
   top: 8px; left: 8px;
@@ -150,6 +248,7 @@ select,.search{padding:10px;border-radius:10px;border:1px solid #ddd;min-width:1
   border-radius: 999px; padding: 4px 8px;
   box-shadow: 0 2px 6px rgba(0,0,0,.15);
   z-index: 5;
+  animation: pulse 2s infinite;
 }
 
 /* Message vide */
@@ -158,32 +257,48 @@ select,.search{padding:10px;border-radius:10px;border:1px solid #ddd;min-width:1
 /* Footer */
 .footer{margin-top:40px;padding:24px 0;border-top:1px solid #eee;font-size:14px;color:#666}
 
-/* WhatsApp flottant */
+/* WhatsApp flottant avec animation */
 .wa-float{
   position:fixed;right:18px;bottom:18px;z-index:999;
   display:inline-flex;align-items:center;justify-content:center;
   width:56px;height:56px;border-radius:999px;background:#25D366;color:#fff;
   box-shadow:0 10px 30px rgba(0,0,0,.2);text-decoration:none;
   touch-action:manipulation;
+  transition: all 0.3s ease;
+  will-change: transform;
+}
+.wa-float:hover {
+  transform: scale(1.1) rotate(5deg);
+  box-shadow: 0 15px 40px rgba(37, 211, 102, 0.4);
 }
 
 /* =========================
    Images Produits : Effet "Jumia" + Bouton survol
    ========================= */
-.card-thumb{ position:relative; overflow:hidden; background:#fff; }
+.card-thumb{ 
+  position:relative; 
+  overflow:hidden; 
+  background:#fff; 
+}
 
 .card-img{
-  width:100%; height:240px; /* Hauteur fixe produits */
+  width:100%; height:240px;
   object-fit:cover; display:block;
-  transition:transform .25s ease, opacity .25s ease;
+  transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: transform;
 }
-.card-img-secondary{ position:absolute; inset:0; opacity:0; }
+.card-img-secondary{ 
+  position:absolute; 
+  inset:0; 
+  opacity:0;
+  transition: opacity 0.4s ease;
+}
 
-/* Hover & Swipe */
-.card:hover .card-img-primary{ transform:scale(1.06); }
+/* Hover & Swipe avec zoom */
+.card:hover .card-img-primary{ transform:scale(1.1); }
 .card:hover .card-img-secondary{ opacity:1; }
-.card.card-swiped .card-img-primary{ opacity:0; transform:scale(1.06); }
-.card.card-swiped .card-img-secondary{ opacity:1; transform:scale(1.06); }
+.card.card-swiped .card-img-primary{ opacity:0; transform:scale(1.1); }
+.card.card-swiped .card-img-secondary{ opacity:1; transform:scale(1.1); }
 
 /* Bouton "Voir le produit" */
 .card-action {
@@ -193,30 +308,35 @@ select,.search{padding:10px;border-radius:10px;border:1px solid #ddd;min-width:1
   background: #fff; color: #000;
   padding: 8px 16px; border-radius: 20px;
   font-weight: 600; font-size: 13px;
-  opacity: 0; transition: all 0.2s ease;
+  opacity: 0; 
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   box-shadow: 0 4px 12px rgba(0,0,0,0.15);
   pointer-events: none;
 }
 .card:hover .card-action {
-  opacity: 1; transform: translateX(-50%) translateY(0);
+  opacity: 1; 
+  transform: translateX(-50%) translateY(0);
 }
 
 /* =========================
-   TÉMOIGNAGES : GRID FIXE (Comme avant)
+   TÉMOIGNAGES : GRID FIXE
    ========================= */
-/* Force la hauteur des images témoignages pour éviter l'effet géant */
 #testiGrid .card img {
   width: 100%;
-  height: 220px;     /* Hauteur contrainte */
-  object-fit: cover; /* Coupe proprement */
+  height: 220px;
+  object-fit: cover;
   display: block;
   background: #f9f9f9;
+  transition: transform 0.3s ease;
 }
 
-/* Témoignages : texte aussi tronqué */
+#testiGrid .card:hover img {
+  transform: scale(1.05);
+}
+
 #testiGrid .card .p p {
   display: -webkit-box;
-  -webkit-line-clamp: 3; /* 3 lignes pour témoignages */
+  -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -224,13 +344,12 @@ select,.search{padding:10px;border-radius:10px;border:1px solid #ddd;min-width:1
   max-height: 60px;
 }
 
-/* Responsive images générales */
+/* Responsive images */
 @media (max-width:1100px){ .hero h1{font-size:34px} .card-img{height:220px} }
 @media (max-width:900px){ .hero .wrap{grid-template-columns:1fr} }
 @media (max-width:620px){ 
   .card-img{height:180px} 
   .grid{gap:14px}
-  /* Descriptions encore plus courtes sur mobile */
   .card .p .muted:nth-child(3) {
     -webkit-line-clamp: 2;
     min-height: 36px;
@@ -239,13 +358,7 @@ select,.search{padding:10px;border-radius:10px;border:1px solid #ddd;min-width:1
 }
 
 /* =========================
-   SKELETON LOADING
-   ========================= */
-.skeleton { animation: pulse 1.5s infinite; }
-@keyframes pulse { 0%{opacity:1} 50%{opacity:.5} 100%{opacity:1} }
-
-/* =========================
-   MODALE MODERNE
+   🎭 MODALE MODERNE (avec animations)
    ========================= */
 .modal-overlay {
   position: fixed;
@@ -255,6 +368,7 @@ select,.search{padding:10px;border-radius:10px;border:1px solid #ddd;min-width:1
   z-index: 1000;
   display: none;
   transition: opacity 0.3s ease;
+  animation: fadeIn 0.3s ease-out;
 }
 .modal-overlay.show { display: block; }
 
@@ -277,10 +391,10 @@ select,.search{padding:10px;border-radius:10px;border:1px solid #ddd;min-width:1
   max-height: 90vh;
   overflow: hidden;
   box-shadow: 0 20px 60px rgba(0,0,0,0.15);
-  transform: scale(0.95);
-  transition: transform 0.3s ease;
+  /* Animation slideUp */
+  animation: slideUp 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: transform;
 }
-.modal.show .modal-card { transform: scale(1); }
 
 /* Header */
 .modal-head {
@@ -310,6 +424,7 @@ select,.search{padding:10px;border-radius:10px;border:1px solid #ddd;min-width:1
 #mClose:hover {
   background: #f3f4f6;
   border-color: #6b7280;
+  transform: rotate(90deg);
 }
 
 /* Body - 2 colonnes */
@@ -322,7 +437,7 @@ select,.search{padding:10px;border-radius:10px;border:1px solid #ddd;min-width:1
   max-height: calc(90vh - 80px);
 }
 
-/* Galerie */
+/* Galerie avec zoom */
 .gal-main {
   background: #f9fafb;
   border: 1px solid #e5e7eb;
@@ -338,9 +453,12 @@ select,.search{padding:10px;border-radius:10px;border:1px solid #ddd;min-width:1
   height: 100%;
   object-fit: contain;
   cursor: zoom-in;
-  transition: transform 0.3s ease;
+  transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: transform;
 }
-.gal-main:hover img { transform: scale(1.05); }
+.gal-main:hover img { 
+  transform: scale(1.15); 
+}
 
 .gal-thumbs {
   display: flex;
@@ -358,7 +476,10 @@ select,.search{padding:10px;border-radius:10px;border:1px solid #ddd;min-width:1
   cursor: pointer;
   transition: all 0.2s ease;
 }
-.gal-thumbs img:hover { border-color: #6b7280; }
+.gal-thumbs img:hover { 
+  border-color: #6b7280;
+  transform: scale(1.05);
+}
 .gal-thumbs img.active {
   border-color: #0A0A0A;
   box-shadow: 0 0 0 1px #0A0A0A;
@@ -386,7 +507,6 @@ select,.search{padding:10px;border-radius:10px;border:1px solid #ddd;min-width:1
   font-size: 15px;
   line-height: 1.7;
   color: #111827;
-  /* PAS de troncature dans la modale - description complète */
 }
 
 #mCities {
@@ -407,8 +527,9 @@ select,.search{padding:10px;border-radius:10px;border:1px solid #ddd;min-width:1
   font-size: 16px;
   font-weight: 700;
   text-decoration: none;
-  transition: all 0.2s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   box-shadow: 0 4px 12px rgba(37, 211, 102, 0.3);
+  will-change: transform;
 }
 #mWhatsApp:hover {
   background: #22c55e;
@@ -436,6 +557,11 @@ select,.search{padding:10px;border-radius:10px;border:1px solid #ddd;min-width:1
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
+  transition: all 0.2s ease;
+}
+#mPrev:hover, #mNext:hover, #mShare:hover {
+  background: #f3f4f6;
+  border-color: #6b7280;
 }
 
 /* Responsive */
@@ -467,4 +593,24 @@ select,.search{padding:10px;border-radius:10px;border:1px solid #ddd;min-width:1
 .thumb-btn.drag{left:-6px;top:-6px;background:#6b7280}
 .thumb.dragging{opacity:.6;outline:2px dashed #bbb}
 
-@media (prefers-reduced-motion: reduce){ *{transition:none !important; animation:none !important} }
+/* ============================================
+   ♿ ACCESSIBILITÉ
+   ============================================ */
+
+/* Focus visible pour navigation clavier */
+*:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 2px;
+}
+
+/* Respect préférences utilisateur */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
