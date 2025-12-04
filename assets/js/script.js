@@ -370,13 +370,20 @@ function cardTpl(p){
   `;
 }
 
-// Effet swipe mobile type "Jumia"
+// ✅ Effet swipe mobile type "Jumia" - CORRIGÉ POUR ÉVITER L'ÉCRAN BLANC
 function bindCardSwipe(){
   if (!gridEl) return;
 
   gridEl.querySelectorAll(".card").forEach(card => {
     const thumb = card.querySelector(".card-thumb");
     if (!thumb) return;
+
+    // ✅ VÉRIFICATION : Y a-t-il une 2ème image ?
+    const hasSecondImage = thumb.querySelector(".card-img-secondary");
+    if (!hasSecondImage) {
+      // Pas de 2ème image = pas de swipe, on sort
+      return;
+    }
 
     let startX = null;
     let moved  = false;
@@ -534,7 +541,7 @@ async function openModal(p){
   // clic image principale → plein écran (si markup présent)
   if (mMain) mMain.onclick = () => openFs();
 
-  // ✅ MODIFICATION ICI : Utilisation des classes .show au lieu de style.display
+  // Utilisation des classes .show
   overlay.classList.add('show');
   modal.classList.add('show');
   document.body.style.overflow = 'hidden';
@@ -557,7 +564,6 @@ function handleModalKeydown(e){
 }
 
 function closeModal(){
-  // ✅ MODIFICATION ICI : Utilisation des classes .show
   modal?.classList.remove('show');
   overlay.classList.remove('show');
   document.body.style.overflow = '';
@@ -605,7 +611,7 @@ if (fsOverlay){
 }
 
 // =======================
-// Deep-link : ouvrir/fermer selon l'URL
+// Deep-link : ouvrir/
 // =======================
 function maybeOpenFromURL(){
   const pid = getPidFromURL();
