@@ -9,11 +9,11 @@ const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJ
 const sb = createClient(SB_URL, SB_KEY);
 
 // --- DOM
-const gridEl   = document.getElementById("products-grid");
-const emptyEl  = document.getElementById("emptyMsg");
-const qEl      = document.getElementById("search");
-const catEl    = document.getElementById("category");
-const cityEl   = document.getElementById("city");
+const gridEl    = document.getElementById("products-grid");
+const emptyEl   = document.getElementById("emptyMsg");
+const qEl       = document.getElementById("search");
+const catEl     = document.getElementById("category");
+const cityEl    = document.getElementById("city");
 
 // Témoignages
 const testiGrid  = document.getElementById("testiGrid");
@@ -59,6 +59,40 @@ const escapeHtml = s => (s ?? "").toString().replace(/[&<>"']/g, c => ({
 })[c]);
 const escapeAttr = s => escapeHtml(s).replace(/"/g,"&quot;");
 const uniq = arr => { const seen=new Set(), out=[]; for (const u of arr) if (u && !seen.has(u)) { seen.add(u); out.push(u); } return out; };
+
+// === NOUVELLES FONCTIONS D'OPTIMISATION IMAGE ===
+
+function optimizeSupabaseImage(url, width = 800) {
+  if (!url || !url.includes('supabase.co')) return url;
+  
+  // Ajoute les paramètres de transformation
+  const separator = url.includes('?') ? '&' : '?';
+  return `${url}${separator}width=${width}&quality=80&format=webp`;
+}
+
+function createResponsiveImage(baseUrl, alt) {
+  return `
+    <picture>
+      <source 
+        srcset="${optimizeSupabaseImage(baseUrl, 400)}" 
+        media="(max-width: 640px)"
+        type="image/webp"
+      >
+      <source 
+        srcset="${optimizeSupabaseImage(baseUrl, 800)}" 
+        media="(max-width: 1024px)"
+        type="image/webp"
+      >
+      <img 
+        src="${optimizeSupabaseImage(baseUrl, 1200)}" 
+        alt="${alt}"
+        loading="lazy"
+      >
+    </picture>
+  `;
+}
+
+// ===============================================
 
 // toArray robuste : Array natif, JSON string, objet {urls:[]}, {0:"url",1:"url"}, CSV (virgule/; / | / retour-ligne)
 const toArray = (v) => {
@@ -328,36 +362,38 @@ function render(list, errorText=""){
   bindCardSwipe();
 }
 
-/* === Nouvelle carte produit : AVEC BOUTON SURVOL (card-action) === */
+/* === Nouvelle carte produit : AVEC OPTIMISATION IMAGE === */
 function cardTpl(p){
   const gallery = buildGalleryLocal(p);
-  const first  = escapeHtml(gallery[0] || "/assets/images/placeholder.png");
-  const second = gallery[1] ? escapeHtml(gallery[1]) : null;
+  // URL brute pour la logique, mais affichage optimisé plus bas
+  const firstUrl  = gallery[0] || "/assets/images/placeholder.png";
+  const secondUrl = gallery[1] ? gallery[1] : null;
 
   const title = escapeHtml(p.title || "");
   const price = fmtXAF(p.price || 0);
   const cat   = escapeHtml(p.category || "");
   const desc  = escapeHtml(p.shortDescription || "");
 
+  // 1. On génère le <picture> responsive pour l'image principale
+  // 2. On injecte les classes CSS nécessaires (card-img card-img-primary) dans la balise <img> générée
+  const responsiveImageHTML = createResponsiveImage(firstUrl, title)
+    .replace('<img', '<img class="card-img card-img-primary"');
+
+  // Pour la seconde image (survol), on utilise juste l'optimisation URL simple
+  const secondImageHTML = secondUrl 
+    ? `<img
+         class="card-img card-img-secondary"
+         src="${optimizeSupabaseImage(secondUrl, 640)}"
+         alt="${title}"
+         loading="lazy"
+       >`
+    : "";
+
   return `
     <div class="card" data-id="${escapeAttr(p.id)}" style="cursor:pointer">
       <div class="card-thumb">
-        <img
-          class="card-img card-img-primary"
-          src="${first}"
-          alt="${title}"
-          loading="lazy"
-        >
-        ${
-          second
-            ? `<img
-                 class="card-img card-img-secondary"
-                 src="${second}"
-                 alt="${title}"
-                 loading="lazy"
-               >`
-            : ""
-        }
+        ${responsiveImageHTML}
+        ${secondImageHTML}
         <div class="card-action">Voir le produit</div>
       </div>
       <div class="p">
@@ -457,12 +493,13 @@ async function fetchExtraImages(productId){
 function renderGallery(){
   if (!mMain || !mThumbs) return;
 
-  // image principale
-  mMain.src = currentGallery.length ? currentGallery[currentIndex] : "/assets/images/placeholder.png";
+  // image principale (OPTIMISÉE)
+  const currentUrl = currentGallery.length ? currentGallery[currentIndex] : "/assets/images/placeholder.png";
+  mMain.src = optimizeSupabaseImage(currentUrl, 1000);
 
-  // vignettes avec classe active
+  // vignettes avec classe active (OPTIMISÉES)
   mThumbs.innerHTML = currentGallery.map((url, i) =>
-    `<img src="${escapeAttr(url)}" data-i="${i}" class="${i===currentIndex ? 'active' : ''}">`
+    `<img src="${escapeAttr(optimizeSupabaseImage(url, 150))}" data-i="${i}" class="${i===currentIndex ? 'active' : ''}">`
   ).join("");
 
   mThumbs.querySelectorAll("img").forEach(img => {
@@ -582,22 +619,33 @@ function closeModal(){
 // =======================
 function openFs(){
   if (!fsOverlay || !fsImg || !currentGallery.length) return;
-  fsImg.src = currentGallery[currentIndex] || "/assets/images/placeholder.png";
+  // IMAGE HAUTE QUALITÉ
+  const currentUrl = currentGallery[currentIndex] || "/assets/images/placeholder.png";
+  fsImg.src = optimizeSupabaseImage(currentUrl, 1600);
+  
   fsOverlay.classList.add("show");
   document.body.style.overflow = "hidden";
 }
 function closeFs(){ if (!fsOverlay) return; fsOverlay.classList.remove("show"); document.body.style.overflow = ""; }
-function fsPrevFn(){ if (!currentGallery.length) return; currentIndex = (currentIndex - 1 + currentGallery.length) % currentGallery.length; if(fsImg) fsImg.src = currentGallery[currentIndex]; }
-function fsNextFn(){ if (!currentGallery.length) return; currentIndex = (currentIndex + 1) % currentGallery.length; if(fsImg) fsImg.src = currentGallery[currentIndex]; }
+function fsPrevFn(){ 
+    if (!currentGallery.length) return; 
+    currentIndex = (currentIndex - 1 + currentGallery.length) % currentGallery.length; 
+    if(fsImg) fsImg.src = optimizeSupabaseImage(currentGallery[currentIndex], 1600); 
+}
+function fsNextFn(){ 
+    if (!currentGallery.length) return; 
+    currentIndex = (currentIndex + 1) % currentGallery.length; 
+    if(fsImg) fsImg.src = optimizeSupabaseImage(currentGallery[currentIndex], 1600); 
+}
 if (fsClose)   fsClose.addEventListener("click", closeFs);
 if (fsOverlay) fsOverlay.addEventListener("click", (e) => { if (e.target === fsOverlay) closeFs(); });
 if (fsPrev)    fsPrev.addEventListener("click", fsPrevFn);
 if (fsNext)    fsNext.addEventListener("click", fsNextFn);
 document.addEventListener("keydown", (e) => {
   if (!fsOverlay || !fsOverlay.classList.contains("show")) return;
-  if (e.key === "Escape")      return closeFs();
-  if (e.key === "ArrowLeft")   return fsPrevFn();
-  if (e.key === "ArrowRight")  return fsNextFn();
+  if (e.key === "Escape")       return closeFs();
+  if (e.key === "ArrowLeft")    return fsPrevFn();
+  if (e.key === "ArrowRight")   return fsNextFn();
 });
 let touchX = null;
 if (fsOverlay){
@@ -717,12 +765,15 @@ function renderTestimonials(list, errText = ""){
       ? date.toLocaleDateString("fr-FR",{year:"numeric",month:"short",day:"2-digit"})
       : "";
 
+    // MODIF ICI : OPTIMISATION IMAGE TÉMOIGNAGE
+    const optimizedAvatar = optimizeSupabaseImage(imgUrl, 100);
+
     // MODIF ICI : Structure carte standard (pour Grille)
     return `
       <article class="card">
         <div class="card-thumb">
           <img
-              src="${escapeAttr(imgUrl)}"
+              src="${escapeAttr(optimizedAvatar)}"
               alt="${name ? "Résultat de " + name : "Témoignage cliente"}"
               loading="lazy"
               onerror="this.onerror=null;this.src='/assets/images/placeholder-testimonial.png';console.error('Image failed:',this.src)"
