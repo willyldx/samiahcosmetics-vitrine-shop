@@ -3,6 +3,14 @@
 // =======================
 import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
 
+// Récupère l'optimiseur
+const ImageOptimizer = window.SupabaseImageOptimizer;
+
+// Fonction helper pour optimiser les URLs
+function getOptimizedImageUrl(url, width = 800) {
+  return ImageOptimizer ? ImageOptimizer.optimize(url, { width }) : url;
+}
+
 // --- Config Supabase
 const SB_URL = "https://dzzblqlteirtzyegplgu.supabase.co";
 const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR6emJscWx0ZWlydHp5ZWdwbGd1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk0MjgyMDgsImV4cCI6MjA3NTAwNDIwOH0.WbjNAjF2qxly8QMu-3VJLPQE88UgzkeAn9XPj0lcb1Y";
@@ -60,7 +68,7 @@ const escapeHtml = s => (s ?? "").toString().replace(/[&<>"']/g, c => ({
 const escapeAttr = s => escapeHtml(s).replace(/"/g,"&quot;");
 const uniq = arr => { const seen=new Set(), out=[]; for (const u of arr) if (u && !seen.has(u)) { seen.add(u); out.push(u); } return out; };
 
-// === NOUVELLES FONCTIONS D'OPTIMISATION IMAGE ===
+// === ANCIENNES FONCTIONS D'OPTIMISATION (Gardées pour Modale/Témoignages) ===
 
 function optimizeSupabaseImage(url, width = 800) {
   if (!url || !url.includes('supabase.co')) return url;
@@ -362,38 +370,39 @@ function render(list, errorText=""){
   bindCardSwipe();
 }
 
-/* === Nouvelle carte produit : AVEC OPTIMISATION IMAGE === */
+/* === Nouvelle carte produit : AVEC NOUVELLE OPTIMISATION === */
 function cardTpl(p){
   const gallery = buildGalleryLocal(p);
-  // URL brute pour la logique, mais affichage optimisé plus bas
-  const firstUrl  = gallery[0] || "/assets/images/placeholder.png";
-  const secondUrl = gallery[1] ? gallery[1] : null;
+  
+  // ✨ OPTIMISATION AUTOMATIQUE (Utilise getOptimizedImageUrl)
+  const first  = escapeHtml(getOptimizedImageUrl(gallery[0], 400) || "/assets/images/placeholder.png");
+  const second = gallery[1] ? escapeHtml(getOptimizedImageUrl(gallery[1], 400)) : null;
 
   const title = escapeHtml(p.title || "");
   const price = fmtXAF(p.price || 0);
   const cat   = escapeHtml(p.category || "");
   const desc  = escapeHtml(p.shortDescription || "");
 
-  // 1. On génère le <picture> responsive pour l'image principale
-  // 2. On injecte les classes CSS nécessaires (card-img card-img-primary) dans la balise <img> générée
-  const responsiveImageHTML = createResponsiveImage(firstUrl, title)
-    .replace('<img', '<img class="card-img card-img-primary"');
-
-  // Pour la seconde image (survol), on utilise juste l'optimisation URL simple
-  const secondImageHTML = secondUrl 
-    ? `<img
-         class="card-img card-img-secondary"
-         src="${optimizeSupabaseImage(secondUrl, 640)}"
-         alt="${title}"
-         loading="lazy"
-       >`
-    : "";
-
+  // Rendu avec balises IMG standards (plus simple et utilisant la nouvelle optimisation)
   return `
     <div class="card" data-id="${escapeAttr(p.id)}" style="cursor:pointer">
       <div class="card-thumb">
-        ${responsiveImageHTML}
-        ${secondImageHTML}
+        <img 
+          class="card-img card-img-primary" 
+          src="${first}" 
+          alt="${title}" 
+          loading="lazy"
+        >
+        ${
+          second 
+            ? `<img 
+                 class="card-img card-img-secondary" 
+                 src="${second}" 
+                 alt="${title}" 
+                 loading="lazy"
+               >` 
+            : ""
+        }
         <div class="card-action">Voir le produit</div>
       </div>
       <div class="p">
