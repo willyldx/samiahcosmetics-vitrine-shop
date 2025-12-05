@@ -10,10 +10,10 @@
   <meta property="og:image:alt" content="Samiah Cosmetics — logo">
   <meta name="twitter:card" content="summary_large_image">
 
-  <script type="application/ld+json">
   <script src="/assets/js/optimize-supabase.js"></script>
   <script defer src="/assets/js/animations.js"></script>
-  
+
+  <script type="application/ld+json">
   {
     "@context": "https://schema.org",
     "@type": "Organization",
@@ -127,23 +127,18 @@
     </svg>
   </a>
 
-<!-- OVERLAY -->
 <div id="overlay" class="modal-overlay"></div>
 
-<!-- MODALE PRODUIT MODERNE -->
 <div id="productModal" class="modal">
   <div class="modal-card">
     
-    <!-- Header -->
     <div class="modal-head">
       <div id="mTitle">Titre du produit</div>
       <button id="mClose">×</button>
     </div>
 
-    <!-- Body - Layout 2 colonnes -->
     <div class="modal-body">
       
-      <!-- GALERIE (gauche) -->
       <div>
         <div class="gal-main">
           <img id="mMain" src="" alt="">
@@ -151,14 +146,12 @@
         <div id="mThumbs" class="gal-thumbs"></div>
       </div>
 
-      <!-- INFOS PRODUIT (droite) -->
       <div class="meta">
         <div id="mPrice">—</div>
         <div id="mCat">—</div>
         <div id="mDesc"></div>
         <div id="mCities"></div>
         
-        <!-- Actions -->
         <div class="modal-actions">
           <a id="mWhatsApp" target="_blank" rel="noopener">
             Commander via WhatsApp
@@ -175,7 +168,6 @@
   </div>
 </div>
 
-<!-- FULLSCREEN LIGHTBOX (optionnel, gardez si vous voulez) -->
 <div id="fsOverlay" class="fs-overlay" aria-hidden="true">
   <button id="fsClose" class="fs-close" aria-label="Fermer">×</button>
   <img id="fsImg" alt="Agrandissement" />
@@ -192,18 +184,13 @@
   .fs-close:hover,.fs-nav:hover{background:#ffffff33}
   @media (max-width: 900px){.fs-nav{width:40px;height:40px;line-height:40px}}
 </style>
-  <script src="/assets/js/optimize-supabase.js"></script>
-  <script src="/assets/js/animations.js"></script>
-  <script type="module" src="/assets/js/script.js"></script>
-  <!-- AVANT -->
-<script type="module" src="/assets/js/script.js"></script>
-</body>
-  
-<!-- APRÈS (ajoute un délai) -->
+
 <script type="module">
-  // Attend 200ms que tout soit chargé
+  // Attend 200ms que tout soit chargé pour lancer script.js
   setTimeout(() => {
     import('/assets/js/script.js');
   }, 200);
 </script>
+
+</body>
 </html>
