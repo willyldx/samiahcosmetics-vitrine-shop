@@ -614,3 +614,20 @@ select:focus, .search:focus {
     scroll-behavior: auto !important;
   }
 }
+
+/* ============================================
+   FIX MOBILE : Image Hero statique
+   ============================================ */
+@media (max-width: 768px) {
+  .hero img,
+  .hero-photo {
+    transform: none !important;
+    position: static !important;
+  }
+  
+  /* Désactive toutes les animations dans le hero sur mobile */
+  .hero * {
+    animation: none !important;
+    transform: none !important;
+  }
+}
