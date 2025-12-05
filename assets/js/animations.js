@@ -263,14 +263,11 @@ class MicroInteractions {
     this.setupCopyFeedback();
   }
 
-  /**
-   * 💧 RIPPLE EFFECT sur boutons
-   */
   setupButtonRipple() {
     document.addEventListener('click', (e) => {
-      // 🔧 FIX : Vérifie que e.target existe
-      if (!e.target || typeof e.target.closest !== 'function') return;
-
+      // ✅ Protection complète
+      if (!e || !e.target || typeof e.target.closest !== 'function') return;
+      
       const btn = e.target.closest('.btn');
       if (!btn) return;
 
@@ -293,7 +290,6 @@ class MicroInteractions {
         animation: ripple 0.6s ease-out;
       `;
 
-      // Animation CSS inline
       if (!document.getElementById('ripple-style')) {
         const style = document.createElement('style');
         style.id = 'ripple-style';
@@ -313,9 +309,6 @@ class MicroInteractions {
     });
   }
 
-  /**
-   * 🔔 TOAST NOTIFICATIONS
-   */
   setupToastNotifications() {
     window.showToast = (message, type = 'success') => {
       const toast = document.createElement('div');
@@ -335,7 +328,6 @@ class MicroInteractions {
         font-weight: 600;
       `;
 
-      // Animation
       if (!document.getElementById('toast-style')) {
         const style = document.createElement('style');
         style.id = 'toast-style';
@@ -356,16 +348,17 @@ class MicroInteractions {
     };
   }
 
-  /**
-   * 📋 FEEDBACK COPIE LIEN
-   */
   setupCopyFeedback() {
-    // Override du bouton partage existant
     document.addEventListener('click', (e) => {
+      // ✅ TRIPLE PROTECTION
+      if (!e || !e.target || typeof e.target.closest !== 'function') {
+        console.warn('[animations.js] Event target invalid');
+        return;
+      }
+      
       const shareBtn = e.target.closest('#mShare');
       if (!shareBtn) return;
 
-      // Ajoute une coche temporaire
       const originalText = shareBtn.textContent;
       shareBtn.textContent = '✓ Copié !';
       shareBtn.style.background = '#10b981';
