@@ -11,6 +11,9 @@
   <meta name="twitter:card" content="summary_large_image">
 
   <script type="application/ld+json">
+  <script src="/assets/js/optimize-supabase.js"></script>
+  <script defer src="/assets/js/animations.js"></script>
+  
   {
     "@context": "https://schema.org",
     "@type": "Organization",
@@ -192,5 +195,15 @@
   <script src="/assets/js/optimize-supabase.js"></script>
   <script src="/assets/js/animations.js"></script>
   <script type="module" src="/assets/js/script.js"></script>
+  <!-- AVANT -->
+<script type="module" src="/assets/js/script.js"></script>
 </body>
+  
+<!-- APRÈS (ajoute un délai) -->
+<script type="module">
+  // Attend 200ms que tout soit chargé
+  setTimeout(() => {
+    import('/assets/js/script.js');
+  }, 200);
+</script>
 </html>
