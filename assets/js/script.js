@@ -154,57 +154,71 @@ function ensureShareButton(){
   return btn;
 }
 
-// =======================
-// Chargement des produits
-// =======================
+// ============================================
+// FIX 4 : Gestion des erreurs Supabase & Chargement Produits
+// ============================================
 async function loadProducts() {
-  const { data, error } = await sb
-    .from("products")
-    .select("id,title,price,currency,category,cities,image,images,short_description,active,created_at,expires_after_days")
-    .eq("active", true)
-    .order("created_at", { ascending: false });
+  try {
+    console.log('📦 Chargement des produits...');
+    
+    const { data, error } = await sb
+      .from("products")
+      .select("id,title,price,currency,category,cities,image,images,short_description,active,created_at,expires_after_days")
+      .eq("active", true)
+      .order("created_at", { ascending: false });
 
-  if (error) {
-    console.error("products fetch error:", error);
-    render([], `erreur: ${error.message}`);
-    return;
-  }
-
-  const now = Date.now();
-  PRODUCTS = (data || []).map(p => ({
-    ...p,
-    shortDescription: p.short_description ?? ""
-  })).filter(p => {
-    const d = Number.isFinite(p.expires_after_days) ? p.expires_after_days : null;
-    if (!d || d <= 0) return true;
-    const created = p.created_at ? Date.parse(p.created_at) : now;
-    return (created + d * 86400000) > now;
-  });
-
-  // Charger les images supplémentaires depuis product_images
-  IMAGES_MAP = {};
-  const ids = PRODUCTS.map(p => p.id).filter(Boolean);
-  if (ids.length) {
-    const im = await sb
-      .from("product_images")
-      .select("product_id,url,sort,created_at")
-      .in("product_id", ids)
-      .order("sort", { ascending: true })
-      .order("created_at", { ascending: true });
-
-    if (!im.error) {
-      for (const r of (im.data || [])) (IMAGES_MAP[r.product_id] ||= []).push(r.url);
-    } else {
-      console.warn("product_images fetch error:", im.error);
+    if (error) {
+      console.error("❌ Erreur Supabase:", error);
+      throw error;
     }
+
+    console.log(`✅ ${data?.length || 0} produits chargés`);
+
+    const now = Date.now();
+    PRODUCTS = (data || []).map(p => ({
+      ...p,
+      shortDescription: p.short_description ?? ""
+    })).filter(p => {
+      const d = Number.isFinite(p.expires_after_days) ? p.expires_after_days : null;
+      if (!d || d <= 0) return true;
+      const created = p.created_at ? Date.parse(p.created_at) : now;
+      return (created + d * 86400000) > now;
+    });
+
+    // Charger les images supplémentaires
+    IMAGES_MAP = {};
+    const ids = PRODUCTS.map(p => p.id).filter(Boolean);
+    
+    if (ids.length) {
+      console.log('🖼️ Chargement des images supplémentaires...');
+      
+      const im = await sb
+        .from("product_images")
+        .select("product_id,url,sort,created_at")
+        .in("product_id", ids)
+        .order("sort", { ascending: true })
+        .order("created_at", { ascending: true });
+
+      if (!im.error) {
+        for (const r of (im.data || [])) {
+          (IMAGES_MAP[r.product_id] ||= []).push(r.url);
+        }
+        console.log(`✅ ${im.data?.length || 0} images supplémentaires chargées`);
+      } else {
+        console.warn("⚠️ Erreur chargement images:", im.error);
+      }
+    }
+
+    fillCategories(PRODUCTS);
+    ensureControls();
+    render(PRODUCTS);
+    maybeOpenFromURL();
+    
+  } catch (error) {
+    console.error('❌ Erreur fatale loadProducts:', error);
+    render([], error.message || "Erreur de connexion");
+    throw error;
   }
-
-  fillCategories(PRODUCTS);
-  ensureControls();            // <— crée la barre de tri/pagination si besoin
-  render(PRODUCTS);
-
-  // Ouvre automatiquement si lien direct ?p=...
-  maybeOpenFromURL();
 }
 
 // =======================
@@ -695,32 +709,32 @@ window.addEventListener("popstate", () => {
   el.addEventListener("change", () => { PAGE = 1; render(PRODUCTS); });
 });
 
-// =======================
-// Témoignages (vitrine) — VERSION CLEAN (GRID)
-// =======================
-async function loadTestimonials(){
+// ============================================
+// FIX 5 : Témoignages avec gestion d'erreurs
+// ============================================
+async function loadTestimonials() {
   if (!testiGrid) return;
 
-  try{
-    console.log("[loadTestimonials] Fetching...");
+  try {
+    console.log('💬 Chargement des témoignages...');
     
-    // ✅ On récupère TOUTES les colonnes possibles
     const { data, error } = await sb
       .from("testimonials")
       .select("id, client_name, city, rating, message, photos, photo_url, created_at, active")
       .eq("active", true)
-      .order("created_at", { ascending:false })
+      .order("created_at", { ascending: false })
       .limit(5);
 
     if (error) {
-      console.error("[loadTestimonials] Supabase error:", error);
+      console.error("❌ Erreur témoignages:", error);
       throw error;
     }
 
-    console.log("[loadTestimonials] Success:", data);
+    console.log(`✅ ${data?.length || 0} témoignages chargés`);
     renderTestimonials(data || []);
-  }catch(e){
-    console.error("[loadTestimonials] Error:", e);
+    
+  } catch (e) {
+    console.error("❌ Erreur fatale loadTestimonials:", e);
     renderTestimonials([], e.message || "Erreur");
   }
 }
@@ -821,15 +835,63 @@ function subscribeRealtime(){
     .subscribe();
 }
 
-// =======================
-// Init
-// =======================
-async function init(){
-  await loadProducts();
-  await loadTestimonials();
-  subscribeRealtime();
+// ============================================
+// FIX 6 : Init principale robuste
+// ============================================
+async function init() {
+  console.log('🎬 Initialisation de l\'application...');
+  
+  // Vérifie que Supabase est bien chargé
+  if (typeof sb === 'undefined') {
+    throw new Error('Supabase client not loaded');
+  }
+  
+  try {
+    await loadProducts();
+    await loadTestimonials();
+    subscribeRealtime();
+    console.log('✅ Initialisation terminée avec succès');
+  } catch (error) {
+    console.error('❌ Erreur durant l\'initialisation:', error);
+    throw error;
+  }
 }
-init().catch(console.error);
+
+// ============================================
+// FIX 3 : script.js - Initialisation Supabase
+// ============================================
+// Vérifie que tout est chargé AVANT d'initialiser
+document.addEventListener('DOMContentLoaded', async () => {
+  console.log('🚀 DOM Ready - Initialisation...');
+  
+  // Attends un peu que Supabase soit prêt
+  await new Promise(resolve => setTimeout(resolve, 100));
+  
+  try {
+    await init();
+    console.log('✅ Application initialisée');
+  } catch (error) {
+    console.error('❌ Erreur initialisation:', error);
+    
+    // Affiche un message à l'utilisateur
+    const grid = document.getElementById('products-grid');
+    if (grid) {
+      grid.innerHTML = `
+        <div style="grid-column: 1/-1; text-align: center; padding: 40px;">
+          <p style="color: #ef4444; font-weight: 600;">
+            ⚠️ Erreur de chargement des produits
+          </p>
+          <p style="color: #6b7280; margin-top: 8px;">
+            Veuillez recharger la page ou contacter le support.
+          </p>
+          <button onclick="location.reload()" style="margin-top: 16px; padding: 12px 24px; background: #111; color: #fff; border: 0; border-radius: 8px; cursor: pointer;">
+            🔄 Recharger la page
+          </button>
+        </div>
+      `;
+    }
+  }
+});
 
 /* ===========================================================
    BADGE "Nouveau" (append-only)
