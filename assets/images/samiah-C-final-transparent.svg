@@ -1,17 +1,67 @@
-<!-- assets/images/samiah-C-final-transparent.svg -->
-<svg xmlns="http://www.w3.org/2000/svg" width="3000" height="1000" viewBox="0 0 3000 1000" aria-label="Samiah Cosmetics">
-  <!-- Badge (sans fond) -->
-  <g transform="translate(560,190)">
-    <circle cx="0" cy="300" r="220" fill="none" stroke="#111111" stroke-width="12"/>
-    <circle cx="0" cy="300" r="180" fill="none" stroke="#C7A27A" stroke-width="10"/>
-    <g transform="translate(0,300)" fill="none" stroke="#111111" stroke-width="8" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M0,-70 C20,-120 80,-120 100,-70 C80,-20 20,-20 0,-70Z"/>
-      <path d="M-24,22 C-70,10 -92,54 -68,76 C-36,92 -4,62 -24,22Z"/>
+<!-- assets/images/samiah-C-flower.svg -->
+<svg xmlns="http://www.w3.org/2000/svg"
+     width="3000" height="3000"
+     viewBox="0 0 3000 3000"
+     aria-label="Samiah Cosmetics - Flower Logo">
+
+  <!-- Groupe global centré -->
+  <g transform="translate(1500,1500)">
+
+    <!-- FOND : aucune couleur, juste traits -->
+    <!-- Fleur : 8 pétales elliptiques -->
+    <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+      <!-- pétales extérieurs -->
+      <g stroke="#111111" stroke-width="18">
+        <ellipse cx="0" cy="-700" rx="260" ry="700" transform="rotate(0)"/>
+        <ellipse cx="0" cy="-700" rx="260" ry="700" transform="rotate(45)"/>
+        <ellipse cx="0" cy="-700" rx="260" ry="700" transform="rotate(90)"/>
+        <ellipse cx="0" cy="-700" rx="260" ry="700" transform="rotate(135)"/>
+        <ellipse cx="0" cy="-700" rx="260" ry="700" transform="rotate(180)"/>
+        <ellipse cx="0" cy="-700" rx="260" ry="700" transform="rotate(225)"/>
+        <ellipse cx="0" cy="-700" rx="260" ry="700" transform="rotate(270)"/>
+        <ellipse cx="0" cy="-700" rx="260" ry="700" transform="rotate(315)"/>
+      </g>
+
+      <!-- cercle doré interne -->
+      <circle cx="0" cy="0" r="650" stroke="#C7A27A" stroke-width="20"/>
+      <!-- cercle fin au centre -->
+      <circle cx="0" cy="0" r="520" stroke="#111111" stroke-width="10"/>
     </g>
-  </g>
-  <!-- Wordmark -->
-  <g font-family="Garamond, Georgia, 'Times New Roman', serif" fill="#111111">
-    <text x="980" y="520" font-size="300" font-weight="600" letter-spacing="12">SAMIAH</text>
-    <text x="980" y="640" font-size="120" letter-spacing="24" style="text-transform:lowercase;opacity:.92">cosmetics</text>
+
+    <!-- TEXTE / WORDMARK -->
+    <g fill="#111111" font-family="Garamond, Georgia, 'Times New Roman', serif">
+      <!-- SAMIAH (inspiré du logo de base) -->
+      <text x="0" y="-40"
+            font-size="360"
+            font-weight="600"
+            letter-spacing="40"
+            text-anchor="middle">
+        SAMIAH
+      </text>
+
+      <!-- cosmetics -->
+      <text x="0" y="190"
+            font-size="110"
+            letter-spacing="35"
+            text-anchor="middle"
+            style="text-transform:lowercase;">
+        cosmetics
+      </text>
+    </g>
+
+    <!-- Courbe décorative sous les lettres (rappel du logo original) -->
+    <g fill="none" stroke="#111111" stroke-width="12" stroke-linecap="round" stroke-linejoin="round">
+      <!-- grande courbe sous le mot -->
+      <path d="
+        M -680,100
+        C -350,360 350,360 680,100" />
+
+      <!-- petite boucle centrale stylisée (pour rappeler la boucle du M/J) -->
+      <path d="
+        M -60,120
+        C -20,260  20,260  60,120
+        C 30,200  -30,200  -60,120 Z" />
+    </g>
+
   </g>
 </svg>
