@@ -162,6 +162,9 @@ class AnimationController {
 
     // Précharge l'image secondaire au hover
     grid.addEventListener('mouseenter', (e) => {
+      // 🔧 FIX : Vérifie que e.target existe et a la méthode closest
+      if (!e.target || typeof e.target.closest !== 'function') return;
+
       const card = e.target.closest('.card');
       if (!card) return;
 
@@ -265,6 +268,9 @@ class MicroInteractions {
    */
   setupButtonRipple() {
     document.addEventListener('click', (e) => {
+      // 🔧 FIX : Vérifie que e.target existe
+      if (!e.target || typeof e.target.closest !== 'function') return;
+
       const btn = e.target.closest('.btn');
       if (!btn) return;
 
