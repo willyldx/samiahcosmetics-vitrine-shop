@@ -614,20 +614,33 @@ select:focus, .search:focus {
     scroll-behavior: auto !important;
   }
 }
+/* ========================================
+   FIX URGENT MOBILE 
+   ======================================== */
 
-/* ============================================
-   FIX MOBILE : Image Hero statique
-   ============================================ */
+/* Image Hero reste en place */
+.hero img {
+  transform: none !important;
+  will-change: auto !important;
+}
+
+/* Sur mobile : aucune animation dans hero */
 @media (max-width: 768px) {
+  .hero,
+  .hero *,
   .hero img,
   .hero-photo {
     transform: none !important;
+    animation: none !important;
     position: static !important;
   }
-  
-  /* Désactive toutes les animations dans le hero sur mobile */
-  .hero * {
-    animation: none !important;
-    transform: none !important;
-  }
+}
+
+/* Fix overflow sur mobile */
+.hero {
+  overflow: hidden;
+}
+
+.hero .wrap {
+  overflow: visible;
 }
