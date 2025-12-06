@@ -1,22 +1,20 @@
 // =======================
-// Samiah — Vitrine (Supabase + Galerie multi-images + Plein écran robuste + Lien partageable + TRI & PAGINATION + Témoignages)
+// 1. IMPORTS (EN PREMIER)
 // =======================
 import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
 
-// Récupère l'optimiseur
-const ImageOptimizer = window.SupabaseImageOptimizer;
-
-// Fonction helper pour optimiser les URLs
-function getOptimizedImageUrl(url, width = 800) {
-  return ImageOptimizer ? ImageOptimizer.optimize(url, { width }) : url;
-}
-
-// --- Config Supabase
+// =======================
+// 2. CONFIG SUPABASE (JUSTE APRÈS IMPORT)
+// =======================
 const SB_URL = "https://dzzblqlteirtzyegplgu.supabase.co";
 const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR6emJscWx0ZWlydHp5ZWdwbGd1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk0MjgyMDgsImV4cCI6MjA3NTAwNDIwOH0.WbjNAjF2qxly8QMu-3VJLPQE88UgzkeAn9XPj0lcb1Y";
 const sb = createClient(SB_URL, SB_KEY);
 
-// --- DOM
+console.log('✅ Supabase client créé:', sb ? 'OK' : 'FAILED');
+
+// =======================
+// 3. DOM ELEMENTS
+// =======================
 const gridEl    = document.getElementById("products-grid");
 const emptyEl   = document.getElementById("emptyMsg");
 const qEl       = document.getElementById("search");
@@ -41,15 +39,18 @@ const mWhats   = document.getElementById("mWhatsApp");
 const mPrev    = document.getElementById("mPrev");
 const mNext    = document.getElementById("mNext");
 const mClose   = document.getElementById("mClose");
+const mActions = modal ? modal.querySelector(".modal-actions") : null;
 
-// Plein écran (lightbox) – éléments optionnels dans index.html
+// Plein écran (lightbox)
 const fsOverlay = document.getElementById("fsOverlay");
 const fsImg     = document.getElementById("fsImg");
 const fsPrev    = document.getElementById("fsPrev");
 const fsNext    = document.getElementById("fsNext");
 const fsClose   = document.getElementById("fsClose");
 
-// --- État
+// =======================
+// 4. ÉTAT GLOBAL
+// =======================
 let PRODUCTS = [];
 let IMAGES_MAP = {};       // { product_id: [urls] }
 let currentGallery = [];   // galerie courante (modale & plein écran)
@@ -60,7 +61,17 @@ let PAGE      = parseInt(localStorage.getItem("v_page") || "1", 10);
 let PAGE_SIZE = parseInt(localStorage.getItem("v_pageSize") || "12", 10);
 let SORT      = localStorage.getItem("v_sort") || "newest"; // newest | price_asc | price_desc | title_az | title_za
 
-// --- Utils
+// =======================
+// 5. UTILS
+// =======================
+// Récupère l'optimiseur global
+const ImageOptimizer = window.SupabaseImageOptimizer;
+
+// Fonction helper pour optimiser les URLs
+function getOptimizedImageUrl(url, width = 800) {
+  return ImageOptimizer ? ImageOptimizer.optimize(url, { width }) : url;
+}
+
 const fmtXAF = n => new Intl.NumberFormat("fr-FR").format(n) + " XAF";
 const escapeHtml = s => (s ?? "").toString().replace(/[&<>"']/g, c => ({
   '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
@@ -68,12 +79,9 @@ const escapeHtml = s => (s ?? "").toString().replace(/[&<>"']/g, c => ({
 const escapeAttr = s => escapeHtml(s).replace(/"/g,"&quot;");
 const uniq = arr => { const seen=new Set(), out=[]; for (const u of arr) if (u && !seen.has(u)) { seen.add(u); out.push(u); } return out; };
 
-// === ANCIENNES FONCTIONS D'OPTIMISATION (Gardées pour Modale/Témoignages) ===
-
+// Anciennes fonctions d'optimisation (Compatibilité)
 function optimizeSupabaseImage(url, width = 800) {
   if (!url || !url.includes('supabase.co')) return url;
-  
-  // Ajoute les paramètres de transformation
   const separator = url.includes('?') ? '&' : '?';
   return `${url}${separator}width=${width}&quality=80&format=webp`;
 }
@@ -81,28 +89,14 @@ function optimizeSupabaseImage(url, width = 800) {
 function createResponsiveImage(baseUrl, alt) {
   return `
     <picture>
-      <source 
-        srcset="${optimizeSupabaseImage(baseUrl, 400)}" 
-        media="(max-width: 640px)"
-        type="image/webp"
-      >
-      <source 
-        srcset="${optimizeSupabaseImage(baseUrl, 800)}" 
-        media="(max-width: 1024px)"
-        type="image/webp"
-      >
-      <img 
-        src="${optimizeSupabaseImage(baseUrl, 1200)}" 
-        alt="${alt}"
-        loading="lazy"
-      >
+      <source srcset="${optimizeSupabaseImage(baseUrl, 400)}" media="(max-width: 640px)" type="image/webp">
+      <source srcset="${optimizeSupabaseImage(baseUrl, 800)}" media="(max-width: 1024px)" type="image/webp">
+      <img src="${optimizeSupabaseImage(baseUrl, 1200)}" alt="${alt}" loading="lazy">
     </picture>
   `;
 }
 
-// ===============================================
-
-// toArray robuste : Array natif, JSON string, objet {urls:[]}, {0:"url",1:"url"}, CSV (virgule/; / | / retour-ligne)
+// toArray robuste
 const toArray = (v) => {
   if (!v) return [];
   if (Array.isArray(v)) return v.filter(Boolean);
@@ -121,11 +115,7 @@ const toArray = (v) => {
   return [];
 };
 
-// =======================
-// PARTAGE / LIEN DIRECT
-// =======================
-const mActions = modal ? modal.querySelector(".modal-actions") : null;
-
+// Utils Modale / Partage
 function getPidFromURL(){
   try { return new URL(location.href).searchParams.get("p"); } catch { return null; }
 }
@@ -139,7 +129,6 @@ async function copyToClipboard(text){
   catch { prompt("Copiez le lien :", text); }
 }
 function ensureShareButton(){
-  // crée le bouton une seule fois dans la modale
   let btn = document.getElementById("mShare");
   if (!btn && mActions){
     btn = document.createElement("button");
@@ -147,16 +136,17 @@ function ensureShareButton(){
     btn.className = "btn secondary";
     btn.type = "button";
     btn.textContent = "🔗 Partager";
-    // l'insérer avant les boutons Préc/Suiv si possibles
     if (mPrev) mActions.insertBefore(btn, mPrev);
     else mActions.appendChild(btn);
   }
   return btn;
 }
 
-// ============================================
-// FIX 4 : Gestion des erreurs Supabase & Chargement Produits
-// ============================================
+// =======================
+// 6. FONCTIONS
+// =======================
+
+/* --- Gestion des Produits --- */
 async function loadProducts() {
   try {
     console.log('📦 Chargement des produits...');
@@ -221,9 +211,7 @@ async function loadProducts() {
   }
 }
 
-// =======================
-// Rendu + filtres + (tri & pagination)
-// =======================
+/* --- Rendu & UI --- */
 function fillCategories(list){
   if (!catEl) return;
   const set = new Set();
@@ -233,7 +221,6 @@ function fillCategories(list){
     .join("");
 }
 
-/* ===== Barre de contrôle (UI) : tri + pagination ===== */
 function ensureControls(){
   if (!gridEl) return;
   if (document.getElementById("listControls")) return;
@@ -263,10 +250,8 @@ function ensureControls(){
       </div>
     </div>
   `;
-  // Insérer AVANT la grille
   gridEl.insertAdjacentHTML("beforebegin", html);
 
-  // valeurs initiales + bindings
   const sortSel = document.getElementById("sortSel");
   const sizeSel = document.getElementById("pageSizeSel");
   const prevBtn = document.getElementById("prevPage");
@@ -319,7 +304,6 @@ function paginate(arr){
   const start = (PAGE - 1) * PAGE_SIZE;
   const items = arr.slice(start, start + PAGE_SIZE);
 
-  // MAJ UI
   const pageInfo = document.getElementById("pageInfo");
   const prevBtn  = document.getElementById("prevPage");
   const nextBtn  = document.getElementById("nextPage");
@@ -346,7 +330,6 @@ function render(list, errorText=""){
   const cat = (catEl?.value || "Toutes");
   const city = (cityEl?.value || "Toutes");
 
-  // filtre
   const filtered = list.filter(p => {
     const okQ   = !q || (p.title + " " + (p.category || "") + " " + (p.shortDescription || "")).toLowerCase().includes(q);
     const okC   = (cat === "Toutes") || (p.category === cat);
@@ -354,14 +337,11 @@ function render(list, errorText=""){
     return okQ && okC && okCit;
   });
 
-  // tri + pagination
   const sorted   = sortList(filtered);
   const pageData = paginate(sorted);
 
-  // rendu
   gridEl.innerHTML = pageData.map(cardTpl).join("");
 
-  // vide ?
   if (filtered.length === 0) {
     if (emptyEl){
       emptyEl.style.display = "block";
@@ -371,7 +351,6 @@ function render(list, errorText=""){
     if (emptyEl) emptyEl.style.display = "none";
   }
 
-  // click -> modale
   gridEl.querySelectorAll(".card").forEach(card => {
     card.addEventListener("click", () => {
       const id = card.getAttribute("data-id");
@@ -380,43 +359,23 @@ function render(list, errorText=""){
     });
   });
 
-  // swipe mobile -> alterner les images (effet Jumia)
   bindCardSwipe();
 }
 
-/* === Nouvelle carte produit : AVEC NOUVELLE OPTIMISATION === */
 function cardTpl(p){
   const gallery = buildGalleryLocal(p);
-  
-  // ✨ OPTIMISATION AUTOMATIQUE (Utilise getOptimizedImageUrl)
   const first  = escapeHtml(getOptimizedImageUrl(gallery[0], 400) || "/assets/images/placeholder.png");
   const second = gallery[1] ? escapeHtml(getOptimizedImageUrl(gallery[1], 400)) : null;
-
   const title = escapeHtml(p.title || "");
   const price = fmtXAF(p.price || 0);
   const cat   = escapeHtml(p.category || "");
   const desc  = escapeHtml(p.shortDescription || "");
 
-  // Rendu avec balises IMG standards (plus simple et utilisant la nouvelle optimisation)
   return `
     <div class="card" data-id="${escapeAttr(p.id)}" style="cursor:pointer">
       <div class="card-thumb">
-        <img 
-          class="card-img card-img-primary" 
-          src="${first}" 
-          alt="${title}" 
-          loading="lazy"
-        >
-        ${
-          second 
-            ? `<img 
-                 class="card-img card-img-secondary" 
-                 src="${second}" 
-                 alt="${title}" 
-                 loading="lazy"
-               >` 
-            : ""
-        }
+        <img class="card-img card-img-primary" src="${first}" alt="${title}" loading="lazy">
+        ${ second ? `<img class="card-img card-img-secondary" src="${second}" alt="${title}" loading="lazy">` : "" }
         <div class="card-action">Voir le produit</div>
       </div>
       <div class="p">
@@ -429,20 +388,13 @@ function cardTpl(p){
   `;
 }
 
-// ✅ Effet swipe mobile type "Jumia" - CORRIGÉ POUR ÉVITER L'ÉCRAN BLANC
 function bindCardSwipe(){
   if (!gridEl) return;
-
   gridEl.querySelectorAll(".card").forEach(card => {
     const thumb = card.querySelector(".card-thumb");
     if (!thumb) return;
-
-    // ✅ VÉRIFICATION : Y a-t-il une 2ème image ?
     const hasSecondImage = thumb.querySelector(".card-img-secondary");
-    if (!hasSecondImage) {
-      // Pas de 2ème image = pas de swipe, on sort
-      return;
-    }
+    if (!hasSecondImage) return;
 
     let startX = null;
     let moved  = false;
@@ -466,16 +418,13 @@ function bindCardSwipe(){
       const t = e.changedTouches && e.changedTouches[0];
       if (!t || startX == null) return;
       const dx = t.clientX - startX;
-
-      // Swipe horizontal significatif
       if (Math.abs(dx) > 40) {
         card.classList.toggle("card-swiped");
-        e.stopPropagation(); // évite l'ouverture de la modale
+        e.stopPropagation(); 
       }
       startX = null;
     });
 
-    // Si on a glissé, on annule le clic
     thumb.addEventListener("click", (e) => {
       if (moved) {
         e.stopPropagation();
@@ -485,7 +434,6 @@ function bindCardSwipe(){
   });
 }
 
-// Construit la galerie : image principale + products.images + product_images
 function buildGalleryLocal(p){
   const arr = [];
   if (p.image) arr.push(p.image);
@@ -494,9 +442,7 @@ function buildGalleryLocal(p){
   return uniq(arr);
 }
 
-// =======================
-// Modale / Galerie
-// =======================
+/* --- Modale / Galerie --- */
 async function fetchExtraImages(productId){
   try{
     const { data, error } = await sb
@@ -515,12 +461,9 @@ async function fetchExtraImages(productId){
 
 function renderGallery(){
   if (!mMain || !mThumbs) return;
-
-  // image principale (OPTIMISÉE)
   const currentUrl = currentGallery.length ? currentGallery[currentIndex] : "/assets/images/placeholder.png";
   mMain.src = optimizeSupabaseImage(currentUrl, 1000);
 
-  // vignettes avec classe active (OPTIMISÉES)
   mThumbs.innerHTML = currentGallery.map((url, i) =>
     `<img src="${escapeAttr(optimizeSupabaseImage(url, 150))}" data-i="${i}" class="${i===currentIndex ? 'active' : ''}">`
   ).join("");
@@ -545,8 +488,7 @@ async function openModal(p){
     alert("Fiche produit indisponible (modale manquante).");
     return;
   }
-
-  // DIAGNOSTIC
+  
   console.log("[OPEN PRODUCT]", {
     id: p.id,
     image: p.image,
@@ -555,14 +497,12 @@ async function openModal(p){
     extra_from_table: IMAGES_MAP[p.id] || []
   });
 
-  // Texte
   mTitle.textContent = p.title || "";
   mPrice.textContent = fmtXAF(p.price || 0);
   mCat.textContent   = "📦 " + (p.category || "");
   mDesc.textContent  = p.shortDescription || "";
   mCities.textContent = (p.cities && p.cities.length) ? `📍 Disponible à ${p.cities.join(", ")}` : "";
 
-  // WhatsApp avec icône SVG
   const msg = encodeURIComponent(`Bonjour Samiah Cosmetics, je suis intéressé(e) par ${p.title} (${fmtXAF(p.price||0)}).`);
   if (mWhats) {
     mWhats.innerHTML = `
@@ -574,7 +514,6 @@ async function openModal(p){
     mWhats.href = `https://wa.me/23562752105?text=${msg}`;
   }
 
-  // Galerie locale + compléments DB
   currentGallery = buildGalleryLocal(p);
   try{
     const extras = await fetchExtraImages(p.id);
@@ -584,32 +523,27 @@ async function openModal(p){
   currentIndex = 0;
   renderGallery();
 
-  // --- PARTAGE : bouton + URL ---
   const shareBtn = ensureShareButton();
   if (shareBtn){
     const shareUrl = buildShareUrl(p.id);
     shareBtn.onclick = async () => {
       if (navigator.share) {
         try { await navigator.share({ title: p.title, text: p.title, url: shareUrl }); }
-        catch {/* annulation utilisateur */}
+        catch {}
       } else {
         await copyToClipboard(shareUrl);
       }
     };
   }
 
-  // clic image principale → plein écran (si markup présent)
   if (mMain) mMain.onclick = () => openFs();
 
-  // Utilisation des classes .show
   overlay.classList.add('show');
   modal.classList.add('show');
   document.body.style.overflow = 'hidden';
 
-  // Pousse l'état dans l'historique pour lien direct
   try { history.pushState({ pid: p.id }, "", buildShareUrl(p.id)); } catch {}
 
-  // Bind fermeture / nav
   if (mClose) mClose.onclick = closeModal;
   overlay.onclick = (e) => { if (e.target === overlay) closeModal(); };
   document.addEventListener("keydown", handleModalKeydown, { once:true });
@@ -627,8 +561,6 @@ function closeModal(){
   modal?.classList.remove('show');
   overlay.classList.remove('show');
   document.body.style.overflow = '';
-
-  // retire ?p de l'URL sans recharger
   try {
     const u = new URL(location.href);
     u.searchParams.delete("p");
@@ -637,15 +569,11 @@ function closeModal(){
   } catch {}
 }
 
-// =======================
-// Plein écran (lightbox) — optionnel si les éléments existent
-// =======================
+/* --- Plein écran (lightbox) --- */
 function openFs(){
   if (!fsOverlay || !fsImg || !currentGallery.length) return;
-  // IMAGE HAUTE QUALITÉ
   const currentUrl = currentGallery[currentIndex] || "/assets/images/placeholder.png";
   fsImg.src = optimizeSupabaseImage(currentUrl, 1600);
-  
   fsOverlay.classList.add("show");
   document.body.style.overflow = "hidden";
 }
@@ -670,6 +598,7 @@ document.addEventListener("keydown", (e) => {
   if (e.key === "ArrowLeft")    return fsPrevFn();
   if (e.key === "ArrowRight")   return fsNextFn();
 });
+
 let touchX = null;
 if (fsOverlay){
   fsOverlay.addEventListener("touchstart", (e) => { touchX = e.changedTouches?.[0]?.clientX ?? null; }, { passive:true });
@@ -681,9 +610,7 @@ if (fsOverlay){
   }, { passive:true });
 }
 
-// =======================
-// Deep-link : ouvrir/
-// =======================
+/* --- Deep-link & Filtres --- */
 function maybeOpenFromURL(){
   const pid = getPidFromURL();
   if (!pid) return;
@@ -700,24 +627,17 @@ window.addEventListener("popstate", () => {
   }
 });
 
-// =======================
-// Filtres UI
-// =======================
 [qEl, catEl, cityEl].forEach(el => {
   if (!el) return;
   el.addEventListener("input", () => { PAGE = 1; render(PRODUCTS); });
   el.addEventListener("change", () => { PAGE = 1; render(PRODUCTS); });
 });
 
-// ============================================
-// FIX 5 : Témoignages avec gestion d'erreurs
-// ============================================
+/* --- Témoignages --- */
 async function loadTestimonials() {
   if (!testiGrid) return;
-
   try {
     console.log('💬 Chargement des témoignages...');
-    
     const { data, error } = await sb
       .from("testimonials")
       .select("id, client_name, city, rating, message, photos, photo_url, created_at, active")
@@ -732,7 +652,6 @@ async function loadTestimonials() {
 
     console.log(`✅ ${data?.length || 0} témoignages chargés`);
     renderTestimonials(data || []);
-    
   } catch (e) {
     console.error("❌ Erreur fatale loadTestimonials:", e);
     renderTestimonials([], e.message || "Erreur");
@@ -741,18 +660,14 @@ async function loadTestimonials() {
 
 function renderTestimonials(list, errText = ""){
   if (!testiGrid) return;
-
   const rows = Array.isArray(list) ? list : [];
-  
   console.log("[renderTestimonials]", { count: rows.length, rows });
 
   if (!rows.length){
     testiGrid.innerHTML = "";
     if (testiEmpty){
       testiEmpty.style.display = "block";
-      testiEmpty.textContent = errText
-        ? "Les premiers témoignages arrivent bientôt ("+errText+")"
-        : "Les premiers témoignages arrivent bientôt.";
+      testiEmpty.textContent = errText ? "Les premiers témoignages arrivent bientôt ("+errText+")" : "Les premiers témoignages arrivent bientôt.";
     }
     return;
   }
@@ -762,20 +677,13 @@ function renderTestimonials(list, errText = ""){
     const city  = escapeHtml(t.city || "");
     const quote = escapeHtml(t.message || "");
     
-    // ✅ CORRECTION ULTIME : Gère photos (array) OU photo_url (string)
     let imgUrl = "/assets/images/placeholder-testimonial.png";
-    
     if (t.photo_url && typeof t.photo_url === "string") {
-      // Cas 1 : photo_url existe (string)
       imgUrl = t.photo_url;
     } else if (Array.isArray(t.photos) && t.photos.length > 0) {
-      // Cas 2 : photos existe (array)
       imgUrl = t.photos[0];
     }
     
-    console.log("[renderTestimonials] Image pour", name, ":", imgUrl);
-
-    // ✅ Affichage du rating avec étoiles
     let starsHtml = "";
     if (t.rating && typeof t.rating === "number" && t.rating >= 1 && t.rating <= 5) {
       const fullStars = "★".repeat(t.rating);
@@ -784,23 +692,13 @@ function renderTestimonials(list, errText = ""){
     }
 
     const date = t.created_at ? new Date(t.created_at) : null;
-    const dateStr = date
-      ? date.toLocaleDateString("fr-FR",{year:"numeric",month:"short",day:"2-digit"})
-      : "";
-
-    // MODIF ICI : OPTIMISATION IMAGE TÉMOIGNAGE
+    const dateStr = date ? date.toLocaleDateString("fr-FR",{year:"numeric",month:"short",day:"2-digit"}) : "";
     const optimizedAvatar = optimizeSupabaseImage(imgUrl, 100);
 
-    // MODIF ICI : Structure carte standard (pour Grille)
     return `
       <article class="card">
         <div class="card-thumb">
-          <img
-              src="${escapeAttr(optimizedAvatar)}"
-              alt="${name ? "Résultat de " + name : "Témoignage cliente"}"
-              loading="lazy"
-              onerror="this.onerror=null;this.src='/assets/images/placeholder-testimonial.png';console.error('Image failed:',this.src)"
-            >
+          <img src="${escapeAttr(optimizedAvatar)}" alt="${name ? "Résultat de " + name : "Témoignage cliente"}" loading="lazy" onerror="this.onerror=null;this.src='/assets/images/placeholder-testimonial.png';console.error('Image failed:',this.src)">
         </div>
         <div class="p">
           ${starsHtml}
@@ -817,9 +715,7 @@ function renderTestimonials(list, errText = ""){
   if (testiEmpty) testiEmpty.style.display = "none";
 }
 
-// =======================
-// Realtime
-// =======================
+/* --- Realtime --- */
 function subscribeRealtime(){
   sb.channel("realtime:products")
     .on("postgres_changes", { event:"*", schema:"public", table:"products" }, () => loadProducts().catch(console.error))
@@ -829,77 +725,13 @@ function subscribeRealtime(){
     .on("postgres_changes", { event:"*", schema:"public", table:"product_images" }, () => loadProducts().catch(console.error))
     .subscribe();
 
-  // Realtime pour les témoignages (optionnel mais pratique)
   sb.channel("realtime:testimonials")
     .on("postgres_changes", { event:"*", schema:"public", table:"testimonials" }, () => loadTestimonials().catch(console.error))
     .subscribe();
 }
 
-// ============================================
-// FIX 6 : Init principale robuste
-// ============================================
-async function init() {
-  console.log('🎬 Initialisation de l\'application...');
-  
-  // Vérifie que Supabase est bien chargé
-  if (typeof sb === 'undefined') {
-    throw new Error('Supabase client not loaded');
-  }
-  
-  try {
-    await loadProducts();
-    await loadTestimonials();
-    subscribeRealtime();
-    console.log('✅ Initialisation terminée avec succès');
-  } catch (error) {
-    console.error('❌ Erreur durant l\'initialisation:', error);
-    throw error;
-  }
-}
-
-// ============================================
-// FIX 3 : script.js - Initialisation Supabase
-// ============================================
-// Vérifie que tout est chargé AVANT d'initialiser
-document.addEventListener('DOMContentLoaded', async () => {
-  console.log('🚀 DOM Ready - Initialisation...');
-  
-  // Attends un peu que Supabase soit prêt
-  await new Promise(resolve => setTimeout(resolve, 100));
-  
-  try {
-    await init();
-    console.log('✅ Application initialisée');
-  } catch (error) {
-    console.error('❌ Erreur initialisation:', error);
-    
-    // Affiche un message à l'utilisateur
-    const grid = document.getElementById('products-grid');
-    if (grid) {
-      grid.innerHTML = `
-        <div style="grid-column: 1/-1; text-align: center; padding: 40px;">
-          <p style="color: #ef4444; font-weight: 600;">
-            ⚠️ Erreur de chargement des produits
-          </p>
-          <p style="color: #6b7280; margin-top: 8px;">
-            Veuillez recharger la page ou contacter le support.
-          </p>
-          <button onclick="location.reload()" style="margin-top: 16px; padding: 12px 24px; background: #111; color: #fff; border: 0; border-radius: 8px; cursor: pointer;">
-            🔄 Recharger la page
-          </button>
-        </div>
-      `;
-    }
-  }
-});
-
-/* ===========================================================
-   BADGE "Nouveau" (append-only)
-   - Ajoute un badge sur les cartes produits récents (≤ NEW_DAYS)
-   - Sans modifier render() / cardTpl() : post-traitement du DOM
-   =========================================================== */
-
-const NEW_DAYS = 2; // ajuste si besoin
+/* --- Badges Nouveauté --- */
+const NEW_DAYS = 2; 
 function __isNewProduct(p){
   if (!p || !p.created_at) return false;
   const created = Date.parse(p.created_at);
@@ -910,10 +742,8 @@ function __isNewProduct(p){
 
 function __injectNewBadgeIntoCard(cardEl, p){
   if (!cardEl || !p) return;
-  // éviter les doublons
   if (cardEl.querySelector('.badge.badge-new')) return;
 
-  // MODIF ICI : Insertion dans .card-thumb pour coller à l'image
   const slot = cardEl.querySelector('.card-thumb') || cardEl;
   const span = document.createElement('span');
   span.className = 'badge badge-new';
@@ -931,16 +761,59 @@ function markNewCards(){
   });
 }
 
-// 1) Marque immédiatement si déjà rendu
+// Observateurs de badges
 markNewCards();
-
-// 2) Observe la grille : à chaque changement (render), on remet les badges
 const __newBadgeObserver = new MutationObserver(() => markNewCards());
 if (gridEl) {
   __newBadgeObserver.observe(gridEl, { childList: true, subtree: false });
 }
-
-// 3) Sécurité : recalcule aussi après chargement des produits
 document.addEventListener('readystatechange', () => {
   if (document.readyState === 'complete') markNewCards();
+});
+
+// =======================
+// 7. INIT (À LA FIN)
+// =======================
+async function init() {
+  console.log('🎬 Initialisation...');
+  
+  if (!sb) {
+    throw new Error('Supabase client not loaded');
+  }
+  
+  try {
+    await loadProducts();
+    await loadTestimonials();
+    subscribeRealtime();
+    console.log('✅ Init terminée');
+  } catch (error) {
+    console.error('❌ Erreur init:', error);
+    throw error;
+  }
+}
+
+// =======================
+// 8. LANCEMENT (TOUT À LA FIN)
+// =======================
+document.addEventListener('DOMContentLoaded', async () => {
+  console.log('🚀 DOM Ready');
+  
+  await new Promise(resolve => setTimeout(resolve, 100));
+  
+  try {
+    await init();
+  } catch (error) {
+    console.error('❌ Erreur fatale:', error);
+    const grid = document.getElementById('products-grid');
+    if (grid) {
+      grid.innerHTML = `
+        <div style="grid-column:1/-1;text-align:center;padding:40px">
+          <p style="color:#ef4444;font-weight:600">⚠️ Erreur de chargement</p>
+          <button onclick="location.reload()" style="margin-top:16px;padding:12px 24px;background:#111;color:#fff;border:0;border-radius:8px;cursor:pointer">
+            🔄 Recharger
+          </button>
+        </div>
+      `;
+    }
+  }
 });
