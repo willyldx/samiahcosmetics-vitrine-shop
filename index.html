@@ -10,9 +10,8 @@
   <meta property="og:image:alt" content="Samiah Cosmetics — logo">
   <meta name="twitter:card" content="summary_large_image">
 
-  <script src="/assets/js/optimize-supabase.js"></script>
-  <script src="/assets/js/animations.js"></script>
-
+  <!-- ✅ RETIRE LES SCRIPTS DU HEAD -->
+  
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
@@ -40,6 +39,7 @@
 </head>
 <body>
 
+  <!-- ... Tout ton HTML existant ... -->
   <header class="container header">
     <div class="logo">
       <img
@@ -54,7 +54,7 @@
     <div class="container wrap">
       <div>
         <h1>Consultation capillaire en ligne</h1>
-        <p>Définition de votre profil, analyse des problèmes, correction des habitudes, mise en place d’une routine saine et conseils sur mesure.</p>
+        <p>Définition de votre profil, analyse des problèmes, correction des habitudes, mise en place d'une routine saine et conseils sur mesure.</p>
         <a class="btn gold" target="_blank" rel="noopener"
            href="https://wa.me/23562752105?text=Bonjour%20Samiah%20Cosmetics%2C%20je%20souhaite%20r%C3%A9server%20une%20consultation%20capillaire%20(10.000F).">
           Réserver via WhatsApp — 10 000 F
@@ -80,7 +80,7 @@
       </select>
       <select id="city" title="Ville">
         <option>Toutes</option>
-        <option>N’Djamena</option><option>Moundou</option><option>Sarh</option><option>Abéché</option>
+        <option>N'Djamena</option><option>Moundou</option><option>Sarh</option><option>Abéché</option>
         <option>Bongor</option><option>Kélo</option><option>Pala</option><option>Koumra</option><option>Faya-Largeau</option>
       </select>
       <select id="sortBy" title="Trier par">
@@ -89,7 +89,7 @@
         <option value="price-desc">Prix : décroissant</option>
         <option value="title-asc">Nom : A → Z</option>
       </select>
-      </div>
+    </div>
 
     <div id="products-grid" class="grid">
       <div class="card skeleton" style="height:340px;background:#f9f9f9;border-radius:16px"></div>
@@ -102,7 +102,7 @@
     <div style="text-align:center;margin:12px 0">
       <button id="loadMore" class="btn secondary" style="display:none">Voir plus</button>
     </div>
-    <div id="emptyMsg" class="empty" style="display:none">Aucun produit pour l’instant.</div>
+    <div id="emptyMsg" class="empty" style="display:none">Aucun produit pour l'instant.</div>
 
     <section id="testimonials" aria-labelledby="testiTitle" style="margin-top:32px">
       <h2 id="testiTitle" class="section-title">Témoignages</h2>
@@ -114,11 +114,10 @@
         Les premiers témoignages arrivent bientôt.
       </div>
     </section>
-
-    </main>
+  </main>
 
   <footer class="footer">
-    <div class="container">© 2025 Samiah Cosmetics — N’Djamena, Tchad</div>
+    <div class="container">© 2025 Samiah Cosmetics — N'Djamena, Tchad</div>
   </footer>
 
   <a class="wa-float" href="https://wa.me/23562752105" target="_blank" rel="noopener" aria-label="WhatsApp" style="position:fixed;right:18px;bottom:18px;z-index:999;display:inline-flex;align-items:center;justify-content:center;width:56px;height:56px;border-radius:999px;background:#25D366;color:#fff;box-shadow:0 10px 30px rgba(0,0,0,.2);text-decoration:none">
@@ -127,70 +126,74 @@
     </svg>
   </a>
 
-<div id="overlay" class="modal-overlay"></div>
+  <!-- Overlay modale -->
+  <div id="overlay" class="modal-overlay"></div>
 
-<div id="productModal" class="modal">
-  <div class="modal-card">
-    
-    <div class="modal-head">
-      <div id="mTitle">Titre du produit</div>
-      <button id="mClose">×</button>
-    </div>
-
-    <div class="modal-body">
-      
-      <div>
-        <div class="gal-main">
-          <img id="mMain" src="" alt="">
-        </div>
-        <div id="mThumbs" class="gal-thumbs"></div>
+  <!-- Modale produit -->
+  <div id="productModal" class="modal">
+    <div class="modal-card">
+      <div class="modal-head">
+        <div id="mTitle">Titre du produit</div>
+        <button id="mClose">×</button>
       </div>
-
-      <div class="meta">
-        <div id="mPrice">—</div>
-        <div id="mCat">—</div>
-        <div id="mDesc"></div>
-        <div id="mCities"></div>
-        
-        <div class="modal-actions">
-          <a id="mWhatsApp" target="_blank" rel="noopener">
-            Commander via WhatsApp
-          </a>
-          <div>
-            <button id="mShare" class="btn secondary">🔗 Partager</button>
-            <button id="mPrev" class="btn secondary">◄ Préc</button>
-            <button id="mNext" class="btn secondary">Suiv ►</button>
+      <div class="modal-body">
+        <div>
+          <div class="gal-main">
+            <img id="mMain" src="" alt="">
+          </div>
+          <div id="mThumbs" class="gal-thumbs"></div>
+        </div>
+        <div class="meta">
+          <div id="mPrice">—</div>
+          <div id="mCat">—</div>
+          <div id="mDesc"></div>
+          <div id="mCities"></div>
+          <div class="modal-actions">
+            <a id="mWhatsApp" target="_blank" rel="noopener">
+              Commander via WhatsApp
+            </a>
+            <div>
+              <button id="mShare" class="btn secondary">🔗 Partager</button>
+              <button id="mPrev" class="btn secondary">◄ Préc</button>
+              <button id="mNext" class="btn secondary">Suiv ►</button>
+            </div>
           </div>
         </div>
       </div>
-
     </div>
   </div>
-</div>
 
-<div id="fsOverlay" class="fs-overlay" aria-hidden="true">
-  <button id="fsClose" class="fs-close" aria-label="Fermer">×</button>
-  <img id="fsImg" alt="Agrandissement" />
-  <button id="fsPrev" class="fs-nav fs-left" aria-label="Image précédente">‹</button>
-  <button id="fsNext" class="fs-nav fs-right" aria-label="Image suivante">›</button>
-</div>
-<style>
-  .fs-overlay{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.95);z-index:1200;overscroll-behavior:contain}
-  .fs-overlay.show{display:flex}
-  .fs-overlay img{max-width:95vw;max-height:92vh;object-fit:contain;box-shadow:0 10px 40px rgba(0,0,0,.5);user-select:none}
-  .fs-close{position:fixed;top:14px;right:16px;appearance:none;border:0;cursor:pointer;width:42px;height:42px;border-radius:999px;background:#ffffff22;color:#fff;font-size:26px;line-height:42px}
-  .fs-nav{position:fixed;top:50%;transform:translateY(-50%);appearance:none;border:0;cursor:pointer;width:46px;height:46px;border-radius:999px;background:#ffffff22;color:#fff;font-size:26px;line-height:46px}
-  .fs-left{left:18px}.fs-right{right:18px}
-  .fs-close:hover,.fs-nav:hover{background:#ffffff33}
-  @media (max-width: 900px){.fs-nav{width:40px;height:40px;line-height:40px}}
-</style>
+  <!-- Lightbox plein écran -->
+  <div id="fsOverlay" class="fs-overlay" aria-hidden="true">
+    <button id="fsClose" class="fs-close" aria-label="Fermer">×</button>
+    <img id="fsImg" alt="Agrandissement" />
+    <button id="fsPrev" class="fs-nav fs-left" aria-label="Image précédente">‹</button>
+    <button id="fsNext" class="fs-nav fs-right" aria-label="Image suivante">›</button>
+  </div>
+  
+  <style>
+    .fs-overlay{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.95);z-index:1200;overscroll-behavior:contain}
+    .fs-overlay.show{display:flex}
+    .fs-overlay img{max-width:95vw;max-height:92vh;object-fit:contain;box-shadow:0 10px 40px rgba(0,0,0,.5);user-select:none}
+    .fs-close{position:fixed;top:14px;right:16px;appearance:none;border:0;cursor:pointer;width:42px;height:42px;border-radius:999px;background:#ffffff22;color:#fff;font-size:26px;line-height:42px}
+    .fs-nav{position:fixed;top:50%;transform:translateY(-50%);appearance:none;border:0;cursor:pointer;width:46px;height:46px;border-radius:999px;background:#ffffff22;color:#fff;font-size:26px;line-height:46px}
+    .fs-left{left:18px}.fs-right{right:18px}
+    .fs-close:hover,.fs-nav:hover{background:#ffffff33}
+    @media (max-width: 900px){.fs-nav{width:40px;height:40px;line-height:40px}}
+  </style>
 
-<script type="module">
-  // Attend 200ms que tout soit chargé pour lancer script.js
-  setTimeout(() => {
-    import('/assets/js/script.js');
-  }, 200);
-</script>
+  <!-- ============================================
+       ✅ SCRIPTS DANS LE BON ORDRE (FIN DE BODY)
+       ============================================ -->
+  
+  <!-- 1. Optimiseur images (premier) -->
+  <script src="/assets/js/optimize-supabase.js?v=3"></script>
+  
+  <!-- 2. Animations (deuxième) -->
+  <script src="/assets/js/animations.js?v=3"></script>
+  
+  <!-- 3. Script principal (dernier, en module) -->
+  <script type="module" src="/assets/js/script.js?v=3"></script>
 
 </body>
 </html>
