@@ -1,54 +1,35 @@
-<svg xmlns="http://www.w3.org/2000/svg"
-     viewBox="0 0 1200 800"
-     width="1200"
-     height="800">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 300">
+  <style>
+    .brand { font-family: 'Cinzel', serif; letter-spacing: 4px; }
+    .title { fill: #111111; font-size: 64px; font-weight: 600; }
+    .subtitle { fill: #C9A24D; font-size: 22px; letter-spacing: 6px; }
+  </style>
 
-  <!-- Fond aquarelle stylisé -->
-  <defs>
-    <radialGradient id="wash" cx="50%" cy="45%" r="55%">
-      <stop offset="0%" stop-color="#e6c9df"/>
-      <stop offset="100%" stop-color="#f3e6f0"/>
-    </radialGradient>
-  </defs>
-
+  <!-- Leaf icon -->
   <path
-    d="M200,150
-       C100,350 150,600 400,650
-       C700,720 1050,600 1020,350
-       C980,120 550,60 200,150 Z"
-    fill="url(#wash)"
+    d="M300 30
+       C260 50 230 90 240 130
+       C250 180 300 210 300 210
+       C300 210 350 180 360 130
+       C370 90 340 50 300 30 Z"
+    fill="#6B8F71"
   />
 
-  <!-- SAMIAH -->
-  <text x="600"
-        y="360"
-        text-anchor="middle"
-        fill="#111111"
-        style="
-          font-family: 'Didot', 'Bodoni MT', 'Playfair Display', serif;
-          font-size: 220px;
-          font-weight: 500;
-          letter-spacing: 4px;
-        ">
+  <!-- Leaf vein -->
+  <path
+    d="M300 55 L300 190"
+    stroke="#F5F1E8"
+    stroke-width="4"
+    stroke-linecap="round"
+  />
+
+  <!-- Brand name -->
+  <text x="300" y="250" text-anchor="middle" class="brand title">
     SAMIAH
   </text>
 
-  <!-- traits horizontaux -->
-  <path d="M200 430 H450" stroke="#111111" stroke-width="2"/>
-  <path d="M750 430 H1000" stroke="#111111" stroke-width="2"/>
-
-  <!-- cosmetics -->
-  <text x="600"
-        y="480"
-        text-anchor="middle"
-        fill="#111111"
-        style="
-          font-family: 'Montserrat', 'Helvetica Neue', Arial, sans-serif;
-          font-size: 42px;
-          font-weight: 300;
-          letter-spacing: 10px;
-        ">
-    cosmetics
+  <!-- Subtitle -->
+  <text x="300" y="280" text-anchor="middle" class="brand subtitle">
+    COSMETICS
   </text>
-
 </svg>
